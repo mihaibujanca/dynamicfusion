@@ -7,7 +7,7 @@ Key changes/features:
 * Performance has been improved by 1.6x factor (Fermi-tested)
 * Code size is reduced drastically. Readability improved. 
 * No hardcoded algorithm parameters! All of them can be changed at runtime (volume size, etc.)
-* The code is made independent from inconveniently heavy OpenCV GPU module and compilation-nightmarish PCL library. 
+* The code is made independent from OpenCV GPU module and PCL library. 
 
 Dependencies:
 * Fermi or Kepler or newer
