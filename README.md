@@ -18,5 +18,6 @@ Dependencies:
 Implicit dependency (needed by opencv_viz):
 * VTK 5.8.0 or higher. (apt-get install on linux, for windows please download and compile from www.vtk.org)
 
-
+Screenshot:
+* https://raw.githubusercontent.com/Nerei/kinfu_remake/master/perf-39.5fps-Tesla-C2070.png
 
