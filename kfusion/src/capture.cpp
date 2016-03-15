@@ -47,6 +47,7 @@ struct kfusion::OpenNISource::Impl
     DepthMetaData depthMD;
     ImageMetaData imageMD;
     XnChar strError[1024];
+    Player player_;
 
     bool has_depth;
     bool has_image;
@@ -56,7 +57,7 @@ kfusion::OpenNISource::OpenNISource() : depth_focal_length_VGA (0.f), baseline (
     shadow_value (0), no_sample_value (0), pixelSize (0.0), max_depth (0) {}
 
 kfusion::OpenNISource::OpenNISource(int device) {open (device); }
-kfusion::OpenNISource::OpenNISource(const string& filename) {open (filename); }
+kfusion::OpenNISource::OpenNISource(const string& filename, bool repeat /*= false*/) {open (filename, repeat); }
 kfusion::OpenNISource::~OpenNISource() { release (); }
 
 void kfusion::OpenNISource::open (int device)
@@ -141,7 +142,7 @@ void kfusion::OpenNISource::open (int device)
     }
 }
 
-void kfusion::OpenNISource::open(const std::string& filename)
+void kfusion::OpenNISource::open(const std::string& filename, bool repeat /*= false*/)
 {
     impl_ = cv::Ptr<Impl> ( new Impl () );
 
@@ -154,12 +155,15 @@ void kfusion::OpenNISource::open(const std::string& filename)
         REPORT_ERROR (impl_->strError);
     }
 
-    rc = impl_->context.OpenFileRecording (filename.c_str (), impl_->node);
+    //rc = impl_->context.OpenFileRecording (filename.c_str (), impl_->node);
+    rc = impl_->context.OpenFileRecording (filename.c_str (), impl_->player_);
     if (rc != XN_STATUS_OK)
     {
         sprintf (impl_->strError, "Open failed: %s\n", xnGetStatusString (rc));
         REPORT_ERROR (impl_->strError);
     }
+    
+    impl_->player_.SetRepeat(repeat);
 
     rc = impl_->context.FindExistingNode (XN_NODE_TYPE_DEPTH, impl_->depth);
     impl_->has_depth = (rc == XN_STATUS_OK);

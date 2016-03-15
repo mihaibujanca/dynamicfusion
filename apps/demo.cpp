@@ -23,7 +23,7 @@ struct KinFuApp
             kinfu.iteractive_mode_ = !kinfu.iteractive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false),  iteractive_mode_(false), capture_ (source)
+    KinFuApp(OpenNISource& source) : exit_ (false),  iteractive_mode_(false), capture_ (source), pause_(false)
     {
         KinFuParams params = KinFuParams::default_params();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -95,13 +95,14 @@ struct KinFuApp
             if (!iteractive_mode_)
                 viz.setViewerPose(kinfu.getCameraPose());
 
-            int key = cv::waitKey(3);
+            int key = cv::waitKey(pause_ ? 0 : 3);
 
             switch(key)
             {
             case 't': case 'T' : take_cloud(kinfu); break;
             case 'i': case 'I' : iteractive_mode_ = !iteractive_mode_; break;
-            case 27: case 32: exit_ = true; break;
+            case 27: exit_ = true; break;
+            case 32: pause_ = !pause_; break;
             }
 
             //exit_ = exit_ || i > 100;
@@ -110,6 +111,7 @@ struct KinFuApp
         return true;
     }
 
+    bool pause_ /*= false*/;
     bool exit_, iteractive_mode_;
     OpenNISource& capture_;
     KinFu::Ptr kinfu_;
