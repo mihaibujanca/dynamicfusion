@@ -79,7 +79,7 @@ void kfusion::cuda::renderImage(const Depth& depth, const Normals& normals, cons
 
     const device::Depth& d = (const device::Depth&)depth;
     const device::Normals& n = (const device::Normals&)normals;
-    device::Reprojector reproj(intr.fx, intr.fy, intr.cx, intr.fy);
+    device::Reprojector reproj(intr.fx, intr.fy, intr.cx, intr.cy);
     device::Vec3f light = device_cast<device::Vec3f>(light_pose);
 
     device::Image& i = (device::Image&)image;
@@ -93,7 +93,7 @@ void kfusion::cuda::renderImage(const Cloud& points, const Normals& normals, con
 
     const device::Points& p = (const device::Points&)points;
     const device::Normals& n = (const device::Normals&)normals;
-    device::Reprojector reproj(intr.fx, intr.fy, intr.cx, intr.fy);
+    device::Reprojector reproj(intr.fx, intr.fy, intr.cx, intr.cy);
     device::Vec3f light = device_cast<device::Vec3f>(light_pose);
 
     device::Image& i = (device::Image&)image;
