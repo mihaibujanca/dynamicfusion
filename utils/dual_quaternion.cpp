@@ -133,7 +133,7 @@ namespace kfusion
         }
 
         template <typename T>
-        DualQuaternion DualQuaternion::operator/(const std::tuple<T,T> divisor)
+        DualQuaternion DualQuaternion::operator/(const std::pair<T,T> divisor)
         {
             DualQuaternion result;
             result.rotation_ = 1 / divisor * rotation_;
@@ -182,12 +182,5 @@ namespace kfusion
             return atan2(2*((rotation_.w_ * rotation_.z_) + (rotation_.x_ * rotation_.y_)),
                          (1 - 2*((rotation_.y_*rotation_.y_) + (rotation_.z_*rotation_.z_))));
         }
-
-    template <typename T> std::ostream& DualQuaternion::operator<< (std::ostream& os, const DualQuaternion<T>& q)
-    {
-        os << "[" << q.rotation_ << ", " << q.translation_ << ", " << "]" << std::endl;
-        return os;
-    }
-
 }
 }

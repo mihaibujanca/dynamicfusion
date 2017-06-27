@@ -1,7 +1,8 @@
 #ifndef DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #define DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #include<iostream>
-#include<tuple>
+#include<quaternion.hpp>
+//TODO: Quaternion class can be forward declared rather than included
 /**
  * \brief a dual quaternion class for encoding transformations.
  * \details transformations are stored as first a translation; then a
@@ -10,75 +11,74 @@
  */
 namespace kfusion {
     namespace utils {
-        class Quaternion;
-            template<typename T>
+
+        template<typename T>
         class DualQuaternion {
         public:
-/**
- * \brief default constructor.
- */
+            /**
+             * \brief default constructor.
+             */
             DualQuaternion();
 
-/**
- * \brief constructor that takes cartesian coordinates and Euler angles as
- *        arguments.
- */
+            /**
+             * \brief constructor that takes cartesian coordinates and Euler angles as
+             *        arguments.
+             */
             DualQuaternion(T x, T y, T z, T roll, T pitch, T yaw);
 
-/**
- * \brief constructor that takes two quaternions as arguments.
- * \details The rotation
- *          quaternion has the conventional encoding for a rotation as a
- *          quaternion. The translation quaternion is a quaternion with
- *          cartesian coordinates encoded as (0, x, y, z)
- */
+            /**
+             * \brief constructor that takes two quaternions as arguments.
+             * \details The rotation
+             *          quaternion has the conventional encoding for a rotation as a
+             *          quaternion. The translation quaternion is a quaternion with
+             *          cartesian coordinates encoded as (0, x, y, z)
+             */
             DualQuaternion(Quaternion<T> translation, Quaternion<T> rotation);
             // Other constructors here.
 
             ~DualQuaternion();
 
-/**
- * \brief store a rotation
- * \param angle is in radians
- */
+            /**
+             * \brief store a rotation
+             * \param angle is in radians
+             */
             void encodeRotation(T angle, T x, T y, T z);
 
             void encodeTranslation(T x, T y, T z);
 
-/// handle accumulating error.
+            /// handle accumulating error.
             void normalizeRotation();
 
 
-/**
- * \brief a reference-based method for acquiring the latest
- *        translation data.
- */
+            /**
+             * \brief a reference-based method for acquiring the latest
+             *        translation data.
+             */
             void getTranslation(T &x, T &y, T &z);
 
             Quaternion<T> getTranslation();
 
-/**
- * \brief a reference-based method for acquiring the latest rotation data.
- */
+            /**
+             * \brief a reference-based method for acquiring the latest rotation data.
+             */
             void getEuler(T &roll, T &pitch, T &yaw);
 
             Quaternion<T> getRotation();
 
 
-/**
- * \brief Extraction everything (in a nice format)
- */
+            /**
+             * \brief Extraction everything (in a nice format)
+             */
             void get6DOF(T &x, T &y, T &z, T &roll, T &pitch, T &yaw);
             DualQuaternion operator+(const DualQuaternion &other);
             DualQuaternion operator-(const DualQuaternion &other);
             DualQuaternion operator*(const DualQuaternion &other);
-            DualQuaternion operator/(const std::tuple<T,T> divisor);
-            std::ostream &operator<<(std::ostream &os, const DualQuaternion<T> &q);
-/// (left) Scalar Multiplication
-/**
- * \fn template <typename U> friend Quaternion operator*(const U scalar,
- * \brief implements scalar multiplication for arbitrary scalar types
- */
+            DualQuaternion operator/(const std::pair<T,T> divisor);
+            /// (left) Scalar Multiplication
+            /**
+             * \fn template <typename U> friend Quaternion operator*(const U scalar,
+             * \brief implements scalar multiplication for arbitrary scalar types
+             */
             template<typename U>
             friend DualQuaternion operator*(const U scalar, const DualQuaternion &q);
             DualQuaternion conjugate();
@@ -98,6 +98,12 @@ namespace kfusion {
             T getPitch();
             T getYaw();
         };
+        template <typename T>
+        std::ostream &operator<<(std::ostream &os, const DualQuaternion<T> &q)
+        {
+            os << "[" << q.rotation_ << ", " << q.translation_ << ", " << "]" << std::endl;
+            return os;
+        }
     }
 }
 #endif //DualQuaternion_HPP

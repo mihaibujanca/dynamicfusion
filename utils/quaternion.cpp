@@ -99,7 +99,7 @@ namespace kfusion {
                                 (scalar * other.z_));
         }
 
-        template <typename U> friend Quaternion Quaternion::operator/(const U scalar, const Quaternion& other)
+        template <typename U> friend Quaternion Quaternion::operator/(const Quaternion& q, const U scalar)
         {
             return (1 / scalar) * other;
         }
@@ -218,12 +218,9 @@ namespace kfusion {
 
             return cos(theta)* (*this) + sin(theta) * v2;
         }
-        template <typename U> friend std::ostream& Quaternion::operator<<(std::ostream& os, const Quaternion<U>& q)
+        template <typename U> friend std::ostream& operator<<(std::ostream& os, const Quaternion<U>& q)
         {
-            os << "(" << q.w_ << ", " <<
-               q.x_ << ", " <<
-               q.y_ << ", " <<
-               q.z_ << ")";
+            os << "(" << q.w_ << ", " << q.x_ << ", " <<  q.y_ << ", " << q.z_ << ")";
             return os;
         }
     };
