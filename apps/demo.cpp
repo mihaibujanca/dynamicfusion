@@ -20,10 +20,10 @@ struct KinFuApp
             kinfu.take_cloud(*kinfu.kinfu_);
 
         if(event.code == 'i' || event.code == 'I')
-            kinfu.iteractive_mode_ = !kinfu.iteractive_mode_;
+            kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false),  iteractive_mode_(false), capture_ (source), pause_(false)
+    KinFuApp(OpenNISource& source) : exit_ (false),  interactive_mode_(false), capture_ (source), pause_(false)
     {
         KinFuParams params = KinFuParams::default_params();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -47,7 +47,7 @@ struct KinFuApp
     void show_raycasted(KinFu& kinfu)
     {
         const int mode = 3;
-        if (iteractive_mode_)
+        if (interactive_mode_)
             kinfu.renderImage(view_device_, viz.getViewerPose(), mode);
         else
             kinfu.renderImage(view_device_, mode);
@@ -63,7 +63,7 @@ struct KinFuApp
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         cloud.download(cloud_host.ptr<Point>());
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        //viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+//        viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
     }
 
     bool execute()
@@ -92,7 +92,7 @@ struct KinFuApp
             show_depth(depth);
             //cv::imshow("Image", image);
 
-            if (!iteractive_mode_)
+            if (!interactive_mode_)
                 viz.setViewerPose(kinfu.getCameraPose());
 
             int key = cv::waitKey(pause_ ? 0 : 3);
@@ -100,7 +100,7 @@ struct KinFuApp
             switch(key)
             {
             case 't': case 'T' : take_cloud(kinfu); break;
-            case 'i': case 'I' : iteractive_mode_ = !iteractive_mode_; break;
+            case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
             case 27: exit_ = true; break;
             case 32: pause_ = !pause_; break;
             }
@@ -112,7 +112,7 @@ struct KinFuApp
     }
 
     bool pause_ /*= false*/;
-    bool exit_, iteractive_mode_;
+    bool exit_, interactive_mode_;
     OpenNISource& capture_;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
