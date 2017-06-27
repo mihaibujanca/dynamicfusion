@@ -5,6 +5,8 @@
 #include <kfusion/cuda/projective_icp.hpp>
 #include <vector>
 #include <string>
+#include <dual_quaternion.hpp>
+
 
 namespace kfusion
 {
@@ -69,10 +71,12 @@ namespace kfusion
 
         void reset();
 
-        bool operator()(const cuda::Depth& dpeth, const cuda::Image& image = cuda::Image());
+        bool operator()(const cuda::Depth& depth, const cuda::Image& image = cuda::Image());
 
         void renderImage(cuda::Image& image, int flags = 0);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
+        utils::DualQuaternion DQB(utils::DualQuaternion vertex);
+        double weighting(Vec3f vertex, Vec3f voxel_center, double weight);
 
         Affine3f getCameraPose (int time = -1) const;
     private:

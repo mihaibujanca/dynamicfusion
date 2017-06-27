@@ -3,7 +3,7 @@
 using namespace kfusion;
 using namespace kfusion::cuda;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////fusion::c///////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume::Entry
 
 float kfusion::cuda::TsdfVolume::Entry::half2float(half)
@@ -35,7 +35,7 @@ Vec3i kfusion::cuda::TsdfVolume::getDims() const
 
 Vec3f kfusion::cuda::TsdfVolume::getVoxelSize() const
 {
-    return Vec3f(size_[0]/dims_[0], size_[1]/dims_[1], size_[2]/dims_[2]);
+    return Vec3f(size_[0] / dims_[0], size_[1] / dims_[1], size_[2] / dims_[2]);
 }
 
 const CudaData kfusion::cuda::TsdfVolume::data() const { return data_; }

@@ -15,10 +15,12 @@ include(cmake/Utils.cmake)
 include(cmake/Targets.cmake)
 
 # ---[ find dependencies
-find_package(OpenCV 2.4.8 REQUIRED COMPONENTS core viz highgui)
+#find_package(OpenCV 2.4.8 REQUIRED COMPONENTS core viz highgui)
+set(OPENCV_DIR, "/home/mihai/Projects/opencv/build")
+set(OPENCV_INCLUDE_DIR, "/home/mihai/Projects/opencv/build")
 find_package(CUDA 5.0 REQUIRED)
 find_package(OpenNI REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR} "utils")
 
 # ---[ misc settings
 if(USE_PROJECT_FOLDERS)

@@ -1,6 +1,7 @@
 #include "precomp.hpp"
 #include "internal.hpp"
-
+#include <tgmath.h>
+#include <dual_quaternion.hpp>
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
@@ -281,6 +282,28 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     }
 #undef PASS1
 }
+
+utils::DualQuaternion kfusion::KinFu::DQB(Vec3f vertex)
+{
+    std::vector<Vec3f> voxels;
+    utils::DualQuaternion quaternion_sum;
+    utils::DualQuaternion quaternion;
+    double voxel_size;
+    for(auto voxel : voxels)
+        quaternion_sum = quaternion_sum + weighting(vertex, voxel, voxel_size) * quaternion;
+    std::pair norm = quaternion_sum.magnitude();
+
+    return utils::DualQuaternion(quaternion_sum.getRotation() / norm.first,
+                                 quaternion_sum.getTranslation() / norm.second);
+}
+
+
+double kfusion::KinFu::weighting(Vec3f vertex, Vec3f voxel_center, double weight)
+{
+    Vec3f diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
+    return exp(-diff * diff / 2 * weight * weight);
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
