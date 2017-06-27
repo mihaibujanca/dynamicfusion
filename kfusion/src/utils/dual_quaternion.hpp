@@ -50,7 +50,6 @@ namespace kfusion {
                 rotation_ = rotation;
                 translation_ = 0.5 * translation * rotation;
             }
-            // Other constructors here.
 
             ~DualQuaternion(){};
 
@@ -217,6 +216,7 @@ namespace kfusion {
                              (1 - 2*((rotation_.y_*rotation_.y_) + (rotation_.z_*rotation_.z_))));
             }
         };
+
         template <typename T>
         std::ostream &operator<<(std::ostream &os, const DualQuaternion<T> &q)
         {

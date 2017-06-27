@@ -128,7 +128,8 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
 
 DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
 {
-    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+//    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+    enum { DEFAULT_CLOUD_BUFFER_SIZE = 256 * 256 * 256 };
 
     if (cloud_buffer.empty ())
         cloud_buffer.create (DEFAULT_CLOUD_BUFFER_SIZE);

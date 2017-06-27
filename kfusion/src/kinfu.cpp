@@ -2,6 +2,7 @@
 #include "internal.hpp"
 #include <tgmath.h>
 #include <dual_quaternion.hpp>
+#include <nanoflann.hpp>
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
@@ -283,19 +284,29 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
 #undef PASS1
 }
 
-utils::DualQuaternion<double> kfusion::KinFu::DQB()
+std::pair<Vec3f,Vec3f> kfusion::KinFu::warp(std::vector<Vec3f>& frame,
+                                            cuda::TsdfVolume& tsdfVolume)
 {
-    std::vector<Vec3f> voxels;
-    Vec3f vertex;
-    utils::DualQuaternion<double> quaternion_sum;
-    utils::DualQuaternion<double> quaternion;
-    double voxel_size;
-    for(auto voxel : voxels)
-        quaternion_sum = quaternion_sum + weighting(vertex, voxel, voxel_size) * quaternion;
+    std::vector<utils::DualQuaternion<float>> nodes(); // = tsdfVolume.getQuaternions()
+
+    return std::make_pair(Vec3f(),Vec3f());
+}
+
+utils::DualQuaternion<float> kfusion::KinFu::DQB(Vec3f vertex,
+                                                 std::vector<utils::DualQuaternion<float>> nodes,
+                                                 double voxel_size)
+{
+    utils::DualQuaternion<float> quaternion_sum;
+    for(auto node : nodes)
+    {
+        utils::Quaternion<float> translation = node.getTranslation();
+        Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
+        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node;
+    }
     auto norm = quaternion_sum.magnitude();
 
-    return utils::DualQuaternion<double>(quaternion_sum.getRotation() / norm.first,
-                                         quaternion_sum.getTranslation() / norm.second);
+    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
+                                        quaternion_sum.getTranslation() / norm.second);
 }
 
 

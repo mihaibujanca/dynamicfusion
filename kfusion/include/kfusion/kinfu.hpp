@@ -74,7 +74,10 @@ namespace kfusion
 
         void renderImage(cuda::Image& image, int flags = 0);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
-        utils::DualQuaternion<double> DQB();
+        utils::DualQuaternion<float> DQB(Vec3f vertex,
+                                          std::vector<utils::DualQuaternion<float>> nodes,
+                                          double voxel_size);
+        std::pair<Vec3f,Vec3f> warp(std::vector<Vec3f>& frame, cuda::TsdfVolume& tsdfVolume);
         double weighting(Vec3f vertex, Vec3f voxel_center, double weight);
 
         Affine3f getCameraPose (int time = -1) const;

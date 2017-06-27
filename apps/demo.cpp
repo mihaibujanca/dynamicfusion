@@ -23,7 +23,7 @@ struct KinFuApp
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false),  interactive_mode_(false), capture_ (source), pause_(false)
+    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false)
     {
         KinFuParams params = KinFuParams::default_params();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -60,10 +60,14 @@ struct KinFuApp
     void take_cloud(KinFu& kinfu)
     {
         cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
+        cuda::DeviceArray<Normal> normals;
+        kinfu.tsdf().fetchNormals(cloud, normals);
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         cloud.download(cloud_host.ptr<Point>());
+        cv::Mat normals_host(1, (int)normals.size(), CV_32FC4);
+        normals.download(normals_host.ptr<Point>());
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-//        viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.1, cv::viz::Color::blue()));
     }
 
     bool execute()
@@ -96,7 +100,7 @@ struct KinFuApp
                 viz.setViewerPose(kinfu.getCameraPose());
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-
+            take_cloud(kinfu);
             switch(key)
             {
             case 't': case 'T' : take_cloud(kinfu); break;
