@@ -136,14 +136,7 @@ int main (int argc, char* argv[])
         return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, 1;
 
     OpenNISource capture;
-    capture.open (0);
-    //capture.open("d:/onis/20111013-224932.oni");
-    //capture.open("d:/onis/reg20111229-180846.oni");
-    //capture.open("d:/onis/white1.oni");
-    //capture.open("/media/Main/onis/20111013-224932.oni");
-    //capture.open("20111013-225218.oni");
-    //capture.open("d:/onis/20111013-224551.oni");
-    //capture.open("d:/onis/20111013-224719.oni");
+    capture.open(argv[1]);
 
     KinFuApp app (capture);
 

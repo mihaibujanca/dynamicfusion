@@ -280,7 +280,7 @@ void kfusion::OpenNISource::getParams ()
     if (rc != XN_STATUS_OK)
     {
         sprintf (impl_->strError, "ShadowValue failed: %s\n", xnGetStatusString (rc));
-        REPORT_ERROR (impl_->strError);
+//        REPORT_ERROR (impl_->strError);
     }
     shadow_value = (int)shadow_value_local;
 
@@ -289,7 +289,7 @@ void kfusion::OpenNISource::getParams ()
     if (rc != XN_STATUS_OK)
     {
         sprintf (impl_->strError, "NoSampleValue failed: %s\n", xnGetStatusString (rc));
-        REPORT_ERROR (impl_->strError);
+//        REPORT_ERROR (impl_->strError);
     }
     no_sample_value = (int)no_sample_value_local;
 
