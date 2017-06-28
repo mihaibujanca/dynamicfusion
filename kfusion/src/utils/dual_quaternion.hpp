@@ -91,7 +91,7 @@ namespace kfusion {
                 z = result.z_;
             }
 
-            Quaternion<T> getTranslation()
+            Quaternion<T> getTranslation() const
             {
                 return 2 * translation_ * rotation_.conjugate();
             }
@@ -108,7 +108,7 @@ namespace kfusion {
                 yaw = getYaw();
             }
 
-            Quaternion<T> getRotation()
+            Quaternion<T> getRotation() const
             {
                 return rotation_;
             }
@@ -220,7 +220,7 @@ namespace kfusion {
         template <typename T>
         std::ostream &operator<<(std::ostream &os, const DualQuaternion<T> &q)
         {
-            os << "[" << q.rotation_ << ", " << q.translation_ << ", " << "]" << std::endl;
+            os << "[" << q.getRotation() << ", " << q.getTranslation()<< ", " << "]" << std::endl;
             return os;
         }
     }

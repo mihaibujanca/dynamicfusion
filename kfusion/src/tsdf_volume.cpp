@@ -64,6 +64,21 @@ float kfusion::cuda::TsdfVolume::getGradientDeltaFactor() const { return gradien
 void kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_delta_factor_ = factor; }
 void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
+//TODO: make this return actual data from TSDF
+std::vector<utils::DualQuaternion<float>> kfusion::cuda::TsdfVolume::getQuaternions() const
+{
+    std::vector<utils::DualQuaternion<float>> nodes;
+    for(float i=0;i<3;i++)
+        for(float j=0;j < 3;j++)
+            for(float k=0;k < 3;k++)
+                for(float l=0; l < 3; l++)
+                {
+                    utils::Quaternion<float> quaternion(i,j,k,l);
+                    utils::DualQuaternion<float> dualQuaternion(quaternion, quaternion);
+                    nodes.push_back(dualQuaternion);
+                }
+    return nodes;
+}
 
 void kfusion::cuda::TsdfVolume::clear()
 { 
@@ -145,6 +160,7 @@ DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& clo
 
     return DeviceArray<Point>((Point*)cloud_buffer.ptr(), size);
 }
+
 
 void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const
 {

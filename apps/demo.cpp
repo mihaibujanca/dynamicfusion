@@ -60,14 +60,13 @@ struct KinFuApp
     void take_cloud(KinFu& kinfu)
     {
         cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
-        cuda::DeviceArray<Normal> normals;
-        kinfu.tsdf().fetchNormals(cloud, normals);
+        kinfu.tsdf().fetchNormals(cloud, normal_buffer);
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         cloud.download(cloud_host.ptr<Point>());
-        cv::Mat normals_host(1, (int)normals.size(), CV_32FC4);
-        normals.download(normals_host.ptr<Point>());
+        cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
+        normal_buffer.download(normals_host.ptr<Point>());
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.1, cv::viz::Color::blue()));
+        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.05, cv::viz::Color::blue()));
     }
 
     bool execute()
@@ -79,6 +78,10 @@ struct KinFuApp
 
         for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
         {
+            std::vector<Vec3f> frame;
+            frame.push_back(Vec3f(0,0,0));
+            frame.push_back(Vec3f(1,2.2342,2.234));
+            std::vector<utils::DualQuaternion<float>> nodes = kinfu.warp(frame, kinfu.tsdf());
             bool has_frame = capture_.grab(depth, image);
             if (!has_frame)
                 return std::cout << "Can't grab" << std::endl, false;
@@ -94,7 +97,7 @@ struct KinFuApp
                 show_raycasted(kinfu);
 
             show_depth(depth);
-            //cv::imshow("Image", image);
+            cv::imshow("Image", image);
 
             if (!interactive_mode_)
                 viz.setViewerPose(kinfu.getCameraPose());
@@ -125,6 +128,7 @@ struct KinFuApp
     cuda::Image view_device_;
     cuda::Depth depth_device_;
     cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<Normal> normal_buffer;
 };
 
 

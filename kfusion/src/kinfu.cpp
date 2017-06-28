@@ -3,9 +3,16 @@
 #include <tgmath.h>
 #include <dual_quaternion.hpp>
 #include <nanoflann.hpp>
+#include <quaternion.hpp>
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
+
+typedef nanoflann::KDTreeSingleIndexAdaptor<
+        nanoflann::L2_Simple_Adaptor<float, PointCloud<float>> ,
+        PointCloud<float>,
+        3 /* dim */
+> kd_tree_t;
 
 static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
@@ -283,25 +290,60 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     }
 #undef PASS1
 }
-
-std::pair<Vec3f,Vec3f> kfusion::KinFu::warp(std::vector<Vec3f>& frame,
-                                            cuda::TsdfVolume& tsdfVolume)
+//FIXME: refactor this, can just build the kdtree as part of TSDF and query directly. Building it every time is slow.
+//std::pair<Vec3f,Vec3f>
+std::vector<utils::DualQuaternion<float>> kfusion::KinFu::warp(std::vector<Vec3f>& frame,
+                                                               const cuda::TsdfVolume& tsdfVolume)
 {
-    std::vector<utils::DualQuaternion<float>> nodes(); // = tsdfVolume.getQuaternions()
+    std::vector<utils::DualQuaternion<float>> nodes = tsdfVolume.getQuaternions();
+    std::vector<utils::DualQuaternion<float>> out_nodes(frame.size());
+    auto *cloud = new PointCloud<float>();
+    cloud->pts.resize(nodes.size());
+    for(size_t i = 0; i < nodes.size(); i++)
+    {
+        PointCloud<float>::Point point(nodes[i].getTranslation().x_,
+                                       nodes[i].getTranslation().y_,
+                                       nodes[i].getTranslation().z_);
+        cloud->pts[i] = point;
+    }
 
-    return std::make_pair(Vec3f(),Vec3f());
+    kd_tree_t index(3, *cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    index.buildIndex();
+
+    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
+    std::vector<utils::DualQuaternion<float>> neighbours(k);
+    for(auto vertex : frame)
+    {
+        std::vector<size_t> ret_index(k);
+        std::vector<float> out_dist_sqr(k);
+        nanoflann::KNNResultSet<float> resultSet(k);
+        resultSet.init(&ret_index[0], &out_dist_sqr[0]);
+
+        index.findNeighbors(resultSet, vertex.val, nanoflann::SearchParams(10));
+
+        for (size_t i = 0; i < k; i++)
+            neighbours.push_back(nodes[ret_index[i]]);
+        utils::DualQuaternion<float> node = DQB(vertex, neighbours, tsdfVolume.getVoxelSize()[0]);
+        out_nodes.push_back(node);
+
+        std::cout<<"Quaternion:" << node << std::endl;
+        neighbours.clear();
+    }
+    delete cloud;
+    return nodes;
 }
 
 utils::DualQuaternion<float> kfusion::KinFu::DQB(Vec3f vertex,
                                                  std::vector<utils::DualQuaternion<float>> nodes,
-                                                 double voxel_size)
+                                                 float voxel_size)
 {
     utils::DualQuaternion<float> quaternion_sum;
     for(auto node : nodes)
     {
         utils::Quaternion<float> translation = node.getTranslation();
         Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
-        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node;
+        double w = weighting(vertex, voxel_center, voxel_size);
+        quaternion_sum = quaternion_sum + w * node;
     }
     auto norm = quaternion_sum.magnitude();
 
@@ -309,10 +351,10 @@ utils::DualQuaternion<float> kfusion::KinFu::DQB(Vec3f vertex,
                                         quaternion_sum.getTranslation() / norm.second);
 }
 
-
-double kfusion::KinFu::weighting(Vec3f vertex, Vec3f voxel_center, double weight)
+//TODO: KNN already gives the squared distance as well, can pass here instead
+float kfusion::KinFu::weighting(Vec3f vertex, Vec3f voxel_center, float weight)
 {
-    double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
+    float diff = (float) cv::norm(voxel_center, vertex, cv::NORM_L2); // Should this be double?
     return exp(-(diff * diff) / (2 * weight * weight));
 }
 

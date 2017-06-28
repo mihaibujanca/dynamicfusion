@@ -4,7 +4,6 @@
 #define DYNAMIC_FUSION_QUATERNION_HPP
 
 #include <iostream>
-
 namespace kfusion{
     namespace utils{
 
@@ -208,7 +207,7 @@ namespace kfusion{
             }
 
             /// Conjugate
-            Quaternion conjugate()
+            Quaternion conjugate() const
             {
                 return Quaternion<T>(w_, -x_, -y_, -z_);
             }
@@ -302,6 +301,7 @@ namespace kfusion{
             T x_;
             T y_;
             T z_;
+            typedef T point_type;
         };
     }
 }
