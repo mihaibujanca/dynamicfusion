@@ -248,7 +248,7 @@ namespace kfusion{
              */
             Quaternion slerp(Quaternion other, double t)
             {
-                // Only unit quaternions are valid rotations.
+                // Only unit quaternions_ are valid rotations.
                 // Normalize to avoid undefined behavior.
                 normalize();
                 other.normalize();
@@ -266,7 +266,7 @@ namespace kfusion{
                     return result;
                 }
 
-                // If the dot product is negative, the quaternions
+                // If the dot product is negative, the quaternions_
                 // have opposite handed-ness and slerp won't take
                 // the shorter path. Fix by reversing one quaternion.
                 if (dot < 0.0f) {

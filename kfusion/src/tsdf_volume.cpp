@@ -17,7 +17,18 @@ kfusion::cuda::TsdfVolume::Entry::half kfusion::cuda::TsdfVolume::Entry::float2h
 
 kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(), trunc_dist_(0.03f), max_weight_(128), dims_(dims),
     size_(Vec3f::all(3.f)), pose_(Affine3f::Identity()), gradient_delta_factor_(0.75f), raycast_step_factor_(0.75f)
-{ create(dims_); }
+{
+    for(float i = 0; i < 3; i++)
+        for(float j = 0; j < 3; j++)
+            for(float k = 0; k < 3; k++)
+                for(float l = 0; l < 3; l++)
+                {
+                    utils::Quaternion<float> quaternion(i, j, k, l);
+                    utils::DualQuaternion<float> dualQuaternion(quaternion, quaternion);
+                    quaternions_.push_back(dualQuaternion);
+                }
+    create(dims_);
+}
 
 kfusion::cuda::TsdfVolume::~TsdfVolume() {}
 
@@ -67,17 +78,7 @@ void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = af
 //TODO: make this return actual data from TSDF
 std::vector<utils::DualQuaternion<float>> kfusion::cuda::TsdfVolume::getQuaternions() const
 {
-    std::vector<utils::DualQuaternion<float>> nodes;
-    for(float i=0;i<3;i++)
-        for(float j=0;j < 3;j++)
-            for(float k=0;k < 3;k++)
-                for(float l=0; l < 3; l++)
-                {
-                    utils::Quaternion<float> quaternion(i,j,k,l);
-                    utils::DualQuaternion<float> dualQuaternion(quaternion, quaternion);
-                    nodes.push_back(dualQuaternion);
-                }
-    return nodes;
+    return quaternions_;
 }
 
 void kfusion::cuda::TsdfVolume::clear()

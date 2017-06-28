@@ -72,7 +72,7 @@ namespace kfusion
             Vec3i dims_;
             Vec3f size_;
             Affine3f pose_;
-
+            std::vector<utils::DualQuaternion<float>> quaternions_;
             float gradient_delta_factor_;
             float raycast_step_factor_;
         };
