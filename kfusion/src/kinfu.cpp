@@ -4,13 +4,14 @@
 #include <dual_quaternion.hpp>
 #include <nanoflann.hpp>
 #include <quaternion.hpp>
+#include <knn_point_cloud.hpp>
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
 
 typedef nanoflann::KDTreeSingleIndexAdaptor<
-        nanoflann::L2_Simple_Adaptor<float, PointCloud<float>> ,
-        PointCloud<float>,
+        nanoflann::L2_Simple_Adaptor<float, utils::PointCloud<float>> ,
+        utils::PointCloud<float>,
         3 /* dim */
 > kd_tree_t;
 
@@ -297,11 +298,11 @@ std::vector<utils::DualQuaternion<float>> kfusion::KinFu::warp(std::vector<Vec3f
 {
     auto nodes = tsdfVolume.getQuaternions();
     std::vector<utils::DualQuaternion<float>> out_nodes(frame.size());
-    auto *cloud = new PointCloud<float>();
+    auto *cloud = new utils::PointCloud<float>();
     cloud->pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
     {
-        PointCloud<float>::Point point(nodes[i].getTranslation().x_,
+        utils::PointCloud<float>::Point point(nodes[i].getTranslation().x_,
                                        nodes[i].getTranslation().y_,
                                        nodes[i].getTranslation().z_);
         cloud->pts[i] = point;

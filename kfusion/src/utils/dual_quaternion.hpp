@@ -226,4 +226,4 @@ namespace kfusion {
         }
     }
 }
-#endif //DualQuaternion_HPP
+#endif //DYNAMIC_FUSION_DUAL_QUATERNION_HPP
