@@ -295,6 +295,34 @@ namespace kfusion{
                 os << "(" << q.w_ << ", " << q.x_ << ", " <<  q.y_ << ", " << q.z_ << ")";
                 return os;
             }
+//TODO: shouldn't have Vec3f but rather Vec3<T>. Not sure how to determine this later
+            static Quaternion<T> normalToQuaternion(Vec3f normal)
+            {
+                Vec3f a(1, 0, 0);
+                Vec3f b(0, 1, 0);
+
+                Vec3f t0 = normal.cross(a);
+
+                if (t0.dot(t0) < 0.001f)
+                    t0 = normal.cross(b);
+                t0 = cv::normalize(t0);
+
+                Vec3f t1 = normal.cross(t0);
+                t1 = cv::normalize(t1);
+//TODO: IMPORTANT. Check if this is row major or column major
+                cv::Mat3f matrix;
+                matrix[0] = &t0;
+                matrix[1] = &t1;
+                matrix[2] = &normal;
+                Quaternion<T> quaternion;
+                T w = sqrt(1.0 + matrix[0][0] + matrix[1][1] + matrix[2][2]) / 2.0;
+                double w4 = (4.0 * w);
+                T x = (matrix[2][1] - matrix[1][2]) / w4 ;
+                T y = (matrix[0][2] - matrix[2][0]) / w4 ;
+                T z = (matrix[1][0] - matrix[2][1]) / w4;
+//                TODO: TEST THIS
+                return Quaternion(w, x, y, z);
+            }
 
             T w_;
             T x_;

@@ -80,6 +80,26 @@ std::vector<utils::DualQuaternion<float>> kfusion::cuda::TsdfVolume::getQuaterni
 {
     return quaternions_;
 }
+//TODO: Make this persistent rather than fetching cloud and normals every time
+void kfusion::cuda::TsdfVolume::fetchQuaternions()
+{
+    cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<Normal> normal_buffer;
+    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
+    fetchNormals(cloud, normal_buffer);
+
+    cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>());
+
+    cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
+    normal_buffer.download(normals_host.ptr<Point>());
+
+    for(int i = 0; i < cloud_host.rows; i++)
+        for(int j = 0; j < cloud_host.cols; j++)
+        {
+
+        }
+}
 
 void kfusion::cuda::TsdfVolume::clear()
 { 

@@ -33,6 +33,7 @@ namespace kfusion
             void setPose(const Affine3f& pose);
 
             std::vector<utils::DualQuaternion<float>> getQuaternions() const;
+            void fetchQuaternions();
 
             float getRaycastStepFactor() const;
             void setRaycastStepFactor(float factor);
