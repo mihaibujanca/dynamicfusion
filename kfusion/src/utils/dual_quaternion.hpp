@@ -3,6 +3,7 @@
 #include<iostream>
 #include<quaternion.hpp>
 //TODO: Quaternion class can be forward declared rather than included
+//Adapted from https://github.com/Poofjunior/QPose
 /**
  * \brief a dual quaternion class for encoding transformations.
  * \details transformations are stored as first a translation; then a

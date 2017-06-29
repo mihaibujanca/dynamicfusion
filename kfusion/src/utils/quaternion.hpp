@@ -1,9 +1,8 @@
-/**
- */
 #ifndef DYNAMIC_FUSION_QUATERNION_HPP
 #define DYNAMIC_FUSION_QUATERNION_HPP
 
 #include <iostream>
+//Adapted from https://github.com/Poofjunior/QPose
 namespace kfusion{
     namespace utils{
 
