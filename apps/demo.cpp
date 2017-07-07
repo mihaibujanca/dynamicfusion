@@ -20,10 +20,10 @@ struct KinFuApp
             kinfu.take_cloud(*kinfu.kinfu_);
 
         if(event.code == 'i' || event.code == 'I')
-            kinfu.iteractive_mode_ = !kinfu.iteractive_mode_;
+            kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false),  iteractive_mode_(false), capture_ (source), pause_(false)
+    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false)
     {
         KinFuParams params = KinFuParams::default_params();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -47,7 +47,7 @@ struct KinFuApp
     void show_raycasted(KinFu& kinfu)
     {
         const int mode = 3;
-        if (iteractive_mode_)
+        if (interactive_mode_)
             kinfu.renderImage(view_device_, viz.getViewerPose(), mode);
         else
             kinfu.renderImage(view_device_, mode);
@@ -60,10 +60,13 @@ struct KinFuApp
     void take_cloud(KinFu& kinfu)
     {
         cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
+        kinfu.tsdf().fetchNormals(cloud, normal_buffer);
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         cloud.download(cloud_host.ptr<Point>());
+        cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
+        normal_buffer.download(normals_host.ptr<Point>());
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        //viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.05, cv::viz::Color::blue()));
     }
 
     bool execute()
@@ -75,6 +78,10 @@ struct KinFuApp
 
         for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
         {
+            std::vector<Vec3f> frame;
+            frame.push_back(Vec3f(0,0,0));
+            frame.push_back(Vec3f(1,2.2342,2.234));
+            std::vector<utils::DualQuaternion<float>> nodes = kinfu.warp(frame, kinfu.tsdf());
             bool has_frame = capture_.grab(depth, image);
             if (!has_frame)
                 return std::cout << "Can't grab" << std::endl, false;
@@ -90,17 +97,17 @@ struct KinFuApp
                 show_raycasted(kinfu);
 
             show_depth(depth);
-            //cv::imshow("Image", image);
+            cv::imshow("Image", image);
 
-            if (!iteractive_mode_)
+            if (!interactive_mode_)
                 viz.setViewerPose(kinfu.getCameraPose());
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-
+            take_cloud(kinfu);
             switch(key)
             {
             case 't': case 'T' : take_cloud(kinfu); break;
-            case 'i': case 'I' : iteractive_mode_ = !iteractive_mode_; break;
+            case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
             case 27: exit_ = true; break;
             case 32: pause_ = !pause_; break;
             }
@@ -112,7 +119,7 @@ struct KinFuApp
     }
 
     bool pause_ /*= false*/;
-    bool exit_, iteractive_mode_;
+    bool exit_, interactive_mode_;
     OpenNISource& capture_;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
@@ -121,6 +128,7 @@ struct KinFuApp
     cuda::Image view_device_;
     cuda::Depth depth_device_;
     cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<Normal> normal_buffer;
 };
 
 
@@ -136,14 +144,7 @@ int main (int argc, char* argv[])
         return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, 1;
 
     OpenNISource capture;
-    capture.open (0);
-    //capture.open("d:/onis/20111013-224932.oni");
-    //capture.open("d:/onis/reg20111229-180846.oni");
-    //capture.open("d:/onis/white1.oni");
-    //capture.open("/media/Main/onis/20111013-224932.oni");
-    //capture.open("20111013-225218.oni");
-    //capture.open("d:/onis/20111013-224551.oni");
-    //capture.open("d:/onis/20111013-224719.oni");
+    capture.open(argv[1]);
 
     KinFuApp app (capture);
 

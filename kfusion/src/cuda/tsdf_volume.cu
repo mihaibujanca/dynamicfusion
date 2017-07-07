@@ -226,8 +226,8 @@ namespace kfusion
                 float3 ray_dir = normalized( aff.R * reproj(x, y, 1.f) );
 
                 // We do subtract voxel size to minimize checks after
-                // Note: origin of volume coordinate is placeed
-                // in the center of voxel (0,0,0), not in the corener of the voxel!
+                // Note: origin of volume coordinate is placed
+                // in the center of voxel (0,0,0), not in the corner of the voxel!
                 float3 box_max = volume_size - volume.voxel_size;
 
                 float tmin, tmax;

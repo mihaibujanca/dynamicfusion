@@ -76,9 +76,9 @@ namespace kfusion
             template<class A>
             void upload(const std::vector<T, A>& data);
 
-             /** \brief Downloads data from internal buffer to CPU memory
-               * \param data:  host vector to download to
-               * */
+            /** \brief Downloads data from internal buffer to CPU memory
+              * \param data:  host vector to download to
+              * */
             template<typename A>
             void download(std::vector<T, A>& data) const;
 
@@ -132,12 +132,12 @@ namespace kfusion
               * */
             DeviceArray2D(int rows, int cols);
 
-             /** \brief Initializes with user allocated buffer. Reference counting is disabled in this case.
-              * \param rows: number of rows
-              * \param cols: number of elements in each row
-              * \param data: pointer to buffer
-              * \param stepBytes: stride between two consecutive rows in bytes
-              * */
+            /** \brief Initializes with user allocated buffer. Reference counting is disabled in this case.
+             * \param rows: number of rows
+             * \param cols: number of elements in each row
+             * \param data: pointer to buffer
+             * \param stepBytes: stride between two consecutive rows in bytes
+             * */
             DeviceArray2D(int rows, int cols, void *data, size_t stepBytes);
 
             /** \brief Copy constructor. Just increments reference counter. */

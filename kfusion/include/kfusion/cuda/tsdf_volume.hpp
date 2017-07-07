@@ -1,7 +1,7 @@
 #pragma once
 
 #include <kfusion/types.hpp>
-
+#include <dual_quaternion.hpp>
 namespace kfusion
 {
     namespace cuda
@@ -31,6 +31,9 @@ namespace kfusion
 
             Affine3f getPose() const;
             void setPose(const Affine3f& pose);
+
+            std::vector<utils::DualQuaternion<float>> getQuaternions() const;
+            void fetchQuaternions();
 
             float getRaycastStepFactor() const;
             void setRaycastStepFactor(float factor);
@@ -70,7 +73,7 @@ namespace kfusion
             Vec3i dims_;
             Vec3f size_;
             Affine3f pose_;
-
+            std::vector<utils::DualQuaternion<float>> quaternions_;
             float gradient_delta_factor_;
             float raycast_step_factor_;
         };

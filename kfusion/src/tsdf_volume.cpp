@@ -3,7 +3,7 @@
 using namespace kfusion;
 using namespace kfusion::cuda;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////fusion::c///////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume::Entry
 
 float kfusion::cuda::TsdfVolume::Entry::half2float(half)
@@ -15,9 +15,26 @@ kfusion::cuda::TsdfVolume::Entry::half kfusion::cuda::TsdfVolume::Entry::float2h
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume
 
-kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(), trunc_dist_(0.03f), max_weight_(128), dims_(dims),
-    size_(Vec3f::all(3.f)), pose_(Affine3f::Identity()), gradient_delta_factor_(0.75f), raycast_step_factor_(0.75f)
-{ create(dims_); }
+kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
+                                                           trunc_dist_(0.03f),
+                                                           max_weight_(128),
+                                                           dims_(dims),
+                                                           size_(Vec3f::all(3.f)),
+                                                           pose_(Affine3f::Identity()),
+                                                           gradient_delta_factor_(0.75f),
+                                                           raycast_step_factor_(0.75f)
+{
+    for(float i = 0; i < 3; i++)
+        for(float j = 0; j < 3; j++)
+            for(float k = 0; k < 3; k++)
+                for(float l = 0; l < 3; l++)
+                {
+                    utils::Quaternion<float> quaternion(i, j, k, l);
+                    utils::DualQuaternion<float> dualQuaternion(quaternion, quaternion);
+                    quaternions_.push_back(dualQuaternion);
+                }
+    create(dims_);
+}
 
 kfusion::cuda::TsdfVolume::~TsdfVolume() {}
 
@@ -35,7 +52,7 @@ Vec3i kfusion::cuda::TsdfVolume::getDims() const
 
 Vec3f kfusion::cuda::TsdfVolume::getVoxelSize() const
 {
-    return Vec3f(size_[0]/dims_[0], size_[1]/dims_[1], size_[2]/dims_[2]);
+    return Vec3f(size_[0] / dims_[0], size_[1] / dims_[1], size_[2] / dims_[2]);
 }
 
 const CudaData kfusion::cuda::TsdfVolume::data() const { return data_; }
@@ -64,6 +81,31 @@ float kfusion::cuda::TsdfVolume::getGradientDeltaFactor() const { return gradien
 void kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_delta_factor_ = factor; }
 void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
+//TODO: make this return actual data from TSDF
+std::vector<utils::DualQuaternion<float>> kfusion::cuda::TsdfVolume::getQuaternions() const
+{
+    return quaternions_;
+}
+//TODO: Make this persistent rather than fetching cloud and normals every time
+void kfusion::cuda::TsdfVolume::fetchQuaternions()
+{
+    cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<Normal> normal_buffer;
+    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
+    fetchNormals(cloud, normal_buffer);
+
+    cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>());
+
+    cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
+    normal_buffer.download(normals_host.ptr<Point>());
+
+    for(int i = 0; i < cloud_host.rows; i++)
+        for(int j = 0; j < cloud_host.cols; j++)
+        {
+
+        }
+}
 
 void kfusion::cuda::TsdfVolume::clear()
 { 
@@ -128,7 +170,8 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
 
 DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
 {
-    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+//    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+    enum { DEFAULT_CLOUD_BUFFER_SIZE = 256 * 256 * 256 };
 
     if (cloud_buffer.empty ())
         cloud_buffer.create (DEFAULT_CLOUD_BUFFER_SIZE);
@@ -144,6 +187,7 @@ DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& clo
 
     return DeviceArray<Point>((Point*)cloud_buffer.ptr(), size);
 }
+
 
 void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const
 {

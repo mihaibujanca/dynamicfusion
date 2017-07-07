@@ -11,7 +11,7 @@ endfunction()
 
 
 ################################################################################################
-# short command getting sources from standart directores
+# short command getting sources from standard directores
 macro(pickup_std_sources)  
   kf_source_group("Include" GLOB "include/${module_name}/*.h*")
   kf_source_group("Include\\cuda" GLOB "include/${module_name}/cuda/*.h*")
@@ -84,7 +84,7 @@ endfunction()
 macro(add_module_library name)
   set(module_name ${name})  
   pickup_std_sources()
-  include_directories(include src src/cuda)  
+  include_directories(include src src/cuda src/utils)
   
   set(__has_cuda OFF)
   check_cuda(__has_cuda)  
