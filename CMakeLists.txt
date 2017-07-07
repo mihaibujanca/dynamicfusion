@@ -32,7 +32,7 @@ if(DOXYGEN_FOUND)
           )
 
 endif(DOXYGEN_FOUND)
-#find_package(GTest REQUIRED)
+
 
 # ---[ Solution name
 project(kfusion C CXX)
@@ -67,3 +67,14 @@ warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)
+SET(BUILD_TESTS ON)
+if(BUILD_TESTS)
+  find_package(GTest REQUIRED)
+  if( GTEST_FOUND )
+    message( "Found Gtest at ${GTEST_ROOT}")
+    message( "GTest Libs: ${GTEST_BOTH_LIBRARIES}")
+    message( "GTest Include: ${GTEST_INCLUDE_DIRS}")
+    include_directories(${GTEST_INCLUDE_DIRS})
+    add_subdirectory(tests)
+  endif()
+endif()

@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR}/kfusion/include ${CMAKE_SOURCE_DIR}/utils)
+include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
 
 file(GLOB srcs *.cpp *.hpp)
 add_executable(demo ${srcs})

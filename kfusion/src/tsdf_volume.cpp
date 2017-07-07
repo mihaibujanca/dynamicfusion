@@ -15,8 +15,14 @@ kfusion::cuda::TsdfVolume::Entry::half kfusion::cuda::TsdfVolume::Entry::float2h
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume
 
-kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(), trunc_dist_(0.03f), max_weight_(128), dims_(dims),
-    size_(Vec3f::all(3.f)), pose_(Affine3f::Identity()), gradient_delta_factor_(0.75f), raycast_step_factor_(0.75f)
+kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
+                                                           trunc_dist_(0.03f),
+                                                           max_weight_(128),
+                                                           dims_(dims),
+                                                           size_(Vec3f::all(3.f)),
+                                                           pose_(Affine3f::Identity()),
+                                                           gradient_delta_factor_(0.75f),
+                                                           raycast_step_factor_(0.75f)
 {
     for(float i = 0; i < 3; i++)
         for(float j = 0; j < 3; j++)

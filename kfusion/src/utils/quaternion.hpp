@@ -2,6 +2,7 @@
 #define DYNAMIC_FUSION_QUATERNION_HPP
 
 #include <iostream>
+#include <kfusion/types.hpp>
 //Adapted from https://github.com/Poofjunior/QPose
 namespace kfusion{
     namespace utils{
@@ -45,43 +46,6 @@ namespace kfusion{
                 y_ = y * sin(theta / 2);
                 z_ = z * sin(theta / 2);
                 normalize();
-            }
-
-            /**
-             * \fn void getRotation( T& angle, T& x, T& y, T& z)
-             * \brief Retrieve the rotation (angle and vector3) stored in the quaternion.
-             * \warning only unit quaternions represent rotation.
-             * \details A quaternion:
-             *          Q = cos(alpha) + Usin(alpha), where U is a vector3, stores a
-                        rotation
-             *          of 2*alpha about the 3D axis U. This member function retrieves
-                        theta and U, where theta = 2*alpha is the amount of rotation
-                        about the vector U.
-             * \note the angle retrieved is in radians.
-             */
-            void getRotation( T& theta, T& x, T& y, T& z)
-            {
-                // Acquire the amount of rotation. Prevent against rounding error.
-                if ((w_ > 1) || (w_ < -1))
-                    theta = 2 * acos(1);
-                else
-                    theta = 2 * acos(w_);
-
-                T commonVal = sin(theta /2);
-
-                // Acquire rotational axis. Guard against division by 0.
-                if (commonVal != 0)
-                {
-                    x = x_ / commonVal;
-                    y = y_ / commonVal;
-                    z = z_ / commonVal;
-                }
-                else // Guard against division by zero. Values are bogus but ignored.
-                {
-                    x = x_;
-                    y = y_;
-                    z = z_;
-                }
             }
 
 
@@ -202,7 +166,7 @@ namespace kfusion{
              */
             T dotProduct(Quaternion other)
             {
-                return 0.5 * (conjugate() * other) + ((*this) * other.conjugate()).w_;
+                return 0.5 * ((conjugate() * other) + (*this) * other.conjugate()).w_;
             }
 
             /// Conjugate
@@ -218,7 +182,7 @@ namespace kfusion{
 
             Quaternion inverse()
             {
-                return (1/(*this).norm()) * (*this).conjugate();
+                return (1 / (*this).norm()) * (*this).conjugate();
             }
 
             /**
@@ -238,12 +202,10 @@ namespace kfusion{
 
 
             /**
-             * \fn static Quaternion slerp( Quaternion q1 Quaternion q2,
-             *                                 T percentage)
-             * \brief return a quaternion that is a linear interpolation between q1 and q2
+             * \fn Quaternion slerp( Quaternion other, T percentage)
+             * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
              *        where percentage (from 0 to 1) defines the amount of interpolation
-             * \details morph one quaternion into the other with constant 'velocity.'
-             *          Implementation details from Wikipedia article on Slerp.
+             * \details https://en.wikipedia.org/wiki/Slerp
              */
             Quaternion slerp(Quaternion other, double t)
             {
@@ -295,7 +257,7 @@ namespace kfusion{
                 os << "(" << q.w_ << ", " << q.x_ << ", " <<  q.y_ << ", " << q.z_ << ")";
                 return os;
             }
-//TODO: shouldn't have Vec3f but rather Vec3<T>. Not sure how to determine this later
+            //TODO: shouldn't have Vec3f but rather Vec3<T>. Not sure how to determine this later
             static Quaternion<T> normalToQuaternion(Vec3f normal)
             {
                 Vec3f a(1, 0, 0);
@@ -309,18 +271,18 @@ namespace kfusion{
 
                 Vec3f t1 = normal.cross(t0);
                 t1 = cv::normalize(t1);
-//TODO: IMPORTANT. Check if this is row major or column major
+                //TODO: IMPORTANT. Check if this is row major or column major
                 cv::Mat3f matrix;
                 matrix[0] = &t0;
                 matrix[1] = &t1;
                 matrix[2] = &normal;
                 Quaternion<T> quaternion;
-                T w = sqrt(1.0 + matrix[0][0] + matrix[1][1] + matrix[2][2]) / 2.0;
+                T w = sqrt(1.0 + matrix(0)(0) + matrix(1)(1) + matrix(2)(2)) / 2.0;
                 double w4 = (4.0 * w);
-                T x = (matrix[2][1] - matrix[1][2]) / w4 ;
-                T y = (matrix[0][2] - matrix[2][0]) / w4 ;
+                T x = (matrix[2][1] - matrix[1][2]) / w4; //FIXME: accessors should be as above
+                T y = (matrix[0][2] - matrix[2][0]) / w4;
                 T z = (matrix[1][0] - matrix[2][1]) / w4;
-//                TODO: TEST THIS
+                //                TODO: TEST THIS
                 return Quaternion(w, x, y, z);
             }
 
