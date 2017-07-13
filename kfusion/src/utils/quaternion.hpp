@@ -48,6 +48,20 @@ namespace kfusion{
                 normalize();
             }
 
+            /**
+             * \fn void encodeRotation( T theta, T x, T y, T z)
+             * \brief Store a normalized rotation in the quaternion encoded as a rotation
+             *        of theta about the vector (x,y,z).
+             */
+            void getRodrigues(T& x, T& y, T& z)
+            {
+//                FIXME: breaks for w_ = 1
+                T half_theta = acos(w_);
+                x = x_ / sin(half_theta) * tan(half_theta);
+                y = y_ / sin(half_theta) * tan(half_theta);
+                z = z_ / sin(half_theta) * tan(half_theta);
+            }
+
 
             /**
              * \fn void rotate( T& x, T& y, T& z)

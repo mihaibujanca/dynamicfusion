@@ -66,3 +66,14 @@ TEST(QuaternionTest, slerp)
     ASSERT_FLOAT_EQ(result.y_, 0.688191);
     ASSERT_FLOAT_EQ(result.z_, 0.688191);
 }
+
+TEST(QuaternionTest, rodrigues)
+{
+    Quaternion<float> quaternion(0.5,1,2,2);
+    float x, y, z;
+    quaternion.getRodrigues(x,y,z);
+
+    ASSERT_FLOAT_EQ(2, x);
+    ASSERT_FLOAT_EQ(4, y);
+    ASSERT_FLOAT_EQ(4, z);
+}
