@@ -1,16 +1,21 @@
 #include "precomp.hpp"
+#include "dual_quaternion.hpp"
+#include <algorithm>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <kfusion/warp_field.hpp>
 
+#define W_MAX 100.f // This is a hyperparameter for maximum node weight and needs to be tuned. For now set to high value
 using namespace kfusion;
 using namespace kfusion::cuda;
 
 /////////////////////////////////fusion::c///////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume::Entry
-
-float kfusion::cuda::TsdfVolume::Entry::half2float(half)
-{ throw "Not implemented"; }
-
-kfusion::cuda::TsdfVolume::Entry::half kfusion::cuda::TsdfVolume::Entry::float2half(float value)
-{ throw "Not implemented"; }
+//
+//float kfusion::cuda::TsdfVolume::Entry::half2float(half)
+//{ throw "Not implemented"; }
+//
+//kfusion::cuda::TsdfVolume::Entry::half kfusion::cuda::TsdfVolume::Entry::float2half(float value)
+//{ throw "Not implemented"; }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume
@@ -24,15 +29,6 @@ kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
                                                            gradient_delta_factor_(0.75f),
                                                            raycast_step_factor_(0.75f)
 {
-    for(float i = 0; i < 3; i++)
-        for(float j = 0; j < 3; j++)
-            for(float k = 0; k < 3; k++)
-                for(float l = 0; l < 3; l++)
-                {
-                    utils::Quaternion<float> quaternion(i, j, k, l);
-                    utils::DualQuaternion<float> dualQuaternion(quaternion, quaternion);
-                    quaternions_.push_back(dualQuaternion);
-                }
     create(dims_);
 }
 
@@ -81,32 +77,6 @@ float kfusion::cuda::TsdfVolume::getGradientDeltaFactor() const { return gradien
 void kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_delta_factor_ = factor; }
 void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
-//TODO: make this return actual data from TSDF
-std::vector<utils::DualQuaternion<float>> kfusion::cuda::TsdfVolume::getQuaternions() const
-{
-    return quaternions_;
-}
-//TODO: Make this persistent rather than fetching cloud and normals every time
-void kfusion::cuda::TsdfVolume::fetchQuaternions()
-{
-    cuda::DeviceArray<Point> cloud_buffer;
-    cuda::DeviceArray<Normal> normal_buffer;
-    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
-    fetchNormals(cloud, normal_buffer);
-
-    cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-    cloud.download(cloud_host.ptr<Point>());
-
-    cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
-    normal_buffer.download(normals_host.ptr<Point>());
-
-    for(int i = 0; i < cloud_host.rows; i++)
-        for(int j = 0; j < cloud_host.cols; j++)
-        {
-
-        }
-}
-
 void kfusion::cuda::TsdfVolume::clear()
 { 
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
@@ -202,3 +172,40 @@ void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, De
     device::TsdfVolume volume((ushort2*)data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
     device::extractNormals(volume, c, aff, Rinv, gradient_delta_factor_, (float4*)normals.ptr());
 }
+void kfusion::cuda::TsdfVolume::compute_tsdf_value(Vec3f vertex, Vec3f voxel_center, float weight)
+{
+    float new_weight;
+    for(auto entry : tsdf_entries)
+    {
+        float w_x = std::min(entry.tsdf_weight + new_weight, W_MAX);
+        float ro; // = psdf(stuff)
+        float v_x = entry.tsdf_value * tsdf_entries[0].tsdf_weight + std::min(ro, trunc_dist_) * w_x;
+        v_x = v_x / (entry.tsdf_weight + w_x);
+        entry.tsdf_value = v_x;
+        entry.tsdf_weight = w_x;
+    }
+}
+
+    /**
+     * \fn TSDF::psdf (Mat3f K, Depth& depth, Vec3f voxel_center)
+     * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
+     *        where percentage (from 0 to 1) defines the amount of interpolation
+     * \param K: camera matrix
+     * \param depth: a depth frame
+     * \param voxel_center
+     *
+     */
+float kfusion::cuda::TsdfVolume::psdf(Mat3f K, Depth& depth, Vec3f voxel_center, const WarpField& warp_field)
+{
+//    FIXME: this should be abstracted out, DualQuaternion needs to have something that returns the transformation in Rodrigues
+    auto transformation = warp_field.warp(voxel_center);
+//    Vec3f x_t;
+    auto x_t = Vec4f(voxel_center[0],voxel_center[0],voxel_center[0], 1).t(); // * transformation
+
+    cv::Vec3f u_c;
+    cv::perspectiveTransform(x_t, u_c, K);
+    auto u_c_4 = (u_c.t()., 1);
+//    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
+    return 0;
+}
+

@@ -7,6 +7,7 @@
 #include <string>
 #include <dual_quaternion.hpp>
 #include <quaternion.hpp>
+#include <kfusion/warp_field.hpp>
 
 namespace kfusion
 {
@@ -69,19 +70,15 @@ namespace kfusion
         const cuda::ProjectiveICP& icp() const;
         cuda::ProjectiveICP& icp();
 
+        const WarpField& getWarp() const;
+        WarpField& getWarp();
+
         void reset();
 
         bool operator()(const cuda::Depth& depth, const cuda::Image& image = cuda::Image());
 
         void renderImage(cuda::Image& image, int flags = 0);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
-        utils::DualQuaternion<float> DQB(Vec3f vertex,
-                                          std::vector<utils::DualQuaternion<float>> nodes,
-                                          float voxel_size);
-//        std::pair<Vec3f,Vec3f>
-        std::vector<utils::DualQuaternion<float>> warp(std::vector<Vec3f>& frame,
-                                                       const cuda::TsdfVolume& tsdfVolume);
-        float weighting(Vec3f vertex, Vec3f voxel_center, float weight);
 
         Affine3f getCameraPose (int time = -1) const;
     private:
@@ -101,5 +98,6 @@ namespace kfusion
 
         cv::Ptr<cuda::TsdfVolume> volume_;
         cv::Ptr<cuda::ProjectiveICP> icp_;
+        cv::Ptr<WarpField> warp_;
     };
 }

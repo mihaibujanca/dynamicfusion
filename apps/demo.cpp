@@ -81,7 +81,7 @@ struct KinFuApp
             std::vector<Vec3f> frame;
             frame.push_back(Vec3f(0,0,0));
             frame.push_back(Vec3f(1,2.2342,2.234));
-            std::vector<utils::DualQuaternion<float>> nodes = kinfu.warp(frame, kinfu.tsdf());
+//            std::vector<utils::DualQuaternion<float>> nodes = kinfu.getWarp().warp(frame);
             bool has_frame = capture_.grab(depth, image);
             if (!has_frame)
                 return std::cout << "Can't grab" << std::endl, false;

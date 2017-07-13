@@ -2,8 +2,10 @@
 
 #include <kfusion/types.hpp>
 #include <dual_quaternion.hpp>
+#include <kfusion/warp_field.hpp>
 namespace kfusion
 {
+
     namespace cuda
     {
         class KF_EXPORTS TsdfVolume
@@ -32,9 +34,6 @@ namespace kfusion
             Affine3f getPose() const;
             void setPose(const Affine3f& pose);
 
-            std::vector<utils::DualQuaternion<float>> getQuaternions() const;
-            void fetchQuaternions();
-
             float getRaycastStepFactor() const;
             void setRaycastStepFactor(float factor);
 
@@ -44,6 +43,8 @@ namespace kfusion
             Vec3i getGridOrigin() const;
             void setGridOrigin(const Vec3i& origin);
 
+            float psdf(Mat3f K, Depth& depth, Vec3f voxel_center, const WarpField& warp_field);
+            void compute_tsdf_value(Vec3f vertex, Vec3f voxel_center, float weight);
             virtual void clear();
             virtual void applyAffine(const Affine3f& affine);
             virtual void integrate(const Dists& dists, const Affine3f& camera_pose, const Intr& intr);
@@ -57,13 +58,11 @@ namespace kfusion
 
             struct Entry
             {
-                typedef unsigned short half;
+                float tsdf_value;
+                float tsdf_weight;
 
-                half tsdf;
-                unsigned short weight;
-
-                static float half2float(half value);
-                static half float2half(float value);
+//                static float half2float(half value);
+//                static half float2half(float value);
             };
         private:
             CudaData data_;
@@ -73,9 +72,10 @@ namespace kfusion
             Vec3i dims_;
             Vec3f size_;
             Affine3f pose_;
-            std::vector<utils::DualQuaternion<float>> quaternions_;
             float gradient_delta_factor_;
             float raycast_step_factor_;
+            // TODO: remember to add entry when adding a new node
+            std::vector<Entry> tsdf_entries;
         };
     }
 }

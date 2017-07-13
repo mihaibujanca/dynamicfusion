@@ -202,10 +202,11 @@ namespace kfusion{
 
 
             /**
-             * \fn Quaternion slerp( Quaternion other, T percentage)
+             * \fn static Quaternion slerp( Quaternion q1 Quaternion q2, T percentage)
              * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
              *        where percentage (from 0 to 1) defines the amount of interpolation
-             * \details https://en.wikipedia.org/wiki/Slerp
+             * \details morph one quaternion into the other with constant 'velocity.'
+             *          Implementation details from Wikipedia article on Slerp.
              */
             Quaternion slerp(Quaternion other, double t)
             {
