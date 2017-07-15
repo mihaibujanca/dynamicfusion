@@ -19,7 +19,7 @@ WarpField::WarpField()
 
 }
 
-std::vector<utils::DualQuaternion<float>> WarpField::warp(std::vector<Vec3f> &frame) const
+std::vector<node> WarpField::warp(std::vector<Vec3f> &frame) const
 {
     std::vector<utils::DualQuaternion<float>> out_nodes(frame.size());
     for (auto vertex : frame)
@@ -37,9 +37,9 @@ utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
     {
-        utils::PointCloud<float>::Point point(nodes[i].getTranslation().x_,
-                                              nodes[i].getTranslation().y_,
-                                              nodes[i].getTranslation().z_);
+        utils::PointCloud<float>::Point point(nodes[i].vertex.getTranslation().x_,
+                                              nodes[i].vertex.getTranslation().y_,
+                                              nodes[i].vertex.getTranslation().z_);
         cloud.pts[i] = point;
     }
 
@@ -56,7 +56,7 @@ utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
     index.findNeighbors(resultSet, point.val, nanoflann::SearchParams(10));
 
     for (size_t i = 0; i < k; i++)
-        neighbours.push_back(nodes[ret_index[i]]);
+        neighbours.push_back(nodes[ret_index[i]].vertex);
 
     utils::DualQuaternion<float> node = DQB(point, VOXEL_SIZE);
     neighbours.clear();
@@ -68,9 +68,9 @@ utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) cons
     utils::DualQuaternion<float> quaternion_sum;
     for(auto node : nodes)
     {
-        utils::Quaternion<float> translation = node.getTranslation();
+        utils::Quaternion<float> translation = node.vertex.getTranslation();
         Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
-        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node;
+        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node.vertex;
     }
     auto norm = quaternion_sum.magnitude();
 

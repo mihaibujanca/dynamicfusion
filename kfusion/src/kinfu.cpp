@@ -141,6 +141,7 @@ void kfusion::KinFu::reset()
     poses_.reserve(30000);
     poses_.push_back(Affine3f::Identity());
     volume_->clear();
+    warp_->clear();
 }
 
 kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
@@ -176,6 +177,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     //can't perform more on first frame
     if (frame_counter_ == 0)
     {
+
         volume_->integrate(dists_, poses_.back(), p.intr);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
@@ -188,7 +190,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP
-    Affine3f affine; // cuur -> prev
+    Affine3f affine; // curr -> prev
     {
         //ScopeTime time("icp");
 #if defined USE_DEPTH
@@ -214,7 +216,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         //ScopeTime time("tsdf");
         volume_->integrate(dists_, poses_.back(), p.intr);
     }
-
+// TODO: for dynamic fusion we MUST integrate even if camera does not move. Integration function will be different so ignore for now
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Ray casting
     {

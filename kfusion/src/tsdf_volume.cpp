@@ -204,7 +204,7 @@ float kfusion::cuda::TsdfVolume::psdf(Mat3f K, Depth& depth, Vec3f voxel_center,
 
     cv::Vec3f u_c;
     cv::perspectiveTransform(x_t, u_c, K);
-    auto u_c_4 = (u_c.t()., 1);
+//    auto u_c_4 = (u_c.t()., 1);
 //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
     return 0;
 }
