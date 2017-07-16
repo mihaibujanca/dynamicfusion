@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <quaternion.hpp>
 #include <math.h>
-
+#include <kfusion/types.hpp>
 using namespace kfusion::utils;
 TEST(QuaternionTest, encodeRotation)
 {
@@ -65,4 +65,23 @@ TEST(QuaternionTest, slerp)
     ASSERT_FLOAT_EQ(result.x_, 0.16245984);
     ASSERT_FLOAT_EQ(result.y_, 0.688191);
     ASSERT_FLOAT_EQ(result.z_, 0.688191);
+}
+
+TEST(QuaternionTest, rodrigues)
+{
+    Quaternion<float> quaternion(0.5,1,2,2);
+    float x, y, z;
+    quaternion.getRodrigues(x,y,z);
+
+    ASSERT_FLOAT_EQ(2, x);
+    ASSERT_FLOAT_EQ(4, y);
+    ASSERT_FLOAT_EQ(4, z);
+}
+
+TEST(QuaternionTest, normal)
+{
+    kfusion::Vec3f normal(0,1,0);
+    Quaternion<float> quaternion(normal);
+
+    std::cout<<"Quaternion:" << quaternion;
 }
