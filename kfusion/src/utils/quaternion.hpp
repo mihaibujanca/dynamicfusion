@@ -25,6 +25,38 @@ namespace kfusion{
             Quaternion(T w, T x, T y, T z) : w_(w), x_(x), y_(y), z_(z)
             {}
 
+            /**
+             * Encodes rotation from a normal
+             * @param normal
+             */
+            Quaternion(Vec3f normal)
+            {
+                Vec3f a(1, 0, 0);
+                Vec3f b(0, 1, 0);
+
+                Vec3f t0 = normal.cross(a);
+
+                if (t0.dot(t0) < 0.001f)
+                    t0 = normal.cross(b);
+                t0 = cv::normalize(t0);
+
+                Vec3f t1 = normal.cross(t0);
+                t1 = cv::normalize(t1);
+                //TODO: IMPORTANT. Check if this is row major or column major
+                cv::Mat3f matrix;
+                matrix.push_back(t0);
+                matrix.push_back(t1);
+                matrix.push_back(normal);
+                std::cout<<"Matrix:"<<matrix<<std::endl;
+//                matrix[1] = &t1;
+//                matrix[2] = &normal;
+                w_ = sqrt(1.0 + matrix.at<float>(0,0) + matrix.at<float>(1,1) + matrix.at<float>(2,2)) / 2.0;
+                x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4); //FIXME: accessors should be as above
+                y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
+                z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
+                //                TODO: TEST THIS
+            }
+
             ~Quaternion()
             {}
 
@@ -272,33 +304,6 @@ namespace kfusion{
                 return os;
             }
             //TODO: shouldn't have Vec3f but rather Vec3<T>. Not sure how to determine this later
-            static Quaternion<T> normalToQuaternion(Vec3f normal)
-            {
-                Vec3f a(1, 0, 0);
-                Vec3f b(0, 1, 0);
-
-                Vec3f t0 = normal.cross(a);
-
-                if (t0.dot(t0) < 0.001f)
-                    t0 = normal.cross(b);
-                t0 = cv::normalize(t0);
-
-                Vec3f t1 = normal.cross(t0);
-                t1 = cv::normalize(t1);
-                //TODO: IMPORTANT. Check if this is row major or column major
-                cv::Mat3f matrix;
-                matrix[0] = &t0;
-                matrix[1] = &t1;
-                matrix[2] = &normal;
-                Quaternion<T> quaternion;
-                T w = sqrt(1.0 + matrix(0)(0) + matrix(1)(1) + matrix(2)(2)) / 2.0;
-                double w4 = (4.0 * w);
-                T x = (matrix[2][1] - matrix[1][2]) / w4; //FIXME: accessors should be as above
-                T y = (matrix[0][2] - matrix[2][0]) / w4;
-                T z = (matrix[1][0] - matrix[2][1]) / w4;
-                //                TODO: TEST THIS
-                return Quaternion(w, x, y, z);
-            }
 
             T w_;
             T x_;
