@@ -2,10 +2,9 @@
 
 #include <kfusion/types.hpp>
 #include <dual_quaternion.hpp>
-#include <kfusion/warp_field.hpp>
 namespace kfusion
 {
-
+    class WarpField;
     namespace cuda
     {
         class KF_EXPORTS TsdfVolume

@@ -179,6 +179,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     {
 
         volume_->integrate(dists_, poses_.back(), p.intr);
+        warp_->init(curr_.points_pyr[0]);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
 #else
@@ -188,6 +189,10 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         return ++frame_counter_, false;
     }
 
+    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
+
+//    warp_->warp(live frame); //need to warp live frame transformed by its pose
+//    warp_->warp(canonical model); //need to warp canonical model
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP
     Affine3f affine; // curr -> prev

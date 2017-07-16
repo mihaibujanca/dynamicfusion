@@ -99,5 +99,6 @@ namespace kfusion
         cv::Ptr<cuda::TsdfVolume> volume_;
         cv::Ptr<cuda::ProjectiveICP> icp_;
         cv::Ptr<WarpField> warp_;
+        std::vector<std::pair<utils::DualQuaternion<float>, utils::DualQuaternion<float>>> edges;
     };
 }

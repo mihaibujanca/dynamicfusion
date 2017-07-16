@@ -64,7 +64,7 @@ struct KinFuApp
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         cloud.download(cloud_host.ptr<Point>());
         cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
-        normal_buffer.download(normals_host.ptr<Point>());
+        normal_buffer.download(normals_host.ptr<Normal>());
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
         viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.05, cv::viz::Color::blue()));
     }
