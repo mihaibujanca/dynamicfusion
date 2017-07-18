@@ -65,9 +65,6 @@ namespace kfusion
             {
                 float tsdf_value;
                 float tsdf_weight;
-
-//                static float half2float(half value);
-//                static half float2half(float value);
             };
         private:
             CudaData data_;
