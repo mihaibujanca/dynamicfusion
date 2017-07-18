@@ -170,6 +170,6 @@ utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) cons
 //TODO: KNN already gives the squared distance as well, can pass here instead
 float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
 {
-    float diff = (float) cv::norm(voxel_center, vertex, cv::NORM_L2); // Should this be double?
-    return exp(-(diff * diff) / (2 * weight * weight));
+    double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
+    return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
 }
