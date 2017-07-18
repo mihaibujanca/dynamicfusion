@@ -2,7 +2,6 @@
 
 #include <kfusion/types.hpp>
 #include <dual_quaternion.hpp>
-#include <kfusion/warp_field.hpp>
 
 namespace kfusion
 {
