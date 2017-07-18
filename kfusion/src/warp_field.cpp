@@ -27,16 +27,48 @@ WarpField::~WarpField()
  * @param frame
  * \note The pose is assumed to be the identity, as this is the first frame
  */
-void WarpField::init(const cuda::Cloud &frame){}
-void WarpField::init(const std::vector<Vec3f> positions)
+// maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
+void WarpField::init(const cuda::Cloud &frame, const cuda::Normals &normals)
 {
-    nodes.reserve(positions.size());
-    for(int i = 0; i < positions.size(); i++)
-        nodes[i].vertex = positions[i];
+    assert(normals.cols()==frame.cols());
+    assert(normals.rows()==frame.rows());
+    int cols = frame.cols();
+
+    std::vector<Point, std::allocator<Point>> cloud_host(size_t(frame.rows()*frame.cols()));
+    frame.download(cloud_host, cols);
+
+    std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
+    normals.download(normals_host, cols);
+
+    nodes.reserve(cloud_host.size());
+
+    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++) // FIXME: for now just stop at the number of nodes
+    {
+        auto point = cloud_host[i];
+        auto norm = normals_host[i];
+        if(!std::isnan(point.x))
+        {
+            // TODO:    transform by pose
+            Vec3f position(point.x,point.y,point.z);
+            Vec3f normal(norm.x,norm.y,norm.z);
+
+            utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,position[0], position[1], position[2]),
+                                                        utils::Quaternion<float>(normal));
+
+            nodes[i].vertex = position;
+            nodes[i].transform = dualQuaternion;
+        }
+        else
+        {
+            //    FIXME: will need to deal with the case when we get NANs
+            std::cout<<"NANS"<<std::endl;
+            break;
+        }
+    }
 }
 
 void WarpField::energy(const cuda::Cloud &frame,
-                       const cuda::Normals& normals,
+                       const cuda::Normals &normals,
                        const Affine3f &pose,
                        const cuda::TsdfVolume &tsdfVolume,
                        const std::vector<std::pair<utils::DualQuaternion<float>, utils::DualQuaternion<float>>> &edges
@@ -44,6 +76,11 @@ void WarpField::energy(const cuda::Cloud &frame,
 {
     assert(normals.cols()==frame.cols());
     assert(normals.rows()==frame.rows());
+
+    //  TODO: proper implementation. At the moment just initialise the positions with the old Quaternion positions
+    for(auto node : nodes)
+        node.transform.getTranslation(node.vertex);
+
 
     int cols = frame.cols();
 
@@ -76,16 +113,21 @@ void WarpField::energy(const cuda::Cloud &frame,
 
 
 }
-
-std::vector<node> WarpField::warp(std::vector<Vec3f> &frame) const
+/**
+ * Modifies the
+ * @param cloud_host
+ * @param normals_host
+ */
+void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
+                     std::vector<Point, std::allocator<Point>>& normals_host) const
 {
-    std::vector<utils::DualQuaternion<float>> out_nodes(frame.size());
-    for (auto vertex : frame)
+
+    for (auto point : cloud_host)
     {
+        Vec3f vertex(point.x,point.y,point.z);
         utils::DualQuaternion<float> node = warp(vertex);
-        out_nodes.push_back(node);
+//       Apply the transformation to the vertex and the normal
     }
-    return nodes;
 }
 
 utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
@@ -95,9 +137,10 @@ utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
     {
-        utils::PointCloud<float>::Point point(nodes[i].transform.getTranslation().x_,
-                                              nodes[i].transform.getTranslation().y_,
-                                              nodes[i].transform.getTranslation().z_);
+        //        TODO: need to revisit this, now we are simply dealing with Vec3f
+        float x,y,z;
+        nodes[i].transform.getTranslation(x,y,z);
+        utils::PointCloud<float>::Point point(x,y,z);
         cloud.pts[i] = point;
     }
 

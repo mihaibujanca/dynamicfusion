@@ -6,7 +6,7 @@
  * \details
  */
 #include <dual_quaternion.hpp>
-
+#include <kfusion/types.hpp>
 namespace kfusion
 {
     namespace cuda{class TsdfVolume;};
@@ -38,8 +38,7 @@ namespace kfusion
         WarpField();
         ~WarpField();
 
-        void init(const cuda::Cloud &frame);
-        void init(const std::vector<Vec3f> positions);
+        void init(const cuda::Cloud &frame, const cuda::Normals& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -55,11 +54,11 @@ namespace kfusion
 
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                                                     kfusion::utils::DualQuaternion<float>>> &edges);
-        float tukeyPenaltyFunction(float threshold, float x, float c);
-        float huberPenaltyFunction(float threshold, float x, float c);
+        float tukeyPenalty(float threshold, float x, float c);
+        float huberPenalty(float threshold, float x, float c);
 
-//        TODO: refactor this to return a 4x4 Matrix - SE(3) form.
-        std::vector<node> warp(std::vector<Vec3f> &frame) const;
+        void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
+                  std::vector<Point, std::allocator<Point>>& normals_host) const;
         utils::DualQuaternion<float> warp(Vec3f point) const;
         utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;

@@ -17,7 +17,7 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     const int levels = sizeof(iters)/sizeof(iters[0]);
 
     KinFuParams p;
-
+// TODO: this should be coming from a calibration file / shouldn't be hardcoded
     p.cols = 640;  //pixels
     p.rows = 480;  //pixels
     p.intr = Intr(525.f, 525.f, p.cols/2 - 0.5f, p.rows/2 - 0.5f);
@@ -53,6 +53,7 @@ kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(pa
     CV_Assert(params.volume_dims[0] % 32 == 0);
 
     volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
+    warp_ = cv::Ptr<WarpField>(new WarpField());
 
     volume_->setTruncDist(params_.tsdf_trunc_dist);
     volume_->setMaxWeight(params_.tsdf_max_weight);
@@ -179,7 +180,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     {
 
         volume_->integrate(dists_, poses_.back(), p.intr);
-        warp_->init(curr_.points_pyr[0]);
+        warp_->init(curr_.points_pyr[0], curr_.normals_pyr[0]);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
 #else
@@ -191,8 +192,9 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 
-//    warp_->warp(live frame); //need to warp live frame transformed by its pose
-//    warp_->warp(canonical model); //need to warp canonical model
+    tsdf().surface_fusion(getWarp(), depth, poses_.back(), p.intr);
+
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP
     Affine3f affine; // curr -> prev

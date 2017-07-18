@@ -78,7 +78,7 @@ void kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_
 void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
 void kfusion::cuda::TsdfVolume::clear()
-{ 
+{
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
 
@@ -140,7 +140,7 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
 
 DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
 {
-//    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
+    //    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
     enum { DEFAULT_CLOUD_BUFFER_SIZE = 256 * 256 * 256 };
 
     if (cloud_buffer.empty ())
@@ -186,26 +186,71 @@ void kfusion::cuda::TsdfVolume::compute_tsdf_value(Vec3f vertex, Vec3f voxel_cen
     }
 }
 
-    /**
-     * \fn TSDF::psdf (Mat3f K, Depth& depth, Vec3f voxel_center)
-     * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
-     *        where percentage (from 0 to 1) defines the amount of interpolation
-     * \param K: camera matrix
-     * \param depth: a depth frame
-     * \param voxel_center
-     *
-     */
-float kfusion::cuda::TsdfVolume::psdf(Mat3f K, Depth& depth, Vec3f voxel_center, const WarpField& warp_field)
+void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
+                                               const cuda::Depth& depth_img,
+                                               const Affine3f& camera_pose,
+                                               const Intr& intr)
 {
-//    FIXME: this should be abstracted out, DualQuaternion needs to have something that returns the transformation in Rodrigues
-    auto transformation = warp_field.warp(voxel_center);
-//    Vec3f x_t;
-    auto x_t = Vec4f(voxel_center[0],voxel_center[0],voxel_center[0], 1).t(); // * transformation
 
+    cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
+    std::vector<Point, std::allocator<Point>> cloud_host(cloud_buffer.size());
+    cloud_buffer.download(cloud_host);
+    std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
+
+    cuda::DeviceArray<Normal> normal_buffer;
+    fetchNormals(cloud_buffer, normal_buffer);
+    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
+    normal_buffer.download(normals_host);
+    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
+
+    warp_field.warp(cloud_host, normals_host);
+
+//    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
+    for(size_t i = 0; i < cloud_initial.size(); i++)
+    {
+        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
+        Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
+        float ro = psdf(initial, warped, depth_img, intr);
+
+        if(ro > -trunc_dist_)
+        {
+            float weight = weighting(initial);
+            float coeff = std::min(ro, trunc_dist_);
+
+            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
+            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
+
+            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
+        }
+//        else stays the same
+    }
+}
+
+/**
+ * \fn TSDF::psdf (Mat3f K, Depth& depth, Vec3f voxel_center)
+ * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
+ *        where percentage (from 0 to 1) defines the amount of interpolation
+ * \param K: camera matrix
+ * \param depth: a depth frame
+ * \param voxel_center
+ *
+ */
+float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
+                                      Vec3f warped,
+                                      const Depth& depth_img,
+                                      const Intr& intr)
+{
     cv::Vec3f u_c;
-    cv::perspectiveTransform(x_t, u_c, K);
-//    auto u_c_4 = (u_c.t()., 1);
-//    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
+    Mat3f K(intr.fx, 0, intr.cx, 0, intr.fy, intr.cy, 0, 0, 1);
+    cv::perspectiveTransform(warped, u_c, K);
+    //    auto u_c_4 = (u_c.t()., 1);
+    //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
     return 0;
 }
 
+
+float kfusion::cuda::TsdfVolume::weighting(Vec3f voxel_center)
+{
+    return 0;
+}

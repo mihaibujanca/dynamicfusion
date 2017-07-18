@@ -42,19 +42,15 @@ namespace kfusion{
 
                 Vec3f t1 = normal.cross(t0);
                 t1 = cv::normalize(t1);
-                //TODO: IMPORTANT. Check if this is row major or column major
+                //TODO: IMPORTANT. Check if this is row major or column majorl
                 cv::Mat3f matrix;
                 matrix.push_back(t0);
                 matrix.push_back(t1);
                 matrix.push_back(normal);
-                std::cout<<"Matrix:"<<matrix<<std::endl;
-//                matrix[1] = &t1;
-//                matrix[2] = &normal;
                 w_ = sqrt(1.0 + matrix.at<float>(0,0) + matrix.at<float>(1,1) + matrix.at<float>(2,2)) / 2.0;
-                x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4); //FIXME: accessors should be as above
+                x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
-                //                TODO: TEST THIS
             }
 
             ~Quaternion()

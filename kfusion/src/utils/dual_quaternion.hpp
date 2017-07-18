@@ -83,13 +83,23 @@ namespace kfusion {
              * \brief a reference-based method for acquiring the latest
              *        translation data.
              */
-            void getTranslation(T &x, T &y, T &z)
+            void getTranslation(T &x, T &y, T &z) const
             {
                 Quaternion<T> result = 2 * translation_ * rotation_.conjugate();
                 /// note: inverse of a quaternion is the same as the conjugate.
                 x = result.x_;
                 y = result.y_;
                 z = result.z_;
+            }
+
+            /**
+             * \brief a reference-based method for acquiring the latest
+             *        translation data.
+             */
+            void getTranslation(Vec3f& vec3f) const
+            {
+                Quaternion<T> result = 2 * translation_ * rotation_.conjugate();
+                vec3f = Vec3f(result.x_, result.y_, result.z_);
             }
 
             Quaternion<T> getTranslation() const
@@ -182,8 +192,8 @@ namespace kfusion {
             {
                 DualQuaternion result = (*this) * (*this).conjugate();
                 // TODO: only print when debugging
-                std::cout << result.rotation_;
-                std::cout << result.translation_;
+//                std::cout << result.rotation_;
+//                std::cout << result.translation_;
                 return std::make_pair(result.rotation_.w_, result.translation_.w_);
             }
 
