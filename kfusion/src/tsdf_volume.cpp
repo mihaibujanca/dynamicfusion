@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <kfusion/warp_field.hpp>
+#include <knn_point_cloud.hpp>
+#include <numeric>
 
 #define W_MAX 100.f // This is a hyperparameter for maximum node weight and needs to be tuned. For now set to high value
 using namespace kfusion;
@@ -240,8 +242,30 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
     return 0;
 }
 
-
+// FIXME: this is rebuilding a large kd-tree over and over. Should provide the kd-tree directly
 float kfusion::cuda::TsdfVolume::weighting(const Vec3f& voxel_center, const WarpField& warp)
 {
-    return 0;
+    const std::vector<node> *nodes = warp.getNodes();
+    utils::PointCloud cloud;
+    cloud.pts.resize(nodes->size());
+
+     for(size_t i = 0; i < nodes->size(); i++)
+         (*nodes)[i].transform.getTranslation(cloud.pts[i]);
+
+    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    index.buildIndex();
+
+    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
+    std::vector<utils::DualQuaternion<float>> neighbours(k);
+    std::vector<size_t> ret_index(k);
+    std::vector<float> out_dist_sqr(k);
+    nanoflann::KNNResultSet<float> resultSet(k);
+    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
+
+    index.findNeighbors(resultSet, voxel_center.val, nanoflann::SearchParams(10));
+
+    float distances = 0;
+    for(auto distance : out_dist_sqr)
+        distances += sqrt(distance);
+    return distances / k;
 }

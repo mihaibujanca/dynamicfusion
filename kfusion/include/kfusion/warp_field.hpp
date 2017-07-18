@@ -107,8 +107,15 @@ namespace kfusion
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         inline void clear(){};
 
+        inline const std::vector<node>* getNodes() const
+        {
+            return &nodes;
+        }
+
+
     private:
         //    Possibly have an internal kd-tree of nodes rather than a vector?
+        //    FIXME: should be a pointer
         std::vector<node> nodes;
     };
 }
