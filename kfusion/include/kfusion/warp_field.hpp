@@ -9,7 +9,10 @@
 #include <kfusion/types.hpp>
 namespace kfusion
 {
-    namespace cuda{class TsdfVolume;};
+    namespace cuda
+    {
+        class TsdfVolume;
+    }
 //    TODO: remember to rewrite this with proper doxygen formatting (e.g <sub></sub> rather than _
     /*!
      * \struct node
