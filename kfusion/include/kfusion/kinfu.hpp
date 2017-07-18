@@ -1,13 +1,10 @@
 #pragma once
 
 #include <kfusion/types.hpp>
-#include <kfusion/cuda/tsdf_volume.hpp>
-#include <kfusion/cuda/projective_icp.hpp>
 #include <vector>
 #include <string>
 #include <dual_quaternion.hpp>
 #include <quaternion.hpp>
-#include <kfusion/warp_field.hpp>
 
 namespace kfusion
 {
@@ -19,7 +16,10 @@ namespace kfusion
         KF_EXPORTS bool checkIfPreFermiGPU(int device);
         KF_EXPORTS void printCudaDeviceInfo(int device);
         KF_EXPORTS void printShortCudaDeviceInfo(int device);
+        class TsdfVolume;
+        class ProjectiveICP;
     }
+    class WarpField;
 
     struct KF_EXPORTS KinFuParams
     {

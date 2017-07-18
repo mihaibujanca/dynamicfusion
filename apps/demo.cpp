@@ -4,6 +4,7 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include <io/capture.hpp>
+#include <kfusion/cuda/tsdf_volume.hpp>
 
 using namespace kfusion;
 

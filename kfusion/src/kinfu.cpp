@@ -5,6 +5,9 @@
 #include <nanoflann.hpp>
 #include <quaternion.hpp>
 #include <knn_point_cloud.hpp>
+#include <kfusion/warp_field.hpp>
+#include <kfusion/cuda/tsdf_volume.hpp>
+
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
