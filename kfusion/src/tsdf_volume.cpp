@@ -241,7 +241,7 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
 }
 
 
-float kfusion::cuda::TsdfVolume::weighting(Vec3f voxel_center)
+float kfusion::cuda::TsdfVolume::weighting(const Vec3f& voxel_center, const WarpField& warp)
 {
     return 0;
 }
