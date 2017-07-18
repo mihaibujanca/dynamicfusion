@@ -7,12 +7,25 @@
  */
 #include <dual_quaternion.hpp>
 #include <kfusion/types.hpp>
+#include <nanoflann/nanoflann.hpp>
+
 namespace kfusion
 {
     namespace cuda
     {
         class TsdfVolume;
     }
+    namespace utils
+    {
+        class PointCloud;
+    }
+    typedef nanoflann::KDTreeSingleIndexAdaptor<
+            nanoflann::L2_Simple_Adaptor<float, utils::PointCloud>,
+            utils::PointCloud,
+            3 /* dim */
+    > kd_tree_t;
+
+
     //    TODO: remember to rewrite this with proper doxygen formatting (e.g <sub></sub> rather than _
     /*!
      * \struct node

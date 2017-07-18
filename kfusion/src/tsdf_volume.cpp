@@ -206,7 +206,7 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
 
         if(ro > -trunc_dist_)
         {
-            float weight = weighting(initial);
+            float weight = weighting(initial, warp_field);
             float coeff = std::min(ro, trunc_dist_);
 
             tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;

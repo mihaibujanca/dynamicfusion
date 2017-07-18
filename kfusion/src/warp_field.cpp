@@ -11,12 +11,6 @@
 using namespace kfusion;
 
 
-typedef nanoflann::KDTreeSingleIndexAdaptor<
-        nanoflann::L2_Simple_Adaptor<float, utils::PointCloud<float>>,
-        utils::PointCloud<float>,
-        3 /* dim */
-> kd_tree_t;
-
 WarpField::WarpField()
 {}
 
@@ -133,16 +127,10 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
 utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
 {
     utils::DualQuaternion<float> out;
-    utils::PointCloud<float> cloud;
+    utils::PointCloud cloud;
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
-    {
-        //        TODO: need to revisit this, now we are simply dealing with Vec3f
-        float x,y,z;
-        nodes[i].transform.getTranslation(x,y,z);
-        utils::PointCloud<float>::Point point(x,y,z);
-        cloud.pts[i] = point;
-    }
+        nodes[i].transform.getTranslation(cloud.pts[i]);
 
     kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
     index.buildIndex();
