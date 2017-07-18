@@ -13,7 +13,7 @@ namespace kfusion
     {
         class TsdfVolume;
     }
-//    TODO: remember to rewrite this with proper doxygen formatting (e.g <sub></sub> rather than _
+    //    TODO: remember to rewrite this with proper doxygen formatting (e.g <sub></sub> rather than _
     /*!
      * \struct node
      * \brief A node of the warp field
@@ -47,7 +47,7 @@ namespace kfusion
                     const Affine3f &pose,
                     const cuda::TsdfVolume &tsdfVolume,
                     const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
-                                                kfusion::utils::DualQuaternion<float>>> &edges
+                            kfusion::utils::DualQuaternion<float>>> &edges
         );
 
         void energy_data(const cuda::Depth &frame,
@@ -56,9 +56,34 @@ namespace kfusion
         );
 
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
-                                                    kfusion::utils::DualQuaternion<float>>> &edges);
-        float tukeyPenalty(float threshold, float x, float c);
-        float huberPenalty(float threshold, float x, float c);
+                kfusion::utils::DualQuaternion<float>>> &edges);
+
+        /**
+         * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
+         * \param x
+         * \param c
+         * \return
+         * 
+         * \note 
+         * The value c = 4.685 is usually used for this loss function, and
+         * it provides an asymptotic efficiency 95% that of linear
+         * regression for the normal distribution
+         */
+        inline float tukeyPenalty(float x, float c)
+        {
+            return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0;
+        }
+
+        /**
+         * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
+         * \param a
+         * \param delta
+         * \return
+         */
+        inline float huberPenalty(float a, float delta)
+        {
+            return std::abs(a) <= delta ? a * a / 2 : delta * std::abs(a) - delta * delta / 2;
+        }
 
         void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
                   std::vector<Point, std::allocator<Point>>& normals_host) const;
@@ -66,10 +91,11 @@ namespace kfusion
         utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
 
-//        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
+        //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         inline void clear(){};
 
     private:
+        //    Possibly have an internal kd-tree of nodes rather than a vector?
         std::vector<node> nodes;
     };
 }
