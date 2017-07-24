@@ -36,7 +36,7 @@ namespace kfusion
 
             /** \brief Initializes with user allocated buffer. Reference counting is disabled in this case.
               * \param ptr: pointer to buffer
-              * \param size: elemens number
+              * \param size: element number
               * */
             DeviceArray(T *ptr, size_t size);
 

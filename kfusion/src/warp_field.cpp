@@ -107,6 +107,19 @@ void WarpField::energy(const cuda::Cloud &frame,
 
 
 }
+void WarpField::energy_data(const cuda::Depth &frame,
+                            const Affine3f &pose,
+                            const cuda::TsdfVolume &tsdfVolume
+)
+{
+
+
+}
+void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
+        kfusion::utils::DualQuaternion<float>>> &edges)
+{
+
+}
 /**
  * Modifies the
  * @param cloud_host
@@ -120,7 +133,7 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
     {
         Vec3f vertex(point.x,point.y,point.z);
         utils::DualQuaternion<float> node = warp(vertex);
-//       Apply the transformation to the vertex and the normal
+        //       Apply the transformation to the vertex and the normal
     }
 }
 

@@ -68,6 +68,8 @@ namespace kfusion
             };
         private:
             CudaData data_;
+            cuda::DeviceArray<Point> cloud_buffer;
+            cuda::DeviceArray<Normal> normal_buffer;
 
             float trunc_dist_;
             int max_weight_;

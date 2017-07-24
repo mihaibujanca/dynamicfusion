@@ -8,17 +8,11 @@
 #include <dual_quaternion.hpp>
 #include <kfusion/types.hpp>
 #include <nanoflann/nanoflann.hpp>
+#include <knn_point_cloud.hpp>
+#include <kfusion/cuda/tsdf_volume.hpp>
 
 namespace kfusion
 {
-    namespace cuda
-    {
-        class TsdfVolume;
-    }
-    namespace utils
-    {
-        class PointCloud;
-    }
     typedef nanoflann::KDTreeSingleIndexAdaptor<
             nanoflann::L2_Simple_Adaptor<float, utils::PointCloud>,
             utils::PointCloud,
@@ -42,7 +36,7 @@ namespace kfusion
      * \var node::weight
      * Equivalent to dg_w
      */
-    struct node
+    struct deformation_node
     {
         Vec3f vertex;
         kfusion::utils::DualQuaternion<float> transform;
@@ -107,7 +101,7 @@ namespace kfusion
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         inline void clear(){};
 
-        inline const std::vector<node>* getNodes() const
+        inline const std::vector<deformation_node>* getNodes() const
         {
             return &nodes;
         }
@@ -116,7 +110,7 @@ namespace kfusion
     private:
         //    Possibly have an internal kd-tree of nodes rather than a vector?
         //    FIXME: should be a pointer
-        std::vector<node> nodes;
+        std::vector<deformation_node> nodes;
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP

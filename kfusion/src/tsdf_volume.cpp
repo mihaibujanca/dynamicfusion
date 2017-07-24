@@ -23,6 +23,7 @@ kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
                                                            raycast_step_factor_(0.75f)
 {
     create(dims_);
+    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
 }
 
 kfusion::cuda::TsdfVolume::~TsdfVolume() {}
@@ -185,41 +186,43 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
                                                const Intr& intr)
 {
 
-    cuda::DeviceArray<Point> cloud_buffer;
     cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
-    std::vector<Point, std::allocator<Point>> cloud_host(cloud_buffer.size());
-    cloud_buffer.download(cloud_host);
-    std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
+//    std::vector<Point, std::allocator<Point>> cloud_host(cloud_buffer.size());
+//    cloud_buffer.download(cloud_host);
+    cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>());
 
-    cuda::DeviceArray<Normal> normal_buffer;
-    fetchNormals(cloud_buffer, normal_buffer);
-    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
-    normal_buffer.download(normals_host);
-    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
-
-    warp_field.warp(cloud_host, normals_host);
-
-//    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
-    for(size_t i = 0; i < cloud_initial.size(); i++)
-    {
-        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
-        Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
-        float ro = psdf(initial, warped, depth_img, intr);
-
-        if(ro > -trunc_dist_)
-        {
-            float weight = weighting(initial, warp_field);
-            float coeff = std::min(ro, trunc_dist_);
-
-            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
-            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
-
-            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
-        }
-//        else stays the same
-    }
+//    std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
+//
+//    fetchNormals(cloud_buffer, normal_buffer);
+//    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
+//    normal_buffer.download(normals_host);
+//    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
+//
+//    warp_field.warp(cloud_host, normals_host);
+//
+////    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
+//    for(size_t i = 0; i < cloud_initial.size(); i++)
+//    {
+//        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
+//        Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
+//        float ro = psdf(initial, warped, depth_img, intr);
+//
+//        if(ro > -trunc_dist_)
+//        {
+//            float weight = weighting(initial, warp_field);
+//            float coeff = std::min(ro, trunc_dist_);
+//
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
+//
+//            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
+//        }
+////        else
+////        stays the same
+//    }
 }
-
+//FIXME: docstring is not up to date
 /**
  * \fn TSDF::psdf (Mat3f K, Depth& depth, Vec3f voxel_center)
  * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
@@ -234,10 +237,13 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
                                       const Depth& depth_img,
                                       const Intr& intr)
 {
-    cv::Vec3f u_c;
-    Mat3f K(intr.fx, 0, intr.cx, 0, intr.fy, intr.cy, 0, 0, 1);
+    cv::Vec2f u_c;
+    Mat3f K(intr.fx, 0, intr.cx,
+            0, intr.fy, intr.cy,
+            0, 0, 1);
     cv::perspectiveTransform(warped, u_c, K);
-    //    auto u_c_4 = (u_c.t()., 1);
+//    float
+    Vec3f u_c_3(u_c[0], u_c[1], 1);
     //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
     return 0;
 }
@@ -245,7 +251,7 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
 // FIXME: this is rebuilding a large kd-tree over and over. Should provide the kd-tree directly
 float kfusion::cuda::TsdfVolume::weighting(const Vec3f& voxel_center, const WarpField& warp)
 {
-    const std::vector<node> *nodes = warp.getNodes();
+    const std::vector<deformation_node> *nodes = warp.getNodes();
     utils::PointCloud cloud;
     cloud.pts.resize(nodes->size());
 
