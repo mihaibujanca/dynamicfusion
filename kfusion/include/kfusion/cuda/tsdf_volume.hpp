@@ -61,11 +61,7 @@ namespace kfusion
             DeviceArray<Point> fetchCloud(DeviceArray<Point>& cloud_buffer) const;
             void fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const;
 
-            struct Entry
-            {
-                float tsdf_value;
-                float tsdf_weight;
-            };
+
         private:
             CudaData data_;
             cuda::DeviceArray<Point> cloud_buffer;
@@ -79,6 +75,12 @@ namespace kfusion
             float gradient_delta_factor_;
             float raycast_step_factor_;
             // TODO: remember to add entry when adding a new node
+            struct Entry
+            {
+                float tsdf_value;
+                float tsdf_weight;
+            };
+
             std::vector<Entry> tsdf_entries;
         };
     }
