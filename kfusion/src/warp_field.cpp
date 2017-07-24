@@ -121,6 +121,34 @@ void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuate
 
 }
 /**
+ * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
+ * \param x
+ * \param c
+ * \return
+ *
+ * \note
+ * The value c = 4.685 is usually used for this loss function, and
+ * it provides an asymptotic efficiency 95% that of linear
+ * regression for the normal distribution
+ */
+float WarpField::tukeyPenalty(float x, float c) const
+{
+    return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0;
+}
+
+
+/**
+ * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
+ * \param a
+ * \param delta
+ * \return
+ */
+float WarpField::huberPenalty(float a, float delta) const
+{
+    return std::abs(a) <= delta ? a * a / 2 : delta * std::abs(a) - delta * delta / 2;
+}
+
+/**
  * Modifies the
  * @param cloud_host
  * @param normals_host
@@ -185,4 +213,13 @@ float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
 {
     double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
     return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
+}
+
+const std::vector<deformation_node>* WarpField::getNodes() const
+{
+    return &nodes;
+}
+void WarpField::clear()
+{
+
 }

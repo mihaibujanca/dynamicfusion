@@ -65,46 +65,23 @@ namespace kfusion
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        /**
-         * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
-         * \param x
-         * \param c
-         * \return
-         * 
-         * \note 
-         * The value c = 4.685 is usually used for this loss function, and
-         * it provides an asymptotic efficiency 95% that of linear
-         * regression for the normal distribution
-         */
-        inline float tukeyPenalty(float x, float c) const
-        {
-            return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0;
-        }
+        float tukeyPenalty(float x, float c) const;
 
-        /**
-         * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
-         * \param a
-         * \param delta
-         * \return
-         */
-        inline float huberPenalty(float a, float delta) const
-        {
-            return std::abs(a) <= delta ? a * a / 2 : delta * std::abs(a) - delta * delta / 2;
-        }
+        float huberPenalty(float a, float delta) const;
 
         void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
                   std::vector<Point, std::allocator<Point>>& normals_host) const;
+
         utils::DualQuaternion<float> warp(Vec3f point) const;
+
         utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
+
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
 
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
-        inline void clear(){};
+        void clear();
 
-        inline const std::vector<deformation_node>* getNodes() const
-        {
-            return &nodes;
-        }
+        const std::vector<deformation_node>* getNodes() const;
 
 
     private:
