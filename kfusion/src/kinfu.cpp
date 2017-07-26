@@ -14,6 +14,10 @@ using namespace kfusion::cuda;
 
 static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
+/**
+ * \brief
+ * \return
+ */
 kfusion::KinFuParams kfusion::KinFuParams::default_params()
 {
     const int iters[] = {10, 5, 4, 0};
@@ -51,6 +55,10 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     return p;
 }
 
+/**
+ * \brief
+ * \param params
+ */
 kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
     CV_Assert(params.volume_dims[0] % 32 == 0);
@@ -148,6 +156,11 @@ void kfusion::KinFu::reset()
     warp_->clear();
 }
 
+/**
+ * \brief
+ * \param time
+ * \return
+ */
 kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
 {
     if (time > (int)poses_.size () || time < 0)
@@ -155,6 +168,11 @@ kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
     return poses_[time];
 }
 
+/**
+ * \brief
+ * \param depth
+ * \return
+ */
 bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
 {
     const KinFuParams& p = params_;
@@ -246,6 +264,11 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     return ++frame_counter_, true;
 }
 
+/**
+ * \brief
+ * \param image
+ * \param flag
+ */
 void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 {
     const KinFuParams& p = params_;
@@ -272,7 +295,12 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 #undef PASS1
 }
 
-
+/**
+ * \brief
+ * \param image
+ * \param pose
+ * \param flag
+ */
 void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag)
 {
     const KinFuParams& p = params_;

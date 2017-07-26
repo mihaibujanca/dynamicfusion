@@ -13,6 +13,7 @@ using namespace kfusion::cuda;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume
 
+
 kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
                                                            trunc_dist_(0.03f),
                                                            max_weight_(128),
@@ -28,6 +29,10 @@ kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
 
 kfusion::cuda::TsdfVolume::~TsdfVolume() {}
 
+/**
+ * \brief
+ * \param dims
+ */
 void kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
 {
     dims_ = dims;
@@ -37,9 +42,19 @@ void kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
     clear();
 }
 
+/**
+ * \brief
+ * \return
+ */
 Vec3i kfusion::cuda::TsdfVolume::getDims() const
-{ return dims_; }
+{
+    return dims_;
+}
 
+/**
+ * \brief
+ * \return
+ */
 Vec3f kfusion::cuda::TsdfVolume::getVoxelSize() const
 {
     return Vec3f(size_[0] / dims_[0], size_[1] / dims_[1], size_[2] / dims_[2]);
@@ -80,6 +95,12 @@ void kfusion::cuda::TsdfVolume::clear()
     device::clear_volume(volume);
 }
 
+/**
+ * \brief
+ * \param dists
+ * \param camera_pose
+ * \param intr
+ */
 void kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& camera_pose, const Intr& intr)
 {
     Affine3f vol2cam = camera_pose.inv() * pose_;
@@ -94,6 +115,13 @@ void kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& ca
     device::integrate(dists, volume, aff, proj);
 }
 
+/**
+ * \brief
+ * \param camera_pose
+ * \param intr
+ * \param depth
+ * \param normals
+ */
 void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Depth& depth, Normals& normals)
 {
     DeviceArray2D<device::Normal>& n = (DeviceArray2D<device::Normal>&)normals;
@@ -113,6 +141,13 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
 
 }
 
+/**
+ * \brief
+ * \param camera_pose
+ * \param intr
+ * \param points
+ * \param normals
+ */
 void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Cloud& points, Normals& normals)
 {
     device::Normals& n = (device::Normals&)normals;
@@ -132,6 +167,11 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
     device::raycast(volume, aff, Rinv, reproj, p, n, raycast_step_factor_, gradient_delta_factor_);
 }
 
+/**
+ * \brief
+ * \param cloud_buffer
+ * \return
+ */
 DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
 {
     //    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
@@ -166,6 +206,13 @@ void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, De
     device::TsdfVolume volume((ushort2*)data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
     device::extractNormals(volume, c, aff, Rinv, gradient_delta_factor_, (float4*)normals.ptr());
 }
+
+/**
+ * \brief
+ * \param vertex
+ * \param voxel_center
+ * \param weight
+ */
 void kfusion::cuda::TsdfVolume::compute_tsdf_value(Vec3f vertex, Vec3f voxel_center, float weight)
 {
     float new_weight;
@@ -180,47 +227,73 @@ void kfusion::cuda::TsdfVolume::compute_tsdf_value(Vec3f vertex, Vec3f voxel_cen
     }
 }
 
+/**
+ * \brief
+ * \param warp_field
+ * \param depth_img
+ * \param camera_pose
+ * \param intr
+ */
 void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
                                                const cuda::Depth& depth_img,
                                                const Affine3f& camera_pose,
                                                const Intr& intr)
 {
+    const std::vector<deformation_node> *nodes = warp_field.getNodes();
+    utils::PointCloud cloud;
+    cloud.pts.resize(nodes->size());
 
-    cuda::DeviceArray<Point> cloud = fetchCloud(cloud_buffer);
-//    std::vector<Point, std::allocator<Point>> cloud_host(cloud_buffer.size());
-//    cloud_buffer.download(cloud_host);
-    cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-    cloud.download(cloud_host.ptr<Point>());
+    for (size_t i = 0; i < nodes->size(); i++)
+        (*nodes)[i].transform.getTranslation(cloud.pts[i]);
 
-//    std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
-//
-//    fetchNormals(cloud_buffer, normal_buffer);
-//    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
-//    normal_buffer.download(normals_host);
-//    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
-//
-//    warp_field.warp(cloud_host, normals_host);
-//
-////    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
-//    for(size_t i = 0; i < cloud_initial.size(); i++)
-//    {
-//        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
-//        Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
-//        float ro = psdf(initial, warped, depth_img, intr);
-//
-//        if(ro > -trunc_dist_)
-//        {
-//            float weight = weighting(initial, warp_field);
-//            float coeff = std::min(ro, trunc_dist_);
-//
-//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
-//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
-//
-//            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
-//        }
-////        else
-////        stays the same
-//    }
+    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    index.buildIndex();
+    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
+    std::vector<utils::DualQuaternion<float>> neighbours(k);
+    std::vector<size_t> ret_index(k);
+    std::vector<float> out_dist_sqr(k);
+    nanoflann::KNNResultSet<float> resultSet(k);
+    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
+
+
+    cuda::DeviceArray<Point> points = fetchCloud(cloud_buffer);
+    std::vector<Point, std::allocator<Point>> cloud_host(cloud_buffer.size());
+    cloud_buffer.download(cloud_host);
+    //    cloud_host.create(1, (int)cloud.size(), CV_32FC4);
+    //    cloud.download(cloud_host.ptr<Point>());
+    //    std::vector<Point> cloud_host_vector(cloud_host);
+
+    std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
+
+    fetchNormals(cloud_buffer, normal_buffer);
+    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
+    normal_buffer.download(normals_host);
+    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
+
+    warp_field.warp(cloud_host, normals_host);
+
+    //    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
+    for(size_t i = 0; i < cloud_initial.size(); i++)
+    {
+        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
+        Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
+
+        float ro = psdf(initial, warped, depth_img, intr);
+
+        if(ro > -trunc_dist_)
+        {
+            index.findNeighbors(resultSet, warped.val, nanoflann::SearchParams(10));
+            float weight = weighting(out_dist_sqr, k);
+            float coeff = std::min(ro, trunc_dist_);
+
+            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
+            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
+
+            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
+        }
+        //        else
+        //        stays the same
+    }
 }
 //FIXME: docstring is not up to date
 /**
@@ -242,36 +315,25 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
             0, intr.fy, intr.cy,
             0, 0, 1);
     cv::perspectiveTransform(warped, u_c, K);
-//    float
+    Dists dists;
+    computeDists(depth_img, dists, intr);
+    std::vector<unsigned char, std::allocator<unsigned char>> data;
+    //    float
     Vec3f u_c_3(u_c[0], u_c[1], 1);
     //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
     return 0;
 }
 
-// FIXME: this is rebuilding a large kd-tree over and over. Should provide the kd-tree directly
-float kfusion::cuda::TsdfVolume::weighting(const Vec3f& voxel_center, const WarpField& warp)
+/**
+ * \brief
+ * \param dist_sqr
+ * \param k
+ * \return
+ */
+float kfusion::cuda::TsdfVolume::weighting(const std::vector<float>& dist_sqr, int k) const
 {
-    const std::vector<deformation_node> *nodes = warp.getNodes();
-    utils::PointCloud cloud;
-    cloud.pts.resize(nodes->size());
-
-     for(size_t i = 0; i < nodes->size(); i++)
-         (*nodes)[i].transform.getTranslation(cloud.pts[i]);
-
-    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-    index.buildIndex();
-
-    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
-    std::vector<utils::DualQuaternion<float>> neighbours(k);
-    std::vector<size_t> ret_index(k);
-    std::vector<float> out_dist_sqr(k);
-    nanoflann::KNNResultSet<float> resultSet(k);
-    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
-
-    index.findNeighbors(resultSet, voxel_center.val, nanoflann::SearchParams(10));
-
     float distances = 0;
-    for(auto distance : out_dist_sqr)
+    for(auto distance : dist_sqr)
         distances += sqrt(distance);
     return distances / k;
 }
