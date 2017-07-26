@@ -16,6 +16,7 @@ WarpField::WarpField()
 
 WarpField::~WarpField()
 {}
+
 /**
  *
  * @param frame
@@ -61,6 +62,14 @@ void WarpField::init(const cuda::Cloud &frame, const cuda::Normals &normals)
     }
 }
 
+/**
+ * \brief
+ * \param frame
+ * \param normals
+ * \param pose
+ * \param tsdfVolume
+ * \param edges
+ */
 void WarpField::energy(const cuda::Cloud &frame,
                        const cuda::Normals &normals,
                        const Affine3f &pose,
@@ -107,6 +116,13 @@ void WarpField::energy(const cuda::Cloud &frame,
 
 
 }
+
+/**
+ * \brief
+ * \param frame
+ * \param pose
+ * \param tsdfVolume
+ */
 void WarpField::energy_data(const cuda::Depth &frame,
                             const Affine3f &pose,
                             const cuda::TsdfVolume &tsdfVolume
@@ -115,11 +131,17 @@ void WarpField::energy_data(const cuda::Depth &frame,
 
 
 }
+
+/**
+ * \brief
+ * \param edges
+ */
 void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
         kfusion::utils::DualQuaternion<float>>> &edges)
 {
 
 }
+
 /**
  * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
  * \param x
@@ -135,7 +157,6 @@ float WarpField::tukeyPenalty(float x, float c) const
 {
     return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0;
 }
-
 
 /**
  * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
@@ -165,6 +186,11 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
     }
 }
 
+/**
+ * \brief
+ * \param point
+ * \return
+ */
 utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
 {
     utils::DualQuaternion<float> out;
@@ -193,6 +219,12 @@ utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
     return node;
 }
 
+/**
+ * \brief
+ * \param vertex
+ * \param voxel_size
+ * \return
+ */
 utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) const
 {
     utils::DualQuaternion<float> quaternion_sum;
@@ -209,16 +241,31 @@ utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) cons
 }
 
 //TODO: KNN already gives the squared distance as well, can pass here instead
+/**
+ * \brief
+ * \param vertex
+ * \param voxel_center
+ * \param weight
+ * \return
+ */
 float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
 {
     double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
     return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
 }
 
+/**
+ * \brief
+ * \return
+ */
 const std::vector<deformation_node>* WarpField::getNodes() const
 {
     return &nodes;
 }
+
+/**
+ * \brief
+ */
 void WarpField::clear()
 {
 
