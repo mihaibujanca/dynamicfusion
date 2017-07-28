@@ -1,5 +1,6 @@
-KinFu remake
+DynamicFusion
 ============
+Based on https://github.com/Nerei/kinfu_remake
 
 This is lightweight, reworked and optimized version of Kinfu that was originally shared in PCL in 2011. 
 
