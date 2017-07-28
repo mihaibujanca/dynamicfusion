@@ -67,7 +67,6 @@ warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)
-SET(BUILD_TESTS ON)
 if(BUILD_TESTS)
   find_package(GTest REQUIRED)
   if( GTEST_FOUND )
