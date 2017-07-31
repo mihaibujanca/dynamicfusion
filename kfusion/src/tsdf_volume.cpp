@@ -5,11 +5,64 @@
 #include <kfusion/warp_field.hpp>
 #include <knn_point_cloud.hpp>
 #include <numeric>
+#include <cv.h>
 
 #define W_MAX 100.f // This is a hyperparameter for maximum node weight and needs to be tuned. For now set to high value
 using namespace kfusion;
 using namespace kfusion::cuda;
 
+//TODO: do this for a whole frame instead
+std::vector<cv::Point2d> test_points(Intr intr, Vec3f voxel_center)
+{
+    // Read 3D points
+    std::vector<cv::Point3d> objectPoints;
+    objectPoints.push_back(cv::Point3d(voxel_center[0], voxel_center[1], voxel_center[2]));
+    std::vector<cv::Point2d> imagePoints;
+
+    cv::Mat intrisicMat(3, 3, cv::DataType<double>::type); // Intrisic matrix
+
+    intrisicMat.at<double>(0, 0) = intr.fx;
+    intrisicMat.at<double>(1, 0) = 0;
+    intrisicMat.at<double>(2, 0) = intr.cx;
+
+    intrisicMat.at<double>(0, 1) = 0;
+    intrisicMat.at<double>(1, 1) = intr.fy;
+    intrisicMat.at<double>(2, 1) = intr.cy;
+
+    intrisicMat.at<double>(0, 2) = 0;
+    intrisicMat.at<double>(1, 2) = 0;
+    intrisicMat.at<double>(2, 2) = 1;
+
+    cv::Mat rVec(3, 1, cv::DataType<double>::type); // Rotation vector
+    rVec.at<double>(0) = 0;
+    rVec.at<double>(1) = 0;
+    rVec.at<double>(2) = 0;
+
+    cv::Mat tVec(3, 1, cv::DataType<double>::type); // Translation vector
+    tVec.at<double>(0) = 0;
+    tVec.at<double>(1) = 0;
+    tVec.at<double>(2) = 0;
+
+    cv::Mat distCoeffs(5, 1, cv::DataType<double>::type);   // Distortion vector
+    distCoeffs.at<double>(0) = 0;
+    distCoeffs.at<double>(1) = 0;
+    distCoeffs.at<double>(2) = 0;
+    distCoeffs.at<double>(3) = 0;
+    distCoeffs.at<double>(4) = 0;
+
+    std::cout << "Intrisic matrix: " << intrisicMat << std::endl << std::endl;
+    std::cout << "Rotation vector: " << rVec << std::endl << std::endl;
+    std::cout << "Translation vector: " << tVec << std::endl << std::endl;
+    std::cout << "Distortion coef: " << distCoeffs << std::endl << std::endl;
+
+    std::vector<cv::Point2d> projectedPoints;
+
+    cv::projectPoints(objectPoints, rVec, tVec, intrisicMat, distCoeffs, projectedPoints);
+    for (unsigned int i = 0; i < projectedPoints.size(); ++i)
+        std::cout << " Projected to " << projectedPoints[i] << std::endl;
+//        std::cout << "Image point: " << imagePoints[i] << " Projected to " << projectedPoints[i] << std::endl;
+    return projectedPoints;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TsdfVolume
 
@@ -264,33 +317,33 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
     //    std::vector<Point> cloud_host_vector(cloud_host);
 
     std::vector<Point, std::allocator<Point>> cloud_initial(cloud_host);
-
-    fetchNormals(cloud_buffer, normal_buffer);
-    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
-    normal_buffer.download(normals_host);
-    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
-
-    warp_field.warp(cloud_host, normals_host);
-
-    //    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
+//
+//    fetchNormals(cloud_buffer, normal_buffer);
+//    std::vector<Point, std::allocator<Point>> normals_host(cloud_buffer.size());
+//    normal_buffer.download(normals_host);
+//    std::vector<Point, std::allocator<Point>> normals_initial(normals_host);
+//
+//    warp_field.warp(cloud_host, normals_host);
+//
+//    //    assert(tsdf_entries.size() == cloud_host.size() == normals_host.size());
     for(size_t i = 0; i < cloud_initial.size(); i++)
     {
         Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
         Vec3f warped(cloud_host[i].x,cloud_host[i].y,cloud_host[i].z);
 
         float ro = psdf(initial, warped, depth_img, intr);
-
-        if(ro > -trunc_dist_)
-        {
-            index.findNeighbors(resultSet, warped.val, nanoflann::SearchParams(10));
-            float weight = weighting(out_dist_sqr, k);
-            float coeff = std::min(ro, trunc_dist_);
-
-            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
-            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
-
-            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
-        }
+//
+//        if(ro > -trunc_dist_)
+//        {
+//            index.findNeighbors(resultSet, warped.val, nanoflann::SearchParams(10));
+//            float weight = weighting(out_dist_sqr, k);
+//            float coeff = std::min(ro, trunc_dist_);
+//
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
+//
+//            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
+//        }
         //        else
         //        stays the same
     }
@@ -310,16 +363,17 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
                                       const Depth& depth_img,
                                       const Intr& intr)
 {
-    cv::Vec2f u_c;
-    Mat3f K(intr.fx, 0, intr.cx,
-            0, intr.fy, intr.cy,
-            0, 0, 1);
-    cv::perspectiveTransform(warped, u_c, K);
-    Dists dists;
-    computeDists(depth_img, dists, intr);
-    std::vector<unsigned char, std::allocator<unsigned char>> data;
+//    cv::Vec2f u_c;
+//    Mat3f K(intr.fx, 0, intr.cx,
+//            0, intr.fy, intr.cy,
+//            0, 0, 1);
+//    cv::perspectiveTransform(warped, u_c, K);
+//    Dists dists;
+//    computeDists(depth_img, dists, intr);
+//    std::vector<unsigned char, std::allocator<unsigned char>> data;
     //    float
-    Vec3f u_c_3(u_c[0], u_c[1], 1);
+    cv::Point2d u_c = test_points(intr, voxel_center).back();
+    Vec3f u_c_3(u_c.x, u_c.y, 1);
     //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
     return 0;
 }
