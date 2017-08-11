@@ -231,7 +231,7 @@ utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) cons
     for(auto node : nodes)
     {
         utils::Quaternion<float> translation = node.transform.getTranslation();
-        Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
+        Vec3f voxel_center(translation.x_, translation.y_, translation.z_);
         quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node.transform;
     }
     auto norm = quaternion_sum.magnitude();

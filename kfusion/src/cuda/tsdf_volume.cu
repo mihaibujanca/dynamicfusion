@@ -103,9 +103,30 @@ namespace kfusion
                     }
                 }  // for(;;)
             }
+
+            __kf_device__
+            void get_distances(float3& point) const
+            {
+
+                float2 coo = proj(point);
+
+                //#if defined __CUDA_ARCH__ && __CUDA_ARCH__ >= 300
+                // this is actually workaround for kepler. it doesn't return 0.f for texture
+                // fetches for out-of-border coordinates even for cudaaddressmodeborder mode
+//                if (coo.x < 0 || coo.y < 0 || coo.x >= dists_size.x || coo.y >= dists_size.y)
+//                    continue;
+                //#endif
+                float Dp = tex2D(dists_tex, coo.x, coo.y);
+                point.x = coo.x * Dp;
+                point.y = coo.y * Dp;
+                point.z = Dp;
+
+            }
         };
 
+
         __global__ void integrate_kernel( const TsdfIntegrator integrator, TsdfVolume volume) { integrator(volume); };
+        __global__ void get_distances( const TsdfIntegrator integrator, float3& point) { integrator.get_distances(point); };
     }
 }
 
@@ -129,6 +150,30 @@ void kfusion::device::integrate(const PtrStepSz<ushort>& dists, TsdfVolume& volu
     integrate_kernel<<<grid, block>>>(ti, volume);
     cudaSafeCall ( cudaGetLastError () );
     cudaSafeCall ( cudaDeviceSynchronize() );
+}
+
+//TODO: to be consistent, this
+void kfusion::device::project(const PtrStepSz<ushort>& dists, float3& point, const Projector& proj)
+{
+    dists_tex.filterMode = cudaFilterModePoint;
+    dists_tex.addressMode[0] = cudaAddressModeBorder;
+    dists_tex.addressMode[1] = cudaAddressModeBorder;
+    dists_tex.addressMode[2] = cudaAddressModeBorder;
+    TextureBinder binder(dists, dists_tex, cudaCreateChannelDescHalf()); (void)binder;
+    TsdfIntegrator ti;
+    ti.dists_size = make_int2(dists.cols, dists.rows);
+    ti.vol2cam = Aff3f();
+    ti.proj = proj;
+    ti.tranc_dist_inv = 1.f;
+
+    dim3 block(32, 8);
+    dim3 grid(divUp(1, block.x), divUp(1, block.y)); //FIXME: don't hardcode, do this properly
+
+    get_distances<<<grid, block>>>(ti, point);
+
+    cudaSafeCall ( cudaGetLastError () );
+    cudaSafeCall ( cudaDeviceSynchronize() );
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -213,7 +213,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 
-    tsdf().surface_fusion(getWarp(), depth, poses_.back(), p.intr);
+    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////
