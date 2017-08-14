@@ -201,31 +201,20 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
  * @param cloud_host
  * @param normals_host
  */
-void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host) const
+void WarpField::warp(std::vector<Vec3f>& cloud_host) const
 {
     utils::PointCloud cloud;
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
         nodes[i].transform.getTranslation(cloud.pts[i]);
 
-//    FIXME: this is making everything very slow
     index->buildIndex();
-    for (auto point : cloud_host)
+    for (auto& point : cloud_host)
     {
-        Vec3f vertex(point.x,point.y,point.z);
-//        utils::DualQuaternion<float> node = warp(vertex, *index);
+        index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
+//    utils::DualQuaternion<float> dqb = DQB(point, VOXEL_SIZE);
+//    dqb.transform(point);
     }
-}
-
-/**
- * \brief
- * \param point
- * \return
- */
-utils::DualQuaternion<float> kfusion::WarpField::warp(const Vec3f& point, kd_tree_t& index) const
-{
-    index.findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
-    return DQB(point, VOXEL_SIZE);
 }
 
 /**

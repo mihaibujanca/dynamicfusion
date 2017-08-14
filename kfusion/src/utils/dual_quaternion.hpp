@@ -188,6 +188,11 @@ namespace kfusion {
                 return result;
             }
 
+            void transform(Vec3f& point) // TODO: this should be a lot more generic
+            {
+
+            }
+
             std::pair<T,T> magnitude()
             {
                 DualQuaternion result = (*this) * (*this).conjugate();
