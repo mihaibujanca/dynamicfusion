@@ -74,11 +74,12 @@ namespace kfusion
 
         void warp(std::vector<Point, std::allocator<Point>>& cloud_host) const;
 
-        utils::DualQuaternion<float> warp(Vec3f point) const;
+        utils::DualQuaternion<float> warp(const Vec3f& point, kd_tree_t& index) const;
 
         utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
 
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
+        float weighting(float squared_dist, float weight) const;
 
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         void clear();
@@ -90,6 +91,11 @@ namespace kfusion
         //    Possibly have an internal kd-tree of nodes rather than a vector?
         //    FIXME: should be a pointer
         std::vector<deformation_node> nodes;
+        kd_tree_t* index;
+        utils::PointCloud cloud;
+        std::vector<size_t> ret_index;
+        std::vector<float> out_dist_sqr;
+        nanoflann::KNNResultSet<float> *resultSet;
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP

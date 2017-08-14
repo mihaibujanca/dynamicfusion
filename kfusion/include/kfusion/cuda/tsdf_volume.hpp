@@ -69,6 +69,7 @@ namespace kfusion
 
         private:
             CudaData data_;
+//            need to make this smart pointers
             cuda::DeviceArray<Point> *cloud_buffer;
             cuda::DeviceArray<Point> *cloud;
             cuda::DeviceArray<Normal> *normal_buffer;

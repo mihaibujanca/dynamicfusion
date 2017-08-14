@@ -7,12 +7,22 @@
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
 #define VOXEL_SIZE 100
+#define KNN_NEIGHBOURS 100
 
 using namespace kfusion;
+std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
 
 
 WarpField::WarpField()
-{}
+{
+    index = new kd_tree_t(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    ret_index = std::vector<size_t>(KNN_NEIGHBOURS);
+    out_dist_sqr = std::vector<float>(KNN_NEIGHBOURS);
+    resultSet = new nanoflann::KNNResultSet<float>(KNN_NEIGHBOURS);
+    resultSet->init(&ret_index[0], &out_dist_sqr[0]);
+    neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
+
+}
 
 WarpField::~WarpField()
 {}
@@ -181,7 +191,7 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
     for (auto point : cloud_host)
     {
         Vec3f vertex(point.x,point.y,point.z);
-        utils::DualQuaternion<float> node = warp(vertex);
+//        utils::DualQuaternion<float> node = warp(vertex);
         //       Apply the transformation to the vertex and the normal
     }
 }
@@ -193,12 +203,17 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
  */
 void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host) const
 {
+    utils::PointCloud cloud;
+    cloud.pts.resize(nodes.size());
+    for(size_t i = 0; i < nodes.size(); i++)
+        nodes[i].transform.getTranslation(cloud.pts[i]);
 
+//    FIXME: this is making everything very slow
+    index->buildIndex();
     for (auto point : cloud_host)
     {
         Vec3f vertex(point.x,point.y,point.z);
-        utils::DualQuaternion<float> node = warp(vertex);
-
+//        utils::DualQuaternion<float> node = warp(vertex, *index);
     }
 }
 
@@ -207,32 +222,10 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host) cons
  * \param point
  * \return
  */
-utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
+utils::DualQuaternion<float> kfusion::WarpField::warp(const Vec3f& point, kd_tree_t& index) const
 {
-    utils::DualQuaternion<float> out;
-    utils::PointCloud cloud;
-    cloud.pts.resize(nodes.size());
-    for(size_t i = 0; i < nodes.size(); i++)
-        nodes[i].transform.getTranslation(cloud.pts[i]);
-
-    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-    index.buildIndex();
-
-    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
-    std::vector<utils::DualQuaternion<float>> neighbours(k);
-    std::vector<size_t> ret_index(k);
-    std::vector<float> out_dist_sqr(k);
-    nanoflann::KNNResultSet<float> resultSet(k);
-    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
-
-    index.findNeighbors(resultSet, point.val, nanoflann::SearchParams(10));
-
-    for (size_t i = 0; i < k; i++)
-        neighbours.push_back(nodes[ret_index[i]].transform);
-
-    utils::DualQuaternion<float> node = DQB(point, VOXEL_SIZE);
-    neighbours.clear();
-    return node;
+    index.findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
+    return DQB(point, VOXEL_SIZE);
 }
 
 /**
@@ -244,19 +237,16 @@ utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
 utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) const
 {
     utils::DualQuaternion<float> quaternion_sum;
-    for(auto node : nodes)
-    {
-        utils::Quaternion<float> translation = node.transform.getTranslation();
-        Vec3f voxel_center(translation.x_, translation.y_, translation.z_);
-        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node.transform;
-    }
+    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+//        //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], voxel_size) * nodes[ret_index[i]].transform;
+
     auto norm = quaternion_sum.magnitude();
 
     return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
                                         quaternion_sum.getTranslation() / norm.second);
 }
 
-//TODO: KNN already gives the squared distance as well, can pass here instead
 /**
  * \brief
  * \param vertex
@@ -268,6 +258,16 @@ float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
 {
     double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
     return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
+}
+/**
+ * \brief
+ * \param squared_dist
+ * \param weight
+ * \return
+ */
+float WarpField::weighting(float squared_dist, float weight) const
+{
+    return (float) exp(-squared_dist / (2 * weight * weight));
 }
 
 /**

@@ -136,7 +136,7 @@ int main (int argc, char* argv[])
     cuda::printShortCudaDeviceInfo (device);
 
     if(cuda::checkIfPreFermiGPU(device))
-        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, 1;
+        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -    1;
 
     OpenNISource capture;
     capture.open(argv[1]);
