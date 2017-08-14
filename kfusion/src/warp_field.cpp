@@ -187,6 +187,22 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
 }
 
 /**
+ * Modifies the
+ * @param cloud_host
+ * @param normals_host
+ */
+void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host) const
+{
+
+    for (auto point : cloud_host)
+    {
+        Vec3f vertex(point.x,point.y,point.z);
+        utils::DualQuaternion<float> node = warp(vertex);
+
+    }
+}
+
+/**
  * \brief
  * \param point
  * \return

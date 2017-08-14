@@ -60,16 +60,14 @@ struct KinFuApp
 
     void take_cloud(KinFu& kinfu)
     {
-        cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
-        cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-        cloud.download(cloud_host.ptr<Point>());
+        kinfu.tsdf().compute_points();
+        kinfu.tsdf().compute_normals();
 
-        kinfu.tsdf().fetchNormals(cloud, normal_buffer);
-        cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
-        normal_buffer.download(normals_host.ptr<Normal>());
+        cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
+        cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
 
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.05, cv::viz::Color::blue()));
+        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
     }
 
     bool execute()
@@ -126,8 +124,6 @@ struct KinFuApp
     cv::Mat view_host_;
     cuda::Image view_device_;
     cuda::Depth depth_device_;
-    cuda::DeviceArray<Point> cloud_buffer;
-    cuda::DeviceArray<Normal> normal_buffer;
 };
 
 

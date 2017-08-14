@@ -162,7 +162,7 @@ namespace kfusion {
             {
                 DualQuaternion<T> result;
                 result.rotation_ = 1 / divisor.first * rotation_;
-                result.translation_ = 1/ divisor.second * translation_;
+                result.translation_ = 1 / divisor.second * translation_;
                 return result;
             }
 

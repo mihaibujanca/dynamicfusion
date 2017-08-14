@@ -22,6 +22,9 @@ namespace kfusion
             const CudaData data() const;
             CudaData data();
 
+            cv::Mat get_cloud_host() const;
+            cv::Mat get_normal_host() const;
+
             Vec3f getSize() const;
             void setSize(const Vec3f& size);
 
@@ -60,12 +63,17 @@ namespace kfusion
 
             DeviceArray<Point> fetchCloud(DeviceArray<Point>& cloud_buffer) const;
             void fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const;
+            void compute_points();
+            void compute_normals() ;
 
 
         private:
             CudaData data_;
-            cuda::DeviceArray<Point> cloud_buffer;
-            cuda::DeviceArray<Normal> normal_buffer;
+            cuda::DeviceArray<Point> *cloud_buffer;
+            cuda::DeviceArray<Point> *cloud;
+            cuda::DeviceArray<Normal> *normal_buffer;
+            cv::Mat *cloud_host;
+            cv::Mat *normal_host;
 
             float trunc_dist_;
             int max_weight_;

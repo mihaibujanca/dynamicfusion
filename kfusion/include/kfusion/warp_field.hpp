@@ -72,6 +72,8 @@ namespace kfusion
         void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
                   std::vector<Point, std::allocator<Point>>& normals_host) const;
 
+        void warp(std::vector<Point, std::allocator<Point>>& cloud_host) const;
+
         utils::DualQuaternion<float> warp(Vec3f point) const;
 
         utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
