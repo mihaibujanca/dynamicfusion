@@ -273,18 +273,21 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
 //    nanoflann::KNNResultSet<float> resultSet(k);
 //    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
 
-    std::vector<Point, std::allocator<Point>> warped(cloud_host->rows * cloud_host->cols);
+    std::vector<Vec3f> warped(cloud_host->rows * cloud_host->cols);
     for(int i = 0; i < cloud_host->rows; i++)
         for(int j = 0; j < cloud_host->cols; j++)
-            warped[j*cloud_host->rows + i] = cloud_host->at<Point>(i,j);
-    std::vector<Point, std::allocator<Point>> cloud_initial(warped);
+        {
+            Point point = cloud_host->at<Point>(i,j);
+            warped[j*cloud_host->rows + i][0] = point.x;
+            warped[j*cloud_host->rows + i][1] = point.y;
+            warped[j*cloud_host->rows + i][2] = point.z;
+        }
+    std::vector<Vec3f> cloud_initial(warped);
 
     warp_field.warp(warped);
     for(size_t i = 0; i < cloud_initial.size(); i++)
     {
-        Vec3f initial(cloud_initial[i].x,cloud_initial[i].y,cloud_initial[i].z);
-        Vec3f warped_point(warped[i].x, warped[i].y, warped[i].z);
-        float ro = psdf(initial, warped_point, depth_img, intr);
+        float ro = psdf(cloud_initial[i], warped[i], depth_img, intr);
 
         if(ro > -trunc_dist_)
         {

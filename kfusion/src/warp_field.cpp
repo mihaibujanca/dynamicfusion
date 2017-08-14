@@ -227,7 +227,7 @@ utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) cons
 {
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-//        //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
+        //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
         quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], voxel_size) * nodes[ret_index[i]].transform;
 
     auto norm = quaternion_sum.magnitude();
