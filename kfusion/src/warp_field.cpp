@@ -10,7 +10,7 @@
 
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
-
+utils::PointCloud cloud;
 
 WarpField::WarpField()
 {
@@ -202,7 +202,6 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
  */
 void WarpField::warp(std::vector<Vec3f>& cloud_host) const
 {
-    utils::PointCloud cloud;
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
         nodes[i].transform.getTranslation(cloud.pts[i]);
@@ -211,8 +210,8 @@ void WarpField::warp(std::vector<Vec3f>& cloud_host) const
     for (auto& point : cloud_host)
     {
         KNN(point);
-//    utils::DualQuaternion<float> dqb = DQB(point, VOXEL_SIZE);
-//    dqb.transform(point);
+        utils::DualQuaternion<float> dqb;// = DQB(point, VOXEL_SIZE);
+        dqb.transform(point);
     }
 }
 

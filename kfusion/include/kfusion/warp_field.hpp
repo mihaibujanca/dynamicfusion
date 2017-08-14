@@ -91,7 +91,6 @@ namespace kfusion
         //    FIXME: should be a pointer
         std::vector<deformation_node> nodes;
         kd_tree_t* index;
-        utils::PointCloud cloud;
         std::vector<size_t> ret_index;
         nanoflann::KNNResultSet<float> *resultSet;
     };

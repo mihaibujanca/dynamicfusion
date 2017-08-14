@@ -46,7 +46,7 @@ namespace kfusion
             Vec3i getGridOrigin() const;
             void setGridOrigin(const Vec3i& origin);
 
-            float psdf(Vec3f voxel_center, Vec3f warped, const Dists& depth_img, const Intr& intr);
+            float psdf(Vec3f warped, const Dists& depth_img, const Intr& intr);
             float weighting(const std::vector<float>& dist_sqr, int k) const;
             void compute_tsdf_value(Vec3f vertex, Vec3f voxel_center, float weight);
             void surface_fusion(const WarpField& warp_field,

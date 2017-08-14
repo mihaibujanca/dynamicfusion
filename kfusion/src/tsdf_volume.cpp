@@ -275,23 +275,21 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
         }
     std::vector<Vec3f> cloud_initial(warped);
 
-//    warp_field.warp(warped);
+    warp_field.warp(warped);
     for(size_t i = 0; i < cloud_initial.size(); i++)
     {
-        float ro = psdf(cloud_initial[i], warped[i], depth_img, intr);
+        float ro = psdf(warped[i], depth_img, intr);
         if(ro > -trunc_dist_)
         {
-            warp_field.KNN(cloud_initial[i]);
-            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
-            float coeff = std::min(ro, trunc_dist_);
-//
+//            warp_field.KNN(cloud_initial[i]);
+//            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
+//            float coeff = std::min(ro, trunc_dist_);
+
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
 ////
 ////            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
         }
-////                else
-//        //        stays the same
     }
 }
 //FIXME: docstring is not up to date
@@ -304,16 +302,15 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
  * \param voxel_center
  *
  */
-float kfusion::cuda::TsdfVolume::psdf(Vec3f voxel_center,
-                                      Vec3f warped,
+float kfusion::cuda::TsdfVolume::psdf(Vec3f warped,
                                       const Dists& depth_img,
                                       const Intr& intr)
 {
     device::Projector proj(intr.fx, intr.fy, intr.cx, intr.cy);
-    float3 point = make_float3(warped[0], warped[1], warped[2]);
-//    device::project(depth_img, point, proj);
-    //    return (K.inv() * depth.(u_c[0], u_c[1])*[u_c.T, 1].T).z - x_t.z;
-    return 0;
+//    device::project(depth_img, warped, proj);
+
+    Mat3f K(intr.fx,0,intr.cx,0, intr.fy, intr.cy,0,0,1);
+    return (K.inv() * warped)[2] - warped[2];
 }
 
 /**
