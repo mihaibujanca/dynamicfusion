@@ -264,15 +264,6 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
     for (size_t i = 0; i < nodes->size(); i++)
         (*nodes)[i].transform.getTranslation(cloud.pts[i]);
 
-//    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-//    index.buildIndex();
-//    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
-//    std::vector<utils::DualQuaternion<float>> neighbours(k);
-//    std::vector<size_t> ret_index(k);
-//    std::vector<float> out_dist_sqr(k);
-//    nanoflann::KNNResultSet<float> resultSet(k);
-//    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
-
     std::vector<Vec3f> warped(cloud_host->rows * cloud_host->cols);
     for(int i = 0; i < cloud_host->rows; i++)
         for(int j = 0; j < cloud_host->cols; j++)
@@ -284,16 +275,15 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
         }
     std::vector<Vec3f> cloud_initial(warped);
 
-    warp_field.warp(warped);
+//    warp_field.warp(warped);
     for(size_t i = 0; i < cloud_initial.size(); i++)
     {
         float ro = psdf(cloud_initial[i], warped[i], depth_img, intr);
-
         if(ro > -trunc_dist_)
         {
-//            index.findNeighbors(resultSet, warped.val, nanoflann::SearchParams(10));
-//            float weight = weighting(out_dist_sqr, k);
-//            float coeff = std::min(ro, trunc_dist_);
+            warp_field.KNN(cloud_initial[i]);
+            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
+            float coeff = std::min(ro, trunc_dist_);
 //
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;

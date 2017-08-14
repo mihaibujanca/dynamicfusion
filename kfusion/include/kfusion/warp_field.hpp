@@ -10,6 +10,7 @@
 #include <nanoflann/nanoflann.hpp>
 #include <knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
+#define KNN_NEIGHBOURS 8
 
 namespace kfusion
 {
@@ -78,21 +79,20 @@ namespace kfusion
 
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
         float weighting(float squared_dist, float weight) const;
+        void KNN(Vec3f point) const;
 
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
-
+        std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
 
     private:
-        //    Possibly have an internal kd-tree of nodes rather than a vector?
         //    FIXME: should be a pointer
         std::vector<deformation_node> nodes;
         kd_tree_t* index;
         utils::PointCloud cloud;
         std::vector<size_t> ret_index;
-        std::vector<float> out_dist_sqr;
         nanoflann::KNNResultSet<float> *resultSet;
     };
 }

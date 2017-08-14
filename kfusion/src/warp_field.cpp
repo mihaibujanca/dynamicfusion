@@ -7,7 +7,6 @@
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
 #define VOXEL_SIZE 100
-#define KNN_NEIGHBOURS 100
 
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
@@ -211,7 +210,7 @@ void WarpField::warp(std::vector<Vec3f>& cloud_host) const
     index->buildIndex();
     for (auto& point : cloud_host)
     {
-        index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
+        KNN(point);
 //    utils::DualQuaternion<float> dqb = DQB(point, VOXEL_SIZE);
 //    dqb.transform(point);
     }
@@ -257,6 +256,15 @@ float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
 float WarpField::weighting(float squared_dist, float weight) const
 {
     return (float) exp(-squared_dist / (2 * weight * weight));
+}
+
+/**
+ * \brief
+ * \return
+ */
+void WarpField::KNN(Vec3f point) const
+{
+    index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
 }
 
 /**
