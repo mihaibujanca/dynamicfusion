@@ -271,9 +271,9 @@ const std::vector<deformation_node>* WarpField::getNodes() const
 //TODO: This can be optimised
 const cv::Mat WarpField::getNodesAsMat() const
 {
-    cv::Mat matrix(1, nodes.size(), CV_32FC4);
+    cv::Mat matrix(1, nodes.size(), CV_32FC3);
     for(int i = 0; i < nodes.size(); i++)
-        matrix.at<cv::Vec3f>(0) = nodes[i].vertex;
+        matrix.at<cv::Vec3f>(i) = nodes[i].vertex;
     return matrix;
 }
 
