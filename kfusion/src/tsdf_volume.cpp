@@ -81,6 +81,8 @@ void kfusion::cuda::TsdfVolume::setTruncDist(float distance)
 }
 cv::Mat kfusion::cuda::TsdfVolume::get_cloud_host() const {return *cloud_host;};
 cv::Mat kfusion::cuda::TsdfVolume::get_normal_host() const {return *normal_host;};
+cv::Mat* kfusion::cuda::TsdfVolume::get_cloud_host_ptr() const {return cloud_host;};
+cv::Mat* kfusion::cuda::TsdfVolume::get_normal_host_ptr() const {return normal_host;};
 
 int kfusion::cuda::TsdfVolume::getMaxWeight() const { return max_weight_; }
 void kfusion::cuda::TsdfVolume::setMaxWeight(int weight) { max_weight_ = weight; }
@@ -307,7 +309,12 @@ float kfusion::cuda::TsdfVolume::psdf(Vec3f warped,
                                       const Intr& intr)
 {
     device::Projector proj(intr.fx, intr.fy, intr.cx, intr.cy);
-//    device::project(depth_img, warped, proj);
+    float2 coo;
+    coo.x = warped[0] * intr.fx / warped[2] + intr.cx;
+    coo.y = warped[1] * intr.fy / warped[2] + intr.cy;
+//    get value from distances
+//    float z =
+//    warped = Vec3f(coo.x * z, coo.y * z, z);
 
     Mat3f K(intr.fx,0,intr.cx,0, intr.fy, intr.cy,0,0,1);
     return (K.inv() * warped)[2] - warped[2];

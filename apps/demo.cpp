@@ -60,9 +60,6 @@ struct KinFuApp
 
     void take_cloud(KinFu& kinfu)
     {
-        kinfu.tsdf().compute_points();
-        kinfu.tsdf().compute_normals();
-
         cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
         cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
 

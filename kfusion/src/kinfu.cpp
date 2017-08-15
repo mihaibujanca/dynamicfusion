@@ -201,7 +201,11 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     {
 
         volume_->integrate(dists_, poses_.back(), p.intr);
-        warp_->init(curr_.points_pyr[0], curr_.normals_pyr[0]);
+        volume_->compute_points();
+        volume_->compute_normals();
+
+        warp_->init(volume_->get_cloud_host(), volume_->get_normal_host());
+//        warp_->init(curr_.points_pyr[0], curr_.normals_pyr[0]);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
 #else
@@ -214,7 +218,8 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 
     tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
-
+    volume_->compute_points();
+    volume_->compute_normals();
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP

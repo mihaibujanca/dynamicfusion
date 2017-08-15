@@ -25,6 +25,9 @@ namespace kfusion
             cv::Mat get_cloud_host() const;
             cv::Mat get_normal_host() const;
 
+            cv::Mat* get_cloud_host_ptr() const;
+            cv::Mat* get_normal_host_ptr() const;
+
             Vec3f getSize() const;
             void setSize(const Vec3f& size);
 
