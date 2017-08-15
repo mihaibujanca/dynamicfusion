@@ -45,13 +45,10 @@ void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
             auto norm = normals_host.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                Vec3f position(point.x,point.y,point.z);
-                Vec3f normal(norm.x,norm.y,norm.z);
+                utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                            utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,position[0], position[1], position[2]),
-                                                            utils::Quaternion<float>(normal));
-
-                nodes[i].vertex = position;
+                nodes[i].vertex = Vec3f(point.x,point.y,point.z);
                 nodes[i].transform = dualQuaternion;
             }
             else
@@ -62,44 +59,7 @@ void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
             }
         }
 }
-void WarpField::init(const cuda::Cloud &frame, const cuda::Normals &normals)
-{
-    assert(normals.cols()==frame.cols());
-    assert(normals.rows()==frame.rows());
-    int cols = frame.cols();
 
-    std::vector<Point, std::allocator<Point>> cloud_host(size_t(frame.rows()*frame.cols()));
-    frame.download(cloud_host, cols);
-
-    std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
-    normals.download(normals_host, cols);
-
-    nodes.reserve(cloud_host.size());
-
-    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++) // FIXME: for now just stop at the number of nodes
-    {
-        auto point = cloud_host[i];
-        auto norm = normals_host[i];
-        if(!std::isnan(point.x))
-        {
-            // TODO:    transform by pose
-            Vec3f position(point.x,point.y,point.z);
-            Vec3f normal(norm.x,norm.y,norm.z);
-
-            utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,position[0], position[1], position[2]),
-                                                        utils::Quaternion<float>(normal));
-
-            nodes[i].vertex = position;
-            nodes[i].transform = dualQuaternion;
-        }
-        else
-        {
-            //    FIXME: will need to deal with the case when we get NANs
-            std::cout<<"NANS"<<std::endl;
-            break;
-        }
-    }
-}
 
 /**
  * \brief

@@ -50,7 +50,6 @@ namespace kfusion
         ~WarpField();
 
         void init(const cv::Mat& cloud_host, const cv::Mat& normals_host);
-        void init(const cuda::Cloud &frame, const cuda::Normals& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
