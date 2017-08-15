@@ -18,6 +18,47 @@ static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
  * \brief
  * \return
  */
+kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
+{
+    const int iters[] = {10, 5, 4, 0};
+    const int levels = sizeof(iters)/sizeof(iters[0]);
+
+    KinFuParams p;
+// TODO: this should be coming from a calibration file / shouldn't be hardcoded
+    p.cols = 640;  //pixels
+    p.rows = 480;  //pixels
+    p.intr = Intr(570.342f, 570.342f, 320.f, 240.f);
+
+    p.volume_dims = Vec3i::all(512);  //number of voxels
+    p.volume_size = Vec3f::all(3.f);  //meters
+    p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
+
+    p.bilateral_sigma_depth = 0.04f;  //meter
+    p.bilateral_sigma_spatial = 4.5; //pixels
+    p.bilateral_kernel_size = 7;     //pixels
+
+    p.icp_truncate_depth_dist = 0.f;        //meters, disabled
+    p.icp_dist_thres = 0.1f;                //meters
+    p.icp_angle_thres = deg2rad(30.f); //radians
+    p.icp_iter_num.assign(iters, iters + levels);
+
+    p.tsdf_min_camera_movement = 0.f; //meters, disabled
+    p.tsdf_trunc_dist = 0.04f; //meters;
+    p.tsdf_max_weight = 64;   //frames
+
+    p.raycast_step_factor = 0.75f;  //in voxel sizes
+    p.gradient_delta_factor = 0.5f; //in voxel sizes
+
+    //p.light_pose = p.volume_pose.translation()/4; //meters
+    p.light_pose = Vec3f::all(0.f); //meters
+
+    return p;
+}
+
+/**
+ * \brief
+ * \return
+ */
 kfusion::KinFuParams kfusion::KinFuParams::default_params()
 {
     const int iters[] = {10, 5, 4, 0};
@@ -231,7 +272,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     poses_.push_back(poses_.back() * affine); // curr -> global
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
-//    warp_->energy_temp(poses_.back());
+    warp_->energy_temp(poses_.back());
 
 //    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
     volume_->compute_points();

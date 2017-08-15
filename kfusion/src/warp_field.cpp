@@ -114,7 +114,7 @@ void WarpField::energy(const cuda::Cloud &frame,
  */
 void WarpField::energy_temp(const Affine3f &pose)
 {
-    for(auto &node : nodes) // FIXME: for now just stop at the number of nodes
+    for(auto &node : nodes)
         node.vertex = pose * node.vertex;
 }
 

@@ -24,6 +24,7 @@ namespace kfusion
     struct KF_EXPORTS KinFuParams
     {
         static KinFuParams default_params();
+        static KinFuParams default_params_dynamicfusion();
 
         int cols;  //pixels
         int rows;  //pixels
