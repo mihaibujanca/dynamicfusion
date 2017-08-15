@@ -85,6 +85,7 @@ namespace kfusion
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
+        const cv::Mat getNodesAsMat() const;
         std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
 
     private:

@@ -271,9 +271,9 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
         for(int j = 0; j < cloud_host->cols; j++)
         {
             Point point = cloud_host->at<Point>(i,j);
-            warped[j*cloud_host->rows + i][0] = point.x;
-            warped[j*cloud_host->rows + i][1] = point.y;
-            warped[j*cloud_host->rows + i][2] = point.z;
+            warped[i*cloud_host->cols + j][0] = point.x;
+            warped[i*cloud_host->cols + j][1] = point.y;
+            warped[i*cloud_host->cols + j][2] = point.z;
         }
     std::vector<Vec3f> cloud_initial(warped);
 

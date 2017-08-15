@@ -62,9 +62,11 @@ struct KinFuApp
     {
         cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
         cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
-
+//        cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
+//        warp_host.at<float>(0,0) = 0;
         viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
         viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
+//        viz.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
     bool execute()

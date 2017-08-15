@@ -36,7 +36,7 @@ void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
 {
     assert(cloud_host.rows == normals_host.rows);
     assert(cloud_host.cols == normals_host.cols);
-    nodes.reserve(cloud_host.cols * cloud_host.rows);
+    nodes.resize(cloud_host.cols * cloud_host.rows);
 
     for(int i = 0; i < cloud_host.rows; i++) // FIXME: for now just stop at the number of nodes
         for(int j = 0; j < cloud_host.cols; j++) // FIXME: for now just stop at the number of nodes
@@ -45,11 +45,10 @@ void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
             auto norm = normals_host.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                            utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                nodes[i*cloud_host.cols].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                                  utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                nodes[i].vertex = Vec3f(point.x,point.y,point.z);
-                nodes[i].transform = dualQuaternion;
+                nodes[i*cloud_host.cols].vertex = Vec3f(point.x,point.y,point.z);
             }
             else
             {
@@ -169,6 +168,7 @@ float WarpField::huberPenalty(float a, float delta) const
 void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
                      std::vector<Point, std::allocator<Point>>& normals_host) const
 {
+    assert(cloud_host.size() == normals_host.size());
 
     for (auto point : cloud_host)
     {
@@ -256,6 +256,11 @@ void WarpField::KNN(Vec3f point) const
 const std::vector<deformation_node>* WarpField::getNodes() const
 {
     return &nodes;
+}
+
+const cv::Mat WarpField::getNodesAsMat() const
+{
+    return cv::Mat(1, 1, CV_32FC4);
 }
 
 /**
