@@ -62,11 +62,11 @@ struct KinFuApp
     {
         cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
         cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
-//        cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
-//        warp_host.at<float>(0,0) = 0;
-        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
-//        viz.showWidget("warp_field", cv::viz::WCloud(warp_host));
+        cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
+
+//        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
+//        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
+        viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
     bool execute()
@@ -96,7 +96,10 @@ struct KinFuApp
             cv::imshow("Image", image);
 
             if (!interactive_mode_)
+            {
                 viz.setViewerPose(kinfu.getCameraPose());
+                viz1.setViewerPose(kinfu.getCameraPose());
+            }
 
             int key = cv::waitKey(pause_ ? 0 : 3);
             take_cloud(kinfu);
@@ -110,6 +113,7 @@ struct KinFuApp
 
             //exit_ = exit_ || i > 100;
             viz.spinOnce(3, true);
+            viz1.spinOnce(3, true);
         }
         return true;
     }
@@ -119,6 +123,7 @@ struct KinFuApp
     OpenNISource& capture_;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
+    cv::viz::Viz3d viz1;
 
     cv::Mat view_host_;
     cuda::Image view_device_;

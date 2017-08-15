@@ -45,16 +45,14 @@ void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
             auto norm = normals_host.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                nodes[i*cloud_host.cols].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                                  utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                nodes[i*cloud_host.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                                                    utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                nodes[i*cloud_host.cols].vertex = Vec3f(point.x,point.y,point.z);
+                nodes[i*cloud_host.cols+j].vertex = Vec3f(point.x,point.y,point.z);
             }
             else
             {
-                //    FIXME: will need to deal with the case when we get NANs
-                std::cout<<"NANS"<<std::endl;
-                break;
+//                nodes[i*cloud_host.cols+j].valid = false;
             }
         }
 }
@@ -96,7 +94,7 @@ void WarpField::energy(const cuda::Cloud &frame,
         auto norm = normals_host[i];
         if(!std::isnan(point.x))
             nodes[i].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0, point.x, point.y, point.z),
-                                                        utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                                                              utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
         else
         {
             //    FIXME: will need to deal with the case when we get NANs
@@ -104,8 +102,20 @@ void WarpField::energy(const cuda::Cloud &frame,
             break;
         }
     }
+}
 
-
+/**
+ * \brief
+ * \param frame
+ * \param normals
+ * \param pose
+ * \param tsdfVolume
+ * \param edges
+ */
+void WarpField::energy_temp(const Affine3f &pose)
+{
+    for(auto &node : nodes) // FIXME: for now just stop at the number of nodes
+        node.vertex = pose * node.vertex;
 }
 
 /**
@@ -258,9 +268,13 @@ const std::vector<deformation_node>* WarpField::getNodes() const
     return &nodes;
 }
 
+//TODO: This can be optimised
 const cv::Mat WarpField::getNodesAsMat() const
 {
-    return cv::Mat(1, 1, CV_32FC4);
+    cv::Mat matrix(1, nodes.size(), CV_32FC4);
+    for(int i = 0; i < nodes.size(); i++)
+        matrix.at<cv::Vec3f>(0) = nodes[i].vertex;
+    return matrix;
 }
 
 /**

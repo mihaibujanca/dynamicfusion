@@ -32,7 +32,7 @@ namespace kfusion
      * Index of the node in the canonical frame. Equivalent to dg_v
      *
      * \var node::transform
-     * Translation and rotation of a node, equivalent to dg_se in the paper
+     * Transform from canonical point to warped point, equivalent to dg_se in the paper.
      *
      * \var node::weight
      * Equivalent to dg_w
@@ -42,6 +42,7 @@ namespace kfusion
         Vec3f vertex;
         kfusion::utils::DualQuaternion<float> transform;
         float weight = 0;
+        bool valid = true;
     };
     class WarpField
     {
@@ -57,6 +58,7 @@ namespace kfusion
                     const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
+        void energy_temp(const Affine3f &pose);
 
         void energy_data(const cuda::Depth &frame,
                          const Affine3f &pose,

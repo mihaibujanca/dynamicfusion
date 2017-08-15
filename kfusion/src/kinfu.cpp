@@ -215,12 +215,6 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         return ++frame_counter_, false;
     }
 
-    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
-
-    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
-    volume_->compute_points();
-    volume_->compute_normals();
-
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP
     Affine3f affine; // curr -> prev
@@ -236,6 +230,12 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     }
 
     poses_.push_back(poses_.back() * affine); // curr -> global
+//    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
+    warp_->energy_temp(poses_.back());
+
+    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
+    volume_->compute_points();
+    volume_->compute_normals();
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Volume integration
