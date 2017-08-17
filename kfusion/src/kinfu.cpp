@@ -30,7 +30,7 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
     p.intr = Intr(570.342f, 570.342f, 320.f, 240.f);
 
     p.volume_dims = Vec3i::all(512);  //number of voxels
-    p.volume_size = Vec3f::all(3.f);  //meters
+    p.volume_size = Vec3f::all(1.f);  //meters
     p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
 
     p.bilateral_sigma_depth = 0.04f;  //meter
@@ -158,11 +158,15 @@ void kfusion::KinFu::allocate_buffers()
 
     curr_.depth_pyr.resize(LEVELS);
     curr_.normals_pyr.resize(LEVELS);
+    first_.normals_pyr.resize(LEVELS);
+    first_.depth_pyr.resize(LEVELS);
     prev_.depth_pyr.resize(LEVELS);
     prev_.normals_pyr.resize(LEVELS);
+    first_.normals_pyr.resize(LEVELS);
 
     curr_.points_pyr.resize(LEVELS);
     prev_.points_pyr.resize(LEVELS);
+    first_.points_pyr.resize(LEVELS);
 
     for(int i = 0; i < LEVELS; ++i)
     {
@@ -172,8 +176,12 @@ void kfusion::KinFu::allocate_buffers()
         prev_.depth_pyr[i].create(rows, cols);
         prev_.normals_pyr[i].create(rows, cols);
 
+        first_.depth_pyr[i].create(rows, cols);
+        first_.normals_pyr[i].create(rows, cols);
+
         curr_.points_pyr[i].create(rows, cols);
         prev_.points_pyr[i].create(rows, cols);
+        first_.points_pyr[i].create(rows, cols);
 
         cols /= 2;
         rows /= 2;
@@ -214,6 +222,40 @@ kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
  * \param depth
  * \return
  */
+//void kfusion::KinFu::estimateWarpField(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
+//{
+    // 0. create visibility map of the current warp view
+//    m_warpedMesh->renderToCanonicalMaps(*m_camera, m_canoMesh, m_vmap_cano, m_nmap_cano);
+//    m_warpField->warp(m_vmap_cano, m_nmap_cano, m_vmap_warp, m_nmap_warp);
+
+
+//    m_gsSolver->init(m_warpField, m_vmap_cano, m_nmap_cano, m_param, m_kinect_intr);
+//    float energy = FLT_MAX;
+//    for (int icp_iter = 0; icp_iter < m_param.fusion_nonRigidICP_maxIter; icp_iter++)
+//    {
+        // Gauss-Newton Optimization, findding correspondence internal
+//        float oldEnergy = energy, data_energy=0.f, reg_energy=0.f;
+//        energy = m_gsSolver->solve(m_vmap_curr_pyd[0], m_nmap_curr_pyd[0],
+//                                   m_vmap_warp, m_nmap_warp, &data_energy, &reg_energy);
+
+        //printf("icp, energy(data,reg): %d %f = %f + %f\n", icp_iter, energy, data_energy, reg_energy);
+//        if (energy > oldEnergy)
+//            break;
+
+        // update the warp field
+//        m_gsSolver->updateWarpField();
+//
+//        //// update warped mesh and render for visiblity
+//        //if (icp_iter < m_param.fusion_nonRigidICP_maxIter - 1)
+//        //{
+//        //	m_warpField->warp(*m_canoMesh, *m_warpedMesh);
+//        //	m_warpedMesh->renderToCanonicalMaps(*m_camera, m_canoMesh, m_vmap_cano, m_nmap_cano);
+//        //}
+//        m_warpField->warp(m_vmap_cano, m_nmap_cano, m_vmap_warp, m_nmap_warp);
+//        m_gsSolver->factor_out_rigid();
+//    }// end for icp_iter
+
+//}
 bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
 {
     const KinFuParams& p = params_;
@@ -249,10 +291,13 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 //        warp_->init(curr_.points_pyr[0], curr_.normals_pyr[0]);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
+        curr_.depth_pyr.swap(first_.depth_pyr);
 #else
         curr_.points_pyr.swap(prev_.points_pyr);
+        curr_.points_pyr.swap(first_.points_pyr);
 #endif
         curr_.normals_pyr.swap(prev_.normals_pyr);
+        curr_.normals_pyr.swap(first_.normals_pyr);
         return ++frame_counter_, false;
     }
 
@@ -271,6 +316,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     }
 
     poses_.push_back(poses_.back() * affine); // curr -> global
+    reprojectToDepth();
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
     warp_->energy_temp(poses_.back());
 
@@ -285,6 +331,8 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     float rnorm = (float)cv::norm(affine.rvec());
     float tnorm = (float)cv::norm(affine.translation());
     bool integrate = (rnorm + tnorm)/2 >= p.tsdf_min_camera_movement;
+
+    integrate = false;
     if (integrate)
     {
         //ScopeTime time("tsdf");
@@ -347,18 +395,17 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
  * \param pose
  * \param flag
  */
-void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag)
-{
-    const KinFuParams& p = params_;
+void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag) {
+    const KinFuParams &p = params_;
     image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
     depths_.create(p.rows, p.cols);
     normals_.create(p.rows, p.cols);
     points_.create(p.rows, p.cols);
 
 #if defined USE_DEPTH
-    #define PASS1 depths_
+#define PASS1 depths_
 #else
-    #define PASS1 points_
+#define PASS1 points_
 #endif
 
     volume_->raycast(pose, p.intr, PASS1, normals_);
@@ -376,4 +423,43 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
         cuda::renderTangentColors(normals_, i2);
     }
 #undef PASS1
+}
+/**
+ * \brief
+ * \param image
+ * \param pose
+ * \param flag
+ */
+void kfusion::KinFu::reprojectToDepth()
+{
+    const KinFuParams& p = params_;
+    cuda::Depth depth;
+    cuda::Cloud cloud;
+    depth.create(p.rows, p.cols);
+    cloud.create(p.rows, p.cols);
+
+    const Affine3f pose = poses_.back();
+
+//    volume_->raycast(pose, p.intr, depth, normals_);
+    volume_->raycast(pose, p.intr, cloud, normals_);
+
+//    std::vector<Point, std::allocator<Point>> cloud_host(size_t(p.rows * p.cols));
+    cv::Mat cloud_host(p.rows, p.cols, CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
+//    cloud.download(cloud_host, cloud.cols());
+
+//    getWarp().warp();
+    cuda::computeDists(depth, dists_, p.intr);
+    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial, p.bilateral_sigma_depth);
+
+    if (p.icp_truncate_depth_dist > 0)
+        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+    const int LEVELS = icp_->getUsedLevelsNum();
+
+    for (int i = 1; i < LEVELS; ++i)
+        cuda::depthBuildPyramid(curr_.depth_pyr[i-1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
+
+    Affine3f affine;
+    bool ok = icp_->estimateTransform(affine, p.intr, curr_.points_pyr, curr_.normals_pyr, prev_.points_pyr, prev_.normals_pyr);
+
 }

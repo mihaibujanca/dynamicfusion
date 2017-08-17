@@ -50,7 +50,7 @@ namespace kfusion
         WarpField();
         ~WarpField();
 
-        void init(const cv::Mat& cloud_host, const cv::Mat& normals_host);
+        void init(const cv::Mat& first_frame, const cv::Mat& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -75,9 +75,9 @@ namespace kfusion
         void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
                   std::vector<Point, std::allocator<Point>>& normals_host) const;
 
-        void warp(std::vector<Vec3f>& cloud_host) const;
+        void warp(std::vector<Vec3f>& points) const;
 
-        utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
 
         float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
         float weighting(float squared_dist, float weight) const;

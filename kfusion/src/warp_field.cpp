@@ -32,27 +32,28 @@ WarpField::~WarpField()
  * \note The pose is assumed to be the identity, as this is the first frame
  */
 // maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
-void WarpField::init(const cv::Mat& cloud_host, const cv::Mat& normals_host)
+void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 {
-    assert(cloud_host.rows == normals_host.rows);
-    assert(cloud_host.cols == normals_host.cols);
-    nodes.resize(cloud_host.cols * cloud_host.rows);
+    assert(first_frame.rows == normals.rows);
+    assert(first_frame.cols == normals.cols);
+    nodes.resize(first_frame.cols * first_frame.rows);
 
-    for(int i = 0; i < cloud_host.rows; i++) // FIXME: for now just stop at the number of nodes
-        for(int j = 0; j < cloud_host.cols; j++) // FIXME: for now just stop at the number of nodes
+    for(int i = 0; i < first_frame.rows; i++)
+        for(int j = 0; j < first_frame.cols; j++)
         {
-            auto point = cloud_host.at<Point>(i,j);
-            auto norm = normals_host.at<Normal>(i,j);
+            auto point = first_frame.at<Point>(i,j);
+            auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                nodes[i*cloud_host.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                                                    utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                nodes[i*first_frame.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                                                     utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                nodes[i*cloud_host.cols+j].vertex = Vec3f(point.x,point.y,point.z);
+                nodes[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
+                nodes[i*first_frame.cols+j].weight = VOXEL_SIZE;
             }
             else
             {
-//                nodes[i*cloud_host.cols+j].valid = false;
+                nodes[i*first_frame.cols+j].valid = false;
             }
         }
 }
@@ -75,11 +76,6 @@ void WarpField::energy(const cuda::Cloud &frame,
 {
     assert(normals.cols()==frame.cols());
     assert(normals.rows()==frame.rows());
-
-    //  TODO: proper implementation. At the moment just initialise the positions with the old Quaternion positions
-    for(auto node : nodes)
-        node.transform.getTranslation(node.vertex);
-
 
     int cols = frame.cols();
 
@@ -190,20 +186,23 @@ void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
 
 /**
  * Modifies the
- * @param cloud_host
+ * @param points
  * @param normals_host
  */
-void WarpField::warp(std::vector<Vec3f>& cloud_host) const
+void WarpField::warp(std::vector<Vec3f>& points) const
 {
+//    Build kd-tree with current warp nodes.
     cloud.pts.resize(nodes.size());
     for(size_t i = 0; i < nodes.size(); i++)
         nodes[i].transform.getTranslation(cloud.pts[i]);
-
     index->buildIndex();
-    for (auto& point : cloud_host)
+
+    for (auto& point : points)
     {
+        if(isnan(point[0]))
+            continue;
         KNN(point);
-        utils::DualQuaternion<float> dqb;// = DQB(point, VOXEL_SIZE);
+        utils::DualQuaternion<float> dqb;// = DQB(point);
         dqb.transform(point);
     }
 }
@@ -211,15 +210,16 @@ void WarpField::warp(std::vector<Vec3f>& cloud_host) const
 /**
  * \brief
  * \param vertex
- * \param voxel_size
+ * \param weight
  * \return
  */
-utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) const
+utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
         //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], voxel_size) * nodes[ret_index[i]].transform;
+        //TODO: use proper weights
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform;
 
     auto norm = quaternion_sum.magnitude();
 

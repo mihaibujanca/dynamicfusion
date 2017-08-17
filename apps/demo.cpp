@@ -141,8 +141,6 @@ struct KinFuApp
 
             for(int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++)
             {
-                std::cout << depths[i] << "\n";
-                std::cout << images[i] << "\n";
                 image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
                 depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
                 depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
