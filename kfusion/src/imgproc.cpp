@@ -1,5 +1,5 @@
 #include "precomp.hpp"
-
+#include <kfusion/types.hpp>
 /**
  *
  * \param in
@@ -89,6 +89,18 @@ void kfusion::cuda::computeDists(const Depth& depth, Dists& dists, const Intr& i
 {
     dists.create(depth.rows(), depth.cols());
     device::compute_dists(depth, dists, make_float2(intr.fx, intr.fy), make_float2(intr.cx, intr.cy));
+}
+
+/**
+ *
+ * \param cloud
+ * \param depth
+ */
+void kfusion::cuda::cloudToDepth(const Cloud& cloud, Depth& depth)
+{
+    depth.create(cloud.rows(), cloud.cols());
+    device::Points points = (device::Points&)cloud;
+    device::cloud_to_depth(points, depth);
 }
 
 /**

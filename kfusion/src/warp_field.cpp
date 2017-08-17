@@ -168,26 +168,7 @@ float WarpField::huberPenalty(float a, float delta) const
 
 /**
  * Modifies the
- * @param cloud_host
- * @param normals_host
- */
-void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
-                     std::vector<Point, std::allocator<Point>>& normals_host) const
-{
-    assert(cloud_host.size() == normals_host.size());
-
-    for (auto point : cloud_host)
-    {
-        Vec3f vertex(point.x,point.y,point.z);
-//        utils::DualQuaternion<float> node = warp(vertex);
-        //       Apply the transformation to the vertex and the normal
-    }
-}
-
-/**
- * Modifies the
  * @param points
- * @param normals_host
  */
 void WarpField::warp(std::vector<Vec3f>& points) const
 {
@@ -199,10 +180,11 @@ void WarpField::warp(std::vector<Vec3f>& points) const
 
     for (auto& point : points)
     {
-        if(isnan(point[0]))
-            continue;
+//        if(isnan(point[0]))
+//            continue;
         KNN(point);
         utils::DualQuaternion<float> dqb;// = DQB(point);
+        point = warp_to_live * point; // Apply T_lw first
         dqb.transform(point);
     }
 }
@@ -270,4 +252,8 @@ const cv::Mat WarpField::getNodesAsMat() const
 void WarpField::clear()
 {
 
+}
+void WarpField::setWarpToLive(const Affine3f &pose)
+{
+    warp_to_live = pose;
 }

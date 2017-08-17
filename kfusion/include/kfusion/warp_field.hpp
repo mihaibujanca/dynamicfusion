@@ -72,8 +72,8 @@ namespace kfusion
 
         float huberPenalty(float a, float delta) const;
 
-        void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
-                  std::vector<Point, std::allocator<Point>>& normals_host) const;
+        void warp(std::vector<Point, std::allocator<Point>>& points,
+                  std::vector<Point, std::allocator<Point>>& normals) const;
 
         void warp(std::vector<Vec3f>& points) const;
 
@@ -87,6 +87,7 @@ namespace kfusion
 
         const std::vector<deformation_node>* getNodes() const;
         const cv::Mat getNodesAsMat() const;
+        void setWarpToLive(const Affine3f &pose);
         std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
 
     private:
@@ -95,6 +96,7 @@ namespace kfusion
         kd_tree_t* index;
         std::vector<size_t> ret_index;
         nanoflann::KNNResultSet<float> *resultSet;
+        Affine3f warp_to_live;
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP

@@ -1,3 +1,4 @@
+#include <vector_functions.h>
 #include "device.hpp"
 #include "texture_binder.hpp"
 #include "../internal.hpp"
@@ -111,18 +112,21 @@ namespace kfusion
 
         __global__ void integrate_kernel( const TsdfIntegrator integrator, TsdfVolume volume) { integrator(volume); };
 
-        __device__ float3 projected_point;
         __global__
-        void get_distances(const Projector proj, float3 point)
+        void project(const Projector proj, PtrStep<Point> points, int rows, int cols)
         {
 
-            float2 coo = proj(point);
-            float Dp = tex2D(dists_tex, coo.x, coo.y);
-            projected_point.x = coo.x * Dp;
-            projected_point.y = coo.y * Dp;
-            projected_point.z = Dp;
-            printf("Projected point: %f, %f, %f", projected_point.x, projected_point.y, projected_point.z);
-
+            int x = threadIdx.x + blockIdx.x * blockDim.x;
+            int y = threadIdx.y + blockIdx.y * blockDim.y;
+            if (x < cols || y < rows) {
+                auto pt = points(y,x);
+                auto point = make_float3(pt.x, pt.y, pt.z);
+                float2 coo = proj(point);
+                if (coo.x < 0 || coo.y < 0 || coo.x >= rows || coo.y >= cols)
+                    return;
+                float Dp = tex2D(dists_tex, coo.x, coo.y);
+                points(y, x) = make_float4(coo.x * Dp, coo.y * Dp, Dp, 0.f);
+            }
         }
     }
 }
@@ -149,8 +153,8 @@ void kfusion::device::integrate(const PtrStepSz<ushort>& dists, TsdfVolume& volu
     cudaSafeCall ( cudaDeviceSynchronize() );
 }
 
-//TODO: to be consistent, this
-void kfusion::device::project(const PtrStepSz<ushort>& dists, cv::Vec3f& vertex, const Projector& proj)
+
+void kfusion::device::project(const PtrStepSz<ushort>& dists, Points& vertices, const Projector& proj)
 {
     dists_tex.filterMode = cudaFilterModePoint;
     dists_tex.addressMode[0] = cudaAddressModeBorder;
@@ -159,15 +163,10 @@ void kfusion::device::project(const PtrStepSz<ushort>& dists, cv::Vec3f& vertex,
     TextureBinder binder(dists, dists_tex, cudaCreateChannelDescHalf()); (void)binder;
 
     dim3 block(32, 8);
-    dim3 grid(divUp(1, block.x), divUp(1, block.y)); //FIXME: don't hardcode, do this properly
-    float3 point = make_float3(vertex[0], vertex[1], vertex[2]);
-    get_distances<<<1,1>>>(proj, point);
-    cudaMemcpy(&point, &projected_point, sizeof(float3), cudaMemcpyDeviceToHost);
-    printf("Projected point host: %f, %f, %f", point.x, point.y, point.z);
-    vertex = cv::Vec3f(point.x, point.y, point.z);
+    dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
 
+    project <<<grid, block>>>(proj, vertices, dists.rows, dists.cols);
     cudaSafeCall ( cudaGetLastError () );
-    cudaSafeCall ( cudaDeviceSynchronize() );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -405,7 +404,7 @@ namespace kfusion
         };
 
         inline TsdfRaycaster::TsdfRaycaster(const TsdfVolume& _volume, const Aff3f& _aff, const Mat3f& _Rinv, const Reprojector& _reproj)
-            : volume(_volume), aff(_aff), Rinv(_Rinv), reproj(_reproj) {}
+                : volume(_volume), aff(_aff), Rinv(_Rinv), reproj(_reproj) {}
 
         __global__ void raycast_kernel(const TsdfRaycaster raycaster, PtrStepSz<ushort> depth, PtrStep<Normal> normals)
         { raycaster(depth, normals); };
