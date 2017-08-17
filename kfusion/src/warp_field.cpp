@@ -218,7 +218,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
         //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
-        //TODO: use proper weights
         quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform;
 
     auto norm = quaternion_sum.magnitude();
@@ -227,18 +226,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
                                         quaternion_sum.getTranslation() / norm.second);
 }
 
-/**
- * \brief
- * \param vertex
- * \param voxel_center
- * \param weight
- * \return
- */
-float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
-{
-    double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
-    return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
-}
 /**
  * \brief
  * \param squared_dist
