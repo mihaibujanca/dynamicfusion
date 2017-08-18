@@ -117,15 +117,19 @@ namespace kfusion
 
             int x = threadIdx.x + blockIdx.x * blockDim.x;
             int y = threadIdx.y + blockIdx.y * blockDim.y;
+            float qnan = numeric_limits<float>::quiet_NaN ();
             if (x < cols || y < rows) {
                 auto pt = points(y, x);
                 auto point = make_float3(pt.x, pt.y, pt.z);
                 float2 coo = proj(point);
-                if (coo.x < 0 || coo.y < 0 || coo.x >= rows || coo.y >= cols)
+                    if (coo.x < 0 || coo.y < 0 || coo.y >= rows || coo.x >= cols)
+                    {
+                    points(y, x) = make_float4(qnan, qnan, qnan, 0.f);
                     return;
-                depth(coo.x, coo.y) = 0; //FIXME
+                }
 
                 float Dp = tex2D(dists_tex, coo.x, coo.y);
+                depth(coo.x, coo.y) = 0;
                 points(y, x) = make_float4(coo.x * Dp, coo.y * Dp, Dp, 0.f);
             }
         }

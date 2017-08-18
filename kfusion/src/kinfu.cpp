@@ -290,8 +290,8 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         volume_->compute_normals();
 
         warp_->init(volume_->get_cloud_host(), volume_->get_normal_host());
-//        warp_->init(curr_.points_pyr[0], curr_.normals_pyr[0]);
-#if defined USE_DEPTH
+
+        #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
         curr_.depth_pyr.swap(first_.depth_pyr);
 #else
@@ -320,7 +320,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     poses_.push_back(poses_.back() * affine); // curr -> global
     reprojectToDepth();
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
-    warp_->energy_temp(poses_.back());
+//    warp_->energy_temp(poses_.back());
 
 //    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
     volume_->compute_points();
@@ -447,20 +447,24 @@ void kfusion::KinFu::reprojectToDepth() {
     cloud.create(p.rows, p.cols);
 
     const Affine3f pose = poses_.back();
+    volume_->raycast(pose, p.intr, cloud, normals_);
     volume_->raycast(pose, p.intr, depth, normals_);
 
-
+//TODO: have to decide between transforming by pose inverse and then back or transforming warp field vertices by pose
+//There doesn't seem to be a strong reason not to transform the warp field (there are multiple warp operations, by contrast)
     cv::Mat cloud_host(p.rows, p.cols, CV_32FC4);
     cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
     std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
+    auto inverse_pose = pose.inv(cv::DECOMP_SVD);
     for (int i = 0; i < cloud_host.rows; i++)
         for (int j = 0; j < cloud_host.cols; j++) {
             Point point = cloud_host.at<Point>(i, j);
             warped[i * cloud_host.cols + j][0] = point.x;
             warped[i * cloud_host.cols + j][1] = point.y;
             warped[i * cloud_host.cols + j][2] = point.z;
+            warped[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
         }
-//
+
 //    cv::Mat normal_host(p.rows, p.cols, CV_32FC4);
 //    cloud.download(normal_host.ptr<Normal>(), normal_host.step);
 //    std::vector<Vec3f> warped_normals(normal_host.rows * normal_host.cols);
@@ -472,45 +476,45 @@ void kfusion::KinFu::reprojectToDepth() {
 //            warped_normals[i * normal_host.cols + j][2] = point.z;
 //        }
 //
-//    getWarp().warp(warped);
+    getWarp().warp(warped);
+    for(auto &point : warped)
+        point = pose * point;
 //    getWarp().warp(warped_normals);
-//
-//    cuda::cloudToDepth(cloud, depth);
+
     float ro = tsdf().psdf(warped, depth, params_.intr);
     cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
-    depth.download(depth_cloud.ptr<unsigned short>(), depth_cloud.step);
+    depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
     cv::Mat display;
     depth_cloud.convertTo(display, CV_8U, 255.0/4000);
     cv::imshow("Depth_FKED", display);
-//
-//    cuda::computeDists(depth, dists_, p.intr);
-//    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial,
-//                               p.bilateral_sigma_depth);
-//
-//    if (p.icp_truncate_depth_dist > 0)
-//        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-//    const int LEVELS = icp_->getUsedLevelsNum();
-//
-//    for (int i = 1; i < LEVELS; ++i)
-//        cuda::depthBuildPyramid(curr_.depth_pyr[i - 1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
-//
-//    Affine3f affine;
-//    bool ok = icp_->estimateTransform(affine, p.intr, curr_.points_pyr, curr_.normals_pyr, prev_.points_pyr,
-//                                      prev_.normals_pyr);
-//    if (!ok)
-//        reset(), false;
-//
+
+    cuda::computeDists(depth, dists_, p.intr);
+    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial,
+                               p.bilateral_sigma_depth);
+
+    if (p.icp_truncate_depth_dist > 0)
+        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+    const int LEVELS = icp_->getUsedLevelsNum();
+
+    for (int i = 1; i < LEVELS; ++i)
+        cuda::depthBuildPyramid(curr_.depth_pyr[i - 1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
+
+    Affine3f affine;
+    bool ok = icp_->estimateTransform(affine, p.intr,
+                                      curr_.points_pyr, curr_.normals_pyr,
+                                      prev_.points_pyr, prev_.normals_pyr);
+    if (!ok)
+        reset(), false;
+
 //    getWarp().setWarpToLive(affine); // Or is it affine * poses.back()?
 //
-//    for(auto &point : warped)
-//        point = affine * point;
-//
+    for(auto &point : warped)
+        point = affine * point;
+
 //    for(auto &normal : warped_normals)
 //        normal = affine * normal;
-////TODO: set already observed pixels to NAN
-//
-//
-//    volume_->integrate(dists_, poses_.back(), p.intr);
-//    volume_->surface_fusion();
 
+
+    volume_->integrate(dists_, poses_.back(), p.intr);
+//    volume_->surface_fusion();
 }

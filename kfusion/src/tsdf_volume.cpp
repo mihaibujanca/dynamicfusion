@@ -306,7 +306,7 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
  *
  */
 
-float kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
+std::vector<float> kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
                                       Dists& dists,
                                       const Intr& intr)
 {
@@ -325,18 +325,21 @@ float kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
     int size;
     points.download(point_type, size);
 
-    int nans = 0;
-    for(auto point : point_type)
-    {
-        if(std::isnan(point.x / point.y / point.z))
-            nans++;
-    }
-    std::cout<<"NUMBER OF NANs: "<< nans<<std::endl;
-    Mat3f K(intr.fx, 0, intr.cx,
+//    int nans = 0;
+//    for(auto point : point_type)
+//    {
+//        if(std::isnan(point.x / point.y / point.z))
+//            nans++;
+//    }
+//    std::cout<<"NUMBER OF NANs: "<< nans<<std::endl;
+    Mat3f K = Mat3f(intr.fx, 0, intr.cx,
             0, intr.fy, intr.cy,
-            0, 0, 1);
-//    return (K.inv() * warped)[2] - warped[2];
-    return 0;
+            0, 0, 1).inv();
+
+    std::vector<float> distances(warped.size());
+//    for(int i = 0; i < warped.size(); i++)
+//        distances[i] = (K * Vec3f(point_type[i].x, point_type[i].y, point_type[i].z))[2] - warped[i][2];
+    return distances;
 }
 
 /**

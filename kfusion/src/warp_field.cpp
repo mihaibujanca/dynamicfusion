@@ -189,6 +189,7 @@ void WarpField::warp(std::vector<Vec3f>& points) const
     }
 }
 
+
 /**
  * \brief
  * \param vertex
