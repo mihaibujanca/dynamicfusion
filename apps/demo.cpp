@@ -50,7 +50,7 @@ struct KinFuApp
         viz.registerKeyboardCallback(KeyboardCallback, this);
     }
 
-    void show_depth(const cv::Mat& depth)
+    static void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;
         //cv::normalize(depth, display, 0, 255, cv::NORM_MINMAX, CV_8U);

@@ -278,8 +278,8 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
     std::vector<Vec3f> cloud_initial(warped);
 
     warp_field.warp(warped);
-    float ro = psdf(warped, depth_img, intr);
-
+//    float ro = psdf(warped, depth_img, intr);
+    float ro = 0;
     for(size_t i = 0; i < cloud_initial.size(); i++)
     {
         if(ro > -trunc_dist_)
@@ -305,33 +305,9 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
  * \param voxel_center
  *
  */
-float kfusion::cuda::TsdfVolume::psdf(Vec3f warped,
-                                      const Dists& depth_img,
-                                      const Intr& intr)
-{
-    device::Projector proj(intr.fx, intr.fy, intr.cx, intr.cy);
-    float2 coo;
-//    coo.x = warped[0] * intr.fx / warped[2] + intr.cx;
-//    coo.y = warped[1] * intr.fy / warped[2] + intr.cy;
-//    get value from distances
-//    float z =
-    Vec3f projected;// = Vec3f(coo.x * z, coo.y * z, z);
-    if(std::isnan(projected[0]))
-        return nanf("");
-    Mat3f K(intr.fx,0,intr.cx,0, intr.fy, intr.cy,0,0,1);
-    return (K.inv() * projected)[2] - warped[2];
-}
-/**
- * \fn TSDF::psdf (Mat3f K, Depth& depth, Vec3f voxel_center)
- * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
- *        where percentage (from 0 to 1) defines the amount of interpolation
- * \param K: camera matrix
- * \param depth: a depth frame
- * \param voxel_center
- *
- */
+
 float kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
-                                      const Dists& depth_img,
+                                      Dists& dists,
                                       const Intr& intr)
 {
     device::Projector proj(intr.fx, intr.fy, intr.cx, intr.cy);
@@ -344,18 +320,16 @@ float kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
         point_type[i].w = 0.f;
     }
     device::Points points;
-    points.upload(point_type, depth_img.cols()); // TODO: this is not really clean
-    device::project(depth_img, points, proj);
+    points.upload(point_type, dists.cols()); // TODO: this is not really clean
+    device::project_and_remove(dists, points, proj);
     int size;
     points.download(point_type, size);
 
     int nans = 0;
     for(auto point : point_type)
     {
-        if(std::isnan(point.x))
+        if(std::isnan(point.x / point.y / point.z))
             nans++;
-        else
-            std::cout<<point.x<<" "<<point.y<<" "<<point.z<<std::endl;
     }
     std::cout<<"NUMBER OF NANs: "<< nans<<std::endl;
     Mat3f K(intr.fx, 0, intr.cx,

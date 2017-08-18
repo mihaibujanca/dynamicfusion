@@ -2,7 +2,7 @@
 #include "device.hpp"
 #include "texture_binder.hpp"
 #include "../internal.hpp"
-
+#include "math_constants.h"
 using namespace kfusion::device;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,6 @@ namespace kfusion
     namespace device
     {
         texture<float, 2> dists_tex(0, cudaFilterModePoint, cudaAddressModeBorder, cudaCreateChannelDescHalf());
-
         struct TsdfIntegrator
         {
             Aff3f vol2cam;
@@ -113,17 +112,19 @@ namespace kfusion
         __global__ void integrate_kernel( const TsdfIntegrator integrator, TsdfVolume volume) { integrator(volume); };
 
         __global__
-        void project(const Projector proj, PtrStep<Point> points, int rows, int cols)
+        void project(const Projector proj, PtrStep<Point> points, PtrStepSz<ushort> depth, int rows, int cols)
         {
 
             int x = threadIdx.x + blockIdx.x * blockDim.x;
             int y = threadIdx.y + blockIdx.y * blockDim.y;
             if (x < cols || y < rows) {
-                auto pt = points(y,x);
+                auto pt = points(y, x);
                 auto point = make_float3(pt.x, pt.y, pt.z);
                 float2 coo = proj(point);
                 if (coo.x < 0 || coo.y < 0 || coo.x >= rows || coo.y >= cols)
                     return;
+                depth(coo.x, coo.y) = 0; //FIXME
+
                 float Dp = tex2D(dists_tex, coo.x, coo.y);
                 points(y, x) = make_float4(coo.x * Dp, coo.y * Dp, Dp, 0.f);
             }
@@ -153,8 +154,8 @@ void kfusion::device::integrate(const PtrStepSz<ushort>& dists, TsdfVolume& volu
     cudaSafeCall ( cudaDeviceSynchronize() );
 }
 
-
-void kfusion::device::project(const PtrStepSz<ushort>& dists, Points& vertices, const Projector& proj)
+//TODO: rename as now projecting + removing from depth
+void kfusion::device::project_and_remove(const PtrStepSz<ushort>& dists, Points &vertices, const Projector &proj)
 {
     dists_tex.filterMode = cudaFilterModePoint;
     dists_tex.addressMode[0] = cudaAddressModeBorder;
@@ -165,7 +166,23 @@ void kfusion::device::project(const PtrStepSz<ushort>& dists, Points& vertices, 
     dim3 block(32, 8);
     dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
 
-    project <<<grid, block>>>(proj, vertices, dists.rows, dists.cols);
+    project <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
+    cudaSafeCall ( cudaGetLastError () );
+}
+
+//TODO: rename as now projecting + removing from depth
+void kfusion::device::project(const PtrStepSz<ushort> &dists, Points &vertices, const Projector &proj)
+{
+    dists_tex.filterMode = cudaFilterModePoint;
+    dists_tex.addressMode[0] = cudaAddressModeBorder;
+    dists_tex.addressMode[1] = cudaAddressModeBorder;
+    dists_tex.addressMode[2] = cudaAddressModeBorder;
+    TextureBinder binder(dists, dists_tex, cudaCreateChannelDescHalf()); (void)binder;
+
+    dim3 block(32, 8);
+    dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
+
+    project <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
     cudaSafeCall ( cudaGetLastError () );
 }
 
