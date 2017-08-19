@@ -188,6 +188,11 @@ namespace kfusion {
                 return result;
             }
 
+            inline DualQuaternion identity()
+            {
+                return DualQuaternion(Quaternion<T>(0, 0, 0, 0),Quaternion<T>(0, 1, 0, 0));
+            }
+
             void transform(Vec3f& point) // TODO: this should be a lot more generic
             {
 

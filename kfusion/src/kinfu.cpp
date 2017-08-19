@@ -318,6 +318,12 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     }
 
     poses_.push_back(poses_.back() * affine); // curr -> global
+
+    vector<Vec3f> distances;
+    auto tsdf_depth = depth;
+
+
+//    tsdf().psdf(distances, tsdf_depth, p.intr);
     reprojectToDepth();
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 //    warp_->energy_temp(poses_.back());
@@ -340,7 +346,6 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         //ScopeTime time("tsdf");
         volume_->integrate(dists_, poses_.back(), p.intr);
     }
-// TODO: for dynamic fusion we MUST integrate even if camera does not move. Integration function will be different so ignore for now
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Ray casting
     {
@@ -424,11 +429,6 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
 
         cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, i1);
         cuda::renderTangentColors(normals_, i2);
-        cv::Mat depth_cloud(PASS1.rows(),PASS1.cols(), CV_32FC4);
-        PASS1.download(depth_cloud.ptr<Point>(), depth_cloud.step);
-        cv::Mat display;
-        depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-        cv::imshow("Depth_FKED", display);
     }
 #undef PASS1
 }
@@ -448,10 +448,10 @@ void kfusion::KinFu::reprojectToDepth() {
 
     const Affine3f pose = poses_.back();
     volume_->raycast(pose, p.intr, cloud, normals_);
-    volume_->raycast(pose, p.intr, depth, normals_);
+    volume_->raycast(pose, p.intr, depth, normals_);//TODO: shouldn't need two operations
 
 //TODO: have to decide between transforming by pose inverse and then back or transforming warp field vertices by pose
-//There doesn't seem to be a strong reason not to transform the warp field (there are multiple warp operations, by contrast)
+//There doesn't seem to be a strong reason not to transform the warp field instead(there are multiple warp operations, by contrast)
     cv::Mat cloud_host(p.rows, p.cols, CV_32FC4);
     cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
     std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
@@ -475,13 +475,13 @@ void kfusion::KinFu::reprojectToDepth() {
 //            warped_normals[i * normal_host.cols + j][1] = point.y;
 //            warped_normals[i * normal_host.cols + j][2] = point.z;
 //        }
-//
-    getWarp().warp(warped);
-    for(auto &point : warped)
-        point = pose * point;
+
+//    getWarp().warp(warped);
+//    for(auto &point : warped)
+//        point = pose * point;
 //    getWarp().warp(warped_normals);
 
-    float ro = tsdf().psdf(warped, depth, params_.intr);
+    std::vector<float> ro = tsdf().psdf(warped, depth, params_.intr);
     cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
     depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
     cv::Mat display;

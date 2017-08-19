@@ -97,6 +97,7 @@ namespace kfusion
         std::vector<size_t> ret_index;
         nanoflann::KNNResultSet<float> *resultSet;
         Affine3f warp_to_live;
+        void buildKDTree();
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP

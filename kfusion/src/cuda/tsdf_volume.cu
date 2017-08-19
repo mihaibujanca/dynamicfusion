@@ -120,16 +120,18 @@ namespace kfusion
             float qnan = numeric_limits<float>::quiet_NaN ();
             if (x < cols || y < rows) {
                 auto pt = points(y, x);
+                if(isnan(pt.x) || isnan(pt.y) || isnan(pt.z))
+                    return;
                 auto point = make_float3(pt.x, pt.y, pt.z);
                 float2 coo = proj(point);
-                    if (coo.x < 0 || coo.y < 0 || coo.y >= rows || coo.x >= cols)
-                    {
+                if (coo.x < 0 || coo.y < 0 || coo.y >= rows || coo.x >= cols)
+                {
                     points(y, x) = make_float4(qnan, qnan, qnan, 0.f);
                     return;
                 }
 
                 float Dp = tex2D(dists_tex, coo.x, coo.y);
-                depth(coo.x, coo.y) = 0;
+                depth(coo.y, coo.x) = 0;
                 points(y, x) = make_float4(coo.x * Dp, coo.y * Dp, Dp, 0.f);
             }
         }

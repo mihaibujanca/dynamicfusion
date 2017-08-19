@@ -307,8 +307,8 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
  */
 
 std::vector<float> kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
-                                      Dists& dists,
-                                      const Intr& intr)
+                                                   Dists& dists,
+                                                   const Intr& intr)
 {
     device::Projector proj(intr.fx, intr.fy, intr.cx, intr.cy);
     std::vector<float4, std::allocator<float4>> point_type(warped.size());

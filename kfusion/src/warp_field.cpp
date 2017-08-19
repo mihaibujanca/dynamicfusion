@@ -56,6 +56,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
                 nodes[i*first_frame.cols+j].valid = false;
             }
         }
+    buildKDTree();
 }
 
 
@@ -84,16 +85,16 @@ void WarpField::energy(const cuda::Cloud &frame,
 
     std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
     normals.download(normals_host, cols);
-    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++) // FIXME: for now just stop at the number of nodes
+    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++)
     {
         auto point = cloud_host[i];
         auto norm = normals_host[i];
         if(!std::isnan(point.x))
-            nodes[i].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0, point.x, point.y, point.z),
-                                                              utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+        {
+
+        }
         else
         {
-            //    FIXME: will need to deal with the case when we get NANs
             std::cout<<"NANS"<<std::endl;
             break;
         }
@@ -172,21 +173,22 @@ float WarpField::huberPenalty(float a, float delta) const
  */
 void WarpField::warp(std::vector<Vec3f>& points) const
 {
-//    Build kd-tree with current warp nodes.
-    cloud.pts.resize(nodes.size());
-    for(size_t i = 0; i < nodes.size(); i++)
-        nodes[i].transform.getTranslation(cloud.pts[i]);
-    index->buildIndex();
-
+    int i = 0;
+    int nans = 0;
     for (auto& point : points)
     {
-//        if(isnan(point[0]))
-//            continue;
+        i++;
+        if(std::isnan(point[0]) || std::isnan(point[1]) || std::isnan(point[2]))
+        {
+            nans++;
+            continue;
+        }
         KNN(point);
-        utils::DualQuaternion<float> dqb;// = DQB(point);
+        utils::DualQuaternion<float> dqb = DQB(point);
         point = warp_to_live * point; // Apply T_lw first
         dqb.transform(point);
     }
+    std::cout<<"NUMBER OF NANS "<<nans<<std::endl;
 }
 
 
@@ -236,6 +238,19 @@ void WarpField::KNN(Vec3f point) const
 const std::vector<deformation_node>* WarpField::getNodes() const
 {
     return &nodes;
+}
+
+/**
+ * \brief
+ * \return
+ */
+void WarpField::buildKDTree()
+{
+    //    Build kd-tree with current warp nodes.
+    cloud.pts.resize(nodes.size());
+    for(size_t i = 0; i < nodes.size(); i++)
+        nodes[i].transform.getTranslation(cloud.pts[i]);
+    index->buildIndex();
 }
 
 //TODO: This can be optimised
