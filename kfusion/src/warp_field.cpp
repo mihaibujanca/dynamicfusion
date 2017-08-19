@@ -104,20 +104,6 @@ void WarpField::energy(const cuda::Cloud &frame,
 /**
  * \brief
  * \param frame
- * \param normals
- * \param pose
- * \param tsdfVolume
- * \param edges
- */
-void WarpField::energy_temp(const Affine3f &pose)
-{
-    for(auto &node : nodes)
-        node.vertex = pose * node.vertex;
-}
-
-/**
- * \brief
- * \param frame
  * \param pose
  * \param tsdfVolume
  */
@@ -185,10 +171,9 @@ void WarpField::warp(std::vector<Vec3f>& points) const
         }
         KNN(point);
         utils::DualQuaternion<float> dqb = DQB(point);
-        point = warp_to_live * point; // Apply T_lw first
+        point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
         dqb.transform(point);
     }
-    std::cout<<"NUMBER OF NANS "<<nans<<std::endl;
 }
 
 

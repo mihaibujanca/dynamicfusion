@@ -6,6 +6,7 @@
 #include <knn_point_cloud.hpp>
 #include <numeric>
 #include <opencv/cv.h>
+#include <opencv/highgui.h>
 //#include <device.hpp>
 #define W_MAX 100.f // This is a hyperparameter for maximum node weight and needs to be tuned. For now set to high value
 using namespace kfusion;
@@ -259,30 +260,61 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
                                                const Affine3f& camera_pose,
                                                const Intr& intr)
 {
-    const std::vector<deformation_node> *nodes = warp_field.getNodes();
-    utils::PointCloud cloud;
-    cloud.pts.resize(nodes->size());
+    cuda::Depth depth;
+    cuda::Cloud cloud;
+    cuda::Normals normals;
+    depth.create(depth_img.rows(), depth_img.cols());
+    cloud.create(depth_img.rows(), depth_img.cols());
+    normals.create(depth_img.rows(), depth_img.cols());
 
-    for (size_t i = 0; i < nodes->size(); i++)
-        (*nodes)[i].transform.getTranslation(cloud.pts[i]);
-
-    std::vector<Vec3f> warped(cloud_host->rows * cloud_host->cols);
-    for(int i = 0; i < cloud_host->rows; i++)
-        for(int j = 0; j < cloud_host->cols; j++)
-        {
-            Point point = cloud_host->at<Point>(i,j);
-            warped[i*cloud_host->cols + j][0] = point.x;
-            warped[i*cloud_host->cols + j][1] = point.y;
-            warped[i*cloud_host->cols + j][2] = point.z;
+    raycast(camera_pose, intr, cloud, normals);
+    raycast(camera_pose, intr, depth, normals);//TODO: shouldn't need two operations
+//
+////TODO: have to decide between transforming by pose inverse and then back or transforming warp field vertices by pose
+////There doesn't seem to be a strong reason not to transform the warp field instead(there are multiple warp operations, by contrast)
+    cv::Mat cloud_host(depth_img.rows(), depth_img.cols(), CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
+    std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
+    auto inverse_pose = camera_pose.inv(cv::DECOMP_SVD);
+    for (int i = 0; i < cloud_host.rows; i++)
+        for (int j = 0; j < cloud_host.cols; j++) {
+            Point point = cloud_host.at<Point>(i, j);
+            warped[i * cloud_host.cols + j][0] = point.x;
+            warped[i * cloud_host.cols + j][1] = point.y;
+            warped[i * cloud_host.cols + j][2] = point.z;
+            warped[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
         }
+//
+////    cv::Mat normal_host(p.rows, p.cols, CV_32FC4);
+////    cloud.download(normal_host.ptr<Normal>(), normal_host.step);
+////    std::vector<Vec3f> warped_normals(normal_host.rows * normal_host.cols);
+////    for (int i = 0; i < normal_host.rows; i++)
+////        for (int j = 0; j < normal_host.cols; j++) {
+////            Point point = normal_host.at<Normal>(i, j);
+////            warped_normals[i * normal_host.cols + j][0] = point.x;
+////            warped_normals[i * normal_host.cols + j][1] = point.y;
+////            warped_normals[i * normal_host.cols + j][2] = point.z;
+////        }
+//
     std::vector<Vec3f> cloud_initial(warped);
-
     warp_field.warp(warped);
-//    float ro = psdf(warped, depth_img, intr);
-    float ro = 0;
-    for(size_t i = 0; i < cloud_initial.size(); i++)
+////    for(auto &point : warped)
+////        point = pose * point;
+////    getWarp().warp(warped_normals);
+//
+    cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
+    depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
+    cv::Mat display;
+    depth_cloud.convertTo(display, CV_8U, 255.0/4000);
+    cv::imshow("Depth_FKED", display);
+//    volume_->integrate(dists_, poses_.back(), params_.intr);
+
+
+
+    std::vector<float> ro = psdf(warped, depth, intr);
+    for(size_t i = 0; i < ro.size(); i++)
     {
-        if(ro > -trunc_dist_)
+        if(ro[i] > -trunc_dist_)
         {
 //            warp_field.KNN(cloud_initial[i]);
 //            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
@@ -320,25 +352,17 @@ std::vector<float> kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& war
         point_type[i].w = 0.f;
     }
     device::Points points;
-    points.upload(point_type, dists.cols()); // TODO: this is not really clean
+    points.upload(point_type, dists.cols());
     device::project_and_remove(dists, points, proj);
     int size;
     points.download(point_type, size);
-
-//    int nans = 0;
-//    for(auto point : point_type)
-//    {
-//        if(std::isnan(point.x / point.y / point.z))
-//            nans++;
-//    }
-//    std::cout<<"NUMBER OF NANs: "<< nans<<std::endl;
     Mat3f K = Mat3f(intr.fx, 0, intr.cx,
-            0, intr.fy, intr.cy,
-            0, 0, 1).inv();
+                    0, intr.fy, intr.cy,
+                    0, 0, 1).inv();
 
     std::vector<float> distances(warped.size());
-//    for(int i = 0; i < warped.size(); i++)
-//        distances[i] = (K * Vec3f(point_type[i].x, point_type[i].y, point_type[i].z))[2] - warped[i][2];
+    for(int i = 0; i < warped.size(); i++)
+        distances[i] = (K * Vec3f(point_type[i].x, point_type[i].y, point_type[i].z))[2] - warped[i][2];
     return distances;
 }
 

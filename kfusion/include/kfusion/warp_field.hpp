@@ -58,7 +58,6 @@ namespace kfusion
                     const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
-        void energy_temp(const Affine3f &pose);
 
         void energy_data(const cuda::Depth &frame,
                          const Affine3f &pose,

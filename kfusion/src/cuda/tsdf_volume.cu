@@ -112,7 +112,7 @@ namespace kfusion
         __global__ void integrate_kernel( const TsdfIntegrator integrator, TsdfVolume volume) { integrator(volume); };
 
         __global__
-        void project(const Projector proj, PtrStep<Point> points, PtrStepSz<ushort> depth, int rows, int cols)
+        void project_kernel(const Projector proj, PtrStep<Point> points, PtrStepSz<ushort> depth, int rows, int cols)
         {
 
             int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -172,7 +172,7 @@ void kfusion::device::project_and_remove(const PtrStepSz<ushort>& dists, Points 
     dim3 block(32, 8);
     dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
 
-    project <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
+    project_kernel <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
     cudaSafeCall ( cudaGetLastError () );
 }
 
@@ -188,7 +188,7 @@ void kfusion::device::project(const PtrStepSz<ushort> &dists, Points &vertices, 
     dim3 block(32, 8);
     dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
 
-    project <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
+    project_kernel <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
     cudaSafeCall ( cudaGetLastError () );
 }
 

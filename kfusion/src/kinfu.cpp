@@ -326,7 +326,6 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 //    tsdf().psdf(distances, tsdf_depth, p.intr);
     reprojectToDepth();
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
-//    warp_->energy_temp(poses_.back());
 
 //    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
     volume_->compute_points();
@@ -440,19 +439,18 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
  */
 //  FIXME: this is terribly inefficient
 void kfusion::KinFu::reprojectToDepth() {
-    const KinFuParams &p = params_;
     cuda::Depth depth;
     cuda::Cloud cloud;
-    depth.create(p.rows, p.cols);
-    cloud.create(p.rows, p.cols);
+    depth.create(params_.rows, params_.cols);
+    cloud.create(params_.rows, params_.cols);
 
     const Affine3f pose = poses_.back();
-    volume_->raycast(pose, p.intr, cloud, normals_);
-    volume_->raycast(pose, p.intr, depth, normals_);//TODO: shouldn't need two operations
+    volume_->raycast(pose, params_.intr, cloud, normals_);
+    volume_->raycast(pose, params_.intr, depth, normals_);//TODO: shouldn't need two operations
 
 //TODO: have to decide between transforming by pose inverse and then back or transforming warp field vertices by pose
 //There doesn't seem to be a strong reason not to transform the warp field instead(there are multiple warp operations, by contrast)
-    cv::Mat cloud_host(p.rows, p.cols, CV_32FC4);
+    cv::Mat cloud_host(params_.rows, params_.cols, CV_32FC4);
     cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
     std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
     auto inverse_pose = pose.inv(cv::DECOMP_SVD);
@@ -487,34 +485,35 @@ void kfusion::KinFu::reprojectToDepth() {
     cv::Mat display;
     depth_cloud.convertTo(display, CV_8U, 255.0/4000);
     cv::imshow("Depth_FKED", display);
-
-    cuda::computeDists(depth, dists_, p.intr);
-    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial,
-                               p.bilateral_sigma_depth);
-
-    if (p.icp_truncate_depth_dist > 0)
-        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-    const int LEVELS = icp_->getUsedLevelsNum();
-
-    for (int i = 1; i < LEVELS; ++i)
-        cuda::depthBuildPyramid(curr_.depth_pyr[i - 1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
-
-    Affine3f affine;
-    bool ok = icp_->estimateTransform(affine, p.intr,
-                                      curr_.points_pyr, curr_.normals_pyr,
-                                      prev_.points_pyr, prev_.normals_pyr);
-    if (!ok)
-        reset(), false;
-
+//
+//      convert warped points into depth
+    cuda::computeDists(depth, dists_, params_.intr);
+//    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial,
+//                               p.bilateral_sigma_depth);
+//
+//    if (p.icp_truncate_depth_dist > 0)
+//        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+//    const int LEVELS = icp_->getUsedLevelsNum();
+//
+//    for (int i = 1; i < LEVELS; ++i)
+//        cuda::depthBuildPyramid(curr_.depth_pyr[i - 1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
+//
+//    Affine3f affine;
+//    bool ok = icp_->estimateTransform(affine, p.intr,
+//                                      curr_.points_pyr, curr_.normals_pyr,
+//                                      prev_.points_pyr, prev_.normals_pyr);
+//    if (!ok)
+//        reset(), false;
+//
 //    getWarp().setWarpToLive(affine); // Or is it affine * poses.back()?
 //
-    for(auto &point : warped)
-        point = affine * point;
-
+//    for(auto &point : warped)
+//        point = affine * point;
+//
 //    for(auto &normal : warped_normals)
 //        normal = affine * normal;
+//
 
-
-    volume_->integrate(dists_, poses_.back(), p.intr);
+    volume_->integrate(dists_, poses_.back(), params_.intr);
 //    volume_->surface_fusion();
 }

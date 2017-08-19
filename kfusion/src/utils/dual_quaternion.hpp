@@ -195,7 +195,10 @@ namespace kfusion {
 
             void transform(Vec3f& point) // TODO: this should be a lot more generic
             {
-
+                Vec3f translation;
+                getTranslation(translation);
+                rotation_.rotate(point);
+//                point += translation;
             }
 
             std::pair<T,T> magnitude()
