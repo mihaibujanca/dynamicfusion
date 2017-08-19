@@ -172,7 +172,7 @@ void WarpField::warp(std::vector<Vec3f>& points) const
         KNN(point);
         utils::DualQuaternion<float> dqb = DQB(point);
         point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
-        dqb.transform(point);
+//        dqb.transform(point);
     }
 }
 

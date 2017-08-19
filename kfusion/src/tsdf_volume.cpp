@@ -298,6 +298,8 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
 //
     std::vector<Vec3f> cloud_initial(warped);
     warp_field.warp(warped);
+    std::vector<float> ro = psdf(warped, depth, intr);
+
 ////    for(auto &point : warped)
 ////        point = pose * point;
 ////    getWarp().warp(warped_normals);
@@ -307,18 +309,18 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
     cv::Mat display;
     depth_cloud.convertTo(display, CV_8U, 255.0/4000);
     cv::imshow("Depth_FKED", display);
-//    volume_->integrate(dists_, poses_.back(), params_.intr);
 
+    cuda::Dists dists;
+    cuda::computeDists(depth, dists, intr);
+    integrate(dists, camera_pose, intr);
 
-
-    std::vector<float> ro = psdf(warped, depth, intr);
     for(size_t i = 0; i < ro.size(); i++)
     {
         if(ro[i] > -trunc_dist_)
         {
-//            warp_field.KNN(cloud_initial[i]);
-//            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
-//            float coeff = std::min(ro, trunc_dist_);
+            warp_field.KNN(cloud_initial[i]);
+            float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS); //FIXME: why is this very slow?
+            float coeff = std::min(ro[i], trunc_dist_);
 
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
 ////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;

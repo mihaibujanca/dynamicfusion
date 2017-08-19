@@ -219,45 +219,6 @@ kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
     return poses_[time];
 }
 
-/**
- * \brief
- * \param depth
- * \return
- */
-//void kfusion::KinFu::estimateWarpField(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
-//{
-    // 0. create visibility map of the current warp view
-//    m_warpedMesh->renderToCanonicalMaps(*m_camera, m_canoMesh, m_vmap_cano, m_nmap_cano);
-//    m_warpField->warp(m_vmap_cano, m_nmap_cano, m_vmap_warp, m_nmap_warp);
-
-
-//    m_gsSolver->init(m_warpField, m_vmap_cano, m_nmap_cano, m_param, m_kinect_intr);
-//    float energy = FLT_MAX;
-//    for (int icp_iter = 0; icp_iter < m_param.fusion_nonRigidICP_maxIter; icp_iter++)
-//    {
-        // Gauss-Newton Optimization, findding correspondence internal
-//        float oldEnergy = energy, data_energy=0.f, reg_energy=0.f;
-//        energy = m_gsSolver->solve(m_vmap_curr_pyd[0], m_nmap_curr_pyd[0],
-//                                   m_vmap_warp, m_nmap_warp, &data_energy, &reg_energy);
-
-        //printf("icp, energy(data,reg): %d %f = %f + %f\n", icp_iter, energy, data_energy, reg_energy);
-//        if (energy > oldEnergy)
-//            break;
-
-        // update the warp field
-//        m_gsSolver->updateWarpField();
-//
-//        //// update warped mesh and render for visiblity
-//        //if (icp_iter < m_param.fusion_nonRigidICP_maxIter - 1)
-//        //{
-//        //	m_warpField->warp(*m_canoMesh, *m_warpedMesh);
-//        //	m_warpedMesh->renderToCanonicalMaps(*m_camera, m_canoMesh, m_vmap_cano, m_nmap_cano);
-//        //}
-//        m_warpField->warp(m_vmap_cano, m_nmap_cano, m_vmap_warp, m_nmap_warp);
-//        m_gsSolver->factor_out_rigid();
-//    }// end for icp_iter
-
-//}
 bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
 {
     const KinFuParams& p = params_;
@@ -322,12 +283,9 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     vector<Vec3f> distances;
     auto tsdf_depth = depth;
 
-
-//    tsdf().psdf(distances, tsdf_depth, p.intr);
-    reprojectToDepth();
 //    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 
-//    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
+    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
     volume_->compute_points();
     volume_->compute_normals();
 
@@ -437,83 +395,3 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
  * \param pose
  * \param flag
  */
-//  FIXME: this is terribly inefficient
-void kfusion::KinFu::reprojectToDepth() {
-    cuda::Depth depth;
-    cuda::Cloud cloud;
-    depth.create(params_.rows, params_.cols);
-    cloud.create(params_.rows, params_.cols);
-
-    const Affine3f pose = poses_.back();
-    volume_->raycast(pose, params_.intr, cloud, normals_);
-    volume_->raycast(pose, params_.intr, depth, normals_);//TODO: shouldn't need two operations
-
-//TODO: have to decide between transforming by pose inverse and then back or transforming warp field vertices by pose
-//There doesn't seem to be a strong reason not to transform the warp field instead(there are multiple warp operations, by contrast)
-    cv::Mat cloud_host(params_.rows, params_.cols, CV_32FC4);
-    cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
-    std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
-    auto inverse_pose = pose.inv(cv::DECOMP_SVD);
-    for (int i = 0; i < cloud_host.rows; i++)
-        for (int j = 0; j < cloud_host.cols; j++) {
-            Point point = cloud_host.at<Point>(i, j);
-            warped[i * cloud_host.cols + j][0] = point.x;
-            warped[i * cloud_host.cols + j][1] = point.y;
-            warped[i * cloud_host.cols + j][2] = point.z;
-            warped[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
-        }
-
-//    cv::Mat normal_host(p.rows, p.cols, CV_32FC4);
-//    cloud.download(normal_host.ptr<Normal>(), normal_host.step);
-//    std::vector<Vec3f> warped_normals(normal_host.rows * normal_host.cols);
-//    for (int i = 0; i < normal_host.rows; i++)
-//        for (int j = 0; j < normal_host.cols; j++) {
-//            Point point = normal_host.at<Normal>(i, j);
-//            warped_normals[i * normal_host.cols + j][0] = point.x;
-//            warped_normals[i * normal_host.cols + j][1] = point.y;
-//            warped_normals[i * normal_host.cols + j][2] = point.z;
-//        }
-
-//    getWarp().warp(warped);
-//    for(auto &point : warped)
-//        point = pose * point;
-//    getWarp().warp(warped_normals);
-
-    std::vector<float> ro = tsdf().psdf(warped, depth, params_.intr);
-    cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
-    depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
-    cv::Mat display;
-    depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-    cv::imshow("Depth_FKED", display);
-//
-//      convert warped points into depth
-    cuda::computeDists(depth, dists_, params_.intr);
-//    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial,
-//                               p.bilateral_sigma_depth);
-//
-//    if (p.icp_truncate_depth_dist > 0)
-//        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-//    const int LEVELS = icp_->getUsedLevelsNum();
-//
-//    for (int i = 1; i < LEVELS; ++i)
-//        cuda::depthBuildPyramid(curr_.depth_pyr[i - 1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
-//
-//    Affine3f affine;
-//    bool ok = icp_->estimateTransform(affine, p.intr,
-//                                      curr_.points_pyr, curr_.normals_pyr,
-//                                      prev_.points_pyr, prev_.normals_pyr);
-//    if (!ok)
-//        reset(), false;
-//
-//    getWarp().setWarpToLive(affine); // Or is it affine * poses.back()?
-//
-//    for(auto &point : warped)
-//        point = affine * point;
-//
-//    for(auto &normal : warped_normals)
-//        normal = affine * normal;
-//
-
-    volume_->integrate(dists_, poses_.back(), params_.intr);
-//    volume_->surface_fusion();
-}
