@@ -2,7 +2,7 @@
 
 #include <kfusion/cuda/device_array.hpp>
 #include "safe_call.hpp"
-
+#include <opencv2/core/core.hpp>
 //#define USE_DEPTH
 
 namespace kfusion
@@ -104,6 +104,9 @@ namespace kfusion
         //tsdf volume functions
         void clear_volume(TsdfVolume volume);
         void integrate(const Dists& depth, TsdfVolume& volume, const Aff3f& aff, const Projector& proj);
+        void project(const Dists& depth, Points& vertices, const Projector& proj);
+        void project_and_remove(PtrStepSz<ushort>& dists, Points &vertices, const Projector &proj);
+        void project_and_remove(const PtrStepSz<ushort>& dists, Points &vertices, const Projector &proj);
 
         void raycast(const TsdfVolume& volume, const Aff3f& aff, const Mat3f& Rinv,
                      const Reprojector& reproj, Depth& depth, Normals& normals, float step_factor, float delta_factor);
@@ -118,6 +121,7 @@ namespace kfusion
 
         //image proc functions
         void compute_dists(const Depth& depth, Dists dists, float2 f, float2 c);
+        void cloud_to_depth(const Points& cloud, Depth depth);
 
         void truncateDepth(Depth& depth, float max_dist /*meters*/);
         void bilateralFilter(const Depth& src, Depth& dst, int kernel_size, float sigma_spatial, float sigma_depth);

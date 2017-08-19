@@ -5,25 +5,69 @@
 #include <nanoflann.hpp>
 #include <quaternion.hpp>
 #include <knn_point_cloud.hpp>
+#include <kfusion/warp_field.hpp>
+#include <kfusion/cuda/tsdf_volume.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv/highgui.h>
+
 using namespace std;
 using namespace kfusion;
 using namespace kfusion::cuda;
 
-typedef nanoflann::KDTreeSingleIndexAdaptor<
-        nanoflann::L2_Simple_Adaptor<float, utils::PointCloud<float>> ,
-        utils::PointCloud<float>,
-        3 /* dim */
-> kd_tree_t;
-
 static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
+/**
+ * \brief
+ * \return
+ */
+kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
+{
+    const int iters[] = {10, 5, 4, 0};
+    const int levels = sizeof(iters)/sizeof(iters[0]);
+
+    KinFuParams p;
+// TODO: this should be coming from a calibration file / shouldn't be hardcoded
+    p.cols = 640;  //pixels
+    p.rows = 480;  //pixels
+    p.intr = Intr(570.342f, 570.342f, 320.f, 240.f);
+
+    p.volume_dims = Vec3i::all(512);  //number of voxels
+    p.volume_size = Vec3f::all(1.f);  //meters
+    p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
+
+    p.bilateral_sigma_depth = 0.04f;  //meter
+    p.bilateral_sigma_spatial = 4.5; //pixels
+    p.bilateral_kernel_size = 7;     //pixels
+
+    p.icp_truncate_depth_dist = 0.f;        //meters, disabled
+    p.icp_dist_thres = 0.1f;                //meters
+    p.icp_angle_thres = deg2rad(30.f); //radians
+    p.icp_iter_num.assign(iters, iters + levels);
+
+    p.tsdf_min_camera_movement = 0.f; //meters, disabled
+    p.tsdf_trunc_dist = 0.04f; //meters;
+    p.tsdf_max_weight = 64;   //frames
+
+    p.raycast_step_factor = 0.75f;  //in voxel sizes
+    p.gradient_delta_factor = 0.5f; //in voxel sizes
+
+    //p.light_pose = p.volume_pose.translation()/4; //meters
+    p.light_pose = Vec3f::all(0.f); //meters
+
+    return p;
+}
+
+/**
+ * \brief
+ * \return
+ */
 kfusion::KinFuParams kfusion::KinFuParams::default_params()
 {
     const int iters[] = {10, 5, 4, 0};
     const int levels = sizeof(iters)/sizeof(iters[0]);
 
     KinFuParams p;
-
+// TODO: this should be coming from a calibration file / shouldn't be hardcoded
     p.cols = 640;  //pixels
     p.rows = 480;  //pixels
     p.intr = Intr(525.f, 525.f, p.cols/2 - 0.5f, p.rows/2 - 0.5f);
@@ -54,11 +98,16 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     return p;
 }
 
+/**
+ * \brief
+ * \param params
+ */
 kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
     CV_Assert(params.volume_dims[0] % 32 == 0);
 
     volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
+    warp_ = cv::Ptr<WarpField>(new WarpField());
 
     volume_->setTruncDist(params_.tsdf_trunc_dist);
     volume_->setMaxWeight(params_.tsdf_max_weight);
@@ -94,6 +143,12 @@ const kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp() const
 kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp()
 { return *icp_; }
 
+const kfusion::WarpField& kfusion::KinFu::getWarp() const
+{ return *warp_; }
+
+kfusion::WarpField& kfusion::KinFu::getWarp()
+{ return *warp_; }
+
 void kfusion::KinFu::allocate_buffers()
 {
     const int LEVELS = cuda::ProjectiveICP::MAX_PYRAMID_LEVELS;
@@ -105,11 +160,15 @@ void kfusion::KinFu::allocate_buffers()
 
     curr_.depth_pyr.resize(LEVELS);
     curr_.normals_pyr.resize(LEVELS);
+    first_.normals_pyr.resize(LEVELS);
+    first_.depth_pyr.resize(LEVELS);
     prev_.depth_pyr.resize(LEVELS);
     prev_.normals_pyr.resize(LEVELS);
+    first_.normals_pyr.resize(LEVELS);
 
     curr_.points_pyr.resize(LEVELS);
     prev_.points_pyr.resize(LEVELS);
+    first_.points_pyr.resize(LEVELS);
 
     for(int i = 0; i < LEVELS; ++i)
     {
@@ -119,8 +178,12 @@ void kfusion::KinFu::allocate_buffers()
         prev_.depth_pyr[i].create(rows, cols);
         prev_.normals_pyr[i].create(rows, cols);
 
+        first_.depth_pyr[i].create(rows, cols);
+        first_.normals_pyr[i].create(rows, cols);
+
         curr_.points_pyr[i].create(rows, cols);
         prev_.points_pyr[i].create(rows, cols);
+        first_.points_pyr[i].create(rows, cols);
 
         cols /= 2;
         rows /= 2;
@@ -141,8 +204,14 @@ void kfusion::KinFu::reset()
     poses_.reserve(30000);
     poses_.push_back(Affine3f::Identity());
     volume_->clear();
+    warp_->clear();
 }
 
+/**
+ * \brief
+ * \param time
+ * \return
+ */
 kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
 {
     if (time > (int)poses_.size () || time < 0)
@@ -176,19 +245,28 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     //can't perform more on first frame
     if (frame_counter_ == 0)
     {
+
         volume_->integrate(dists_, poses_.back(), p.intr);
-#if defined USE_DEPTH
+        volume_->compute_points();
+        volume_->compute_normals();
+
+        warp_->init(volume_->get_cloud_host(), volume_->get_normal_host());
+
+        #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
+        curr_.depth_pyr.swap(first_.depth_pyr);
 #else
         curr_.points_pyr.swap(prev_.points_pyr);
+        curr_.points_pyr.swap(first_.points_pyr);
 #endif
         curr_.normals_pyr.swap(prev_.normals_pyr);
+        curr_.normals_pyr.swap(first_.normals_pyr);
         return ++frame_counter_, false;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // ICP
-    Affine3f affine; // cuur -> prev
+    Affine3f affine; // curr -> prev
     {
         //ScopeTime time("icp");
 #if defined USE_DEPTH
@@ -202,6 +280,15 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     poses_.push_back(poses_.back() * affine); // curr -> global
 
+    vector<Vec3f> distances;
+    auto tsdf_depth = depth;
+
+//    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
+
+    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
+    volume_->compute_points();
+    volume_->compute_normals();
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Volume integration
 
@@ -209,12 +296,13 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     float rnorm = (float)cv::norm(affine.rvec());
     float tnorm = (float)cv::norm(affine.translation());
     bool integrate = (rnorm + tnorm)/2 >= p.tsdf_min_camera_movement;
+
+    integrate = false;
     if (integrate)
     {
         //ScopeTime time("tsdf");
         volume_->integrate(dists_, poses_.back(), p.intr);
     }
-
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Ray casting
     {
@@ -234,6 +322,11 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     return ++frame_counter_, true;
 }
 
+/**
+ * \brief
+ * \param image
+ * \param flag
+ */
 void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 {
     const KinFuParams& p = params_;
@@ -256,23 +349,28 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 
         cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, i1);
         cuda::renderTangentColors(prev_.normals_pyr[0], i2);
+
     }
 #undef PASS1
 }
 
-
-void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag)
-{
-    const KinFuParams& p = params_;
+/**
+ * \brief
+ * \param image
+ * \param pose
+ * \param flag
+ */
+void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag) {
+    const KinFuParams &p = params_;
     image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
     depths_.create(p.rows, p.cols);
     normals_.create(p.rows, p.cols);
     points_.create(p.rows, p.cols);
 
 #if defined USE_DEPTH
-    #define PASS1 depths_
+#define PASS1 depths_
 #else
-    #define PASS1 points_
+#define PASS1 points_
 #endif
 
     volume_->raycast(pose, p.intr, PASS1, normals_);
@@ -291,68 +389,9 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     }
 #undef PASS1
 }
-//FIXME: refactor this, can just build the kdtree as part of TSDF and query directly. Building it every time is slow.
-//std::pair<Vec3f,Vec3f>
-std::vector<utils::DualQuaternion<float>> kfusion::KinFu::warp(std::vector<Vec3f>& frame,
-                                                               const cuda::TsdfVolume& tsdfVolume)
-{
-    auto nodes = tsdfVolume.getQuaternions();
-    std::vector<utils::DualQuaternion<float>> out_nodes(frame.size());
-    auto *cloud = new utils::PointCloud<float>();
-    cloud->pts.resize(nodes.size());
-    for(size_t i = 0; i < nodes.size(); i++)
-    {
-        utils::PointCloud<float>::Point point(nodes[i].getTranslation().x_,
-                                       nodes[i].getTranslation().y_,
-                                       nodes[i].getTranslation().z_);
-        cloud->pts[i] = point;
-    }
-
-    kd_tree_t index(3, *cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-    index.buildIndex();
-
-    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
-    std::vector<utils::DualQuaternion<float>> neighbours(k);
-    for(auto vertex : frame)
-    {
-        std::vector<size_t> ret_index(k);
-        std::vector<float> out_dist_sqr(k);
-        nanoflann::KNNResultSet<float> resultSet(k);
-        resultSet.init(&ret_index[0], &out_dist_sqr[0]);
-
-        index.findNeighbors(resultSet, vertex.val, nanoflann::SearchParams(10));
-
-        for (size_t i = 0; i < k; i++)
-            neighbours.push_back(nodes[ret_index[i]]);
-        utils::DualQuaternion<float> node = DQB(vertex, neighbours, tsdfVolume.getVoxelSize()[0]);
-        out_nodes.push_back(node);
-        neighbours.clear();
-    }
-    delete cloud;
-    return nodes;
-}
-
-utils::DualQuaternion<float> kfusion::KinFu::DQB(Vec3f vertex,
-                                                 std::vector<utils::DualQuaternion<float>> nodes,
-                                                 float voxel_size)
-{
-    utils::DualQuaternion<float> quaternion_sum;
-    for(auto node : nodes)
-    {
-        utils::Quaternion<float> translation = node.getTranslation();
-        Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
-        double w = weighting(vertex, voxel_center, voxel_size);
-        quaternion_sum = quaternion_sum + w * node;
-    }
-    auto norm = quaternion_sum.magnitude();
-
-    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-                                        quaternion_sum.getTranslation() / norm.second);
-}
-
-//TODO: KNN already gives the squared distance as well, can pass here instead
-float kfusion::KinFu::weighting(Vec3f vertex, Vec3f voxel_center, float weight)
-{
-    float diff = (float) cv::norm(voxel_center, vertex, cv::NORM_L2); // Should this be double?
-    return exp(-(diff * diff) / (2 * weight * weight));
-}
+/**
+ * \brief
+ * \param image
+ * \param pose
+ * \param flag
+ */

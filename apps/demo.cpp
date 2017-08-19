@@ -4,6 +4,9 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include <io/capture.hpp>
+#include <kfusion/cuda/tsdf_volume.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/range/iterator_range.hpp>
 
 using namespace kfusion;
 
@@ -23,7 +26,7 @@ struct KinFuApp
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false)
+    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false), directory(false)
     {
         KinFuParams params = KinFuParams::default_params();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -35,8 +38,19 @@ struct KinFuApp
         viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
         viz.registerKeyboardCallback(KeyboardCallback, this);
     }
+    KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), capture_ (*(new OpenNISource())), pause_(false), directory(true), dir_name(dir)
+    {
+        KinFuParams params = KinFuParams::default_params_dynamicfusion();
+        kinfu_ = KinFu::Ptr( new KinFu(params) );
 
-    void show_depth(const cv::Mat& depth)
+
+        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
+        viz.showWidget("cube", cube, params.volume_pose);
+        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
+        viz.registerKeyboardCallback(KeyboardCallback, this);
+    }
+
+    static void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;
         //cv::normalize(depth, display, 0, 255, cv::NORM_MINMAX, CV_8U);
@@ -59,14 +73,13 @@ struct KinFuApp
 
     void take_cloud(KinFu& kinfu)
     {
-        cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
-        kinfu.tsdf().fetchNormals(cloud, normal_buffer);
-        cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-        cloud.download(cloud_host.ptr<Point>());
-        cv::Mat normals_host(1, (int)normal_buffer.size(), CV_32FC4);
-        normal_buffer.download(normals_host.ptr<Point>());
-        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normals_host, 64, 0.05, cv::viz::Color::blue()));
+//        cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
+//        cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
+        cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
+
+//        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
+//        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
+        viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
     bool execute()
@@ -76,59 +89,108 @@ struct KinFuApp
         double time_ms = 0;
         bool has_image = false;
 
-        for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
+        if(!directory)
+            for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
+            {
+                bool has_frame = capture_.grab(depth, image);
+                if (!has_frame)
+                    return std::cout << "Can't grab" << std::endl, false;
+                depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+
+                {
+                    SampledScopeTime fps(time_ms); (void)fps;
+                    has_image = kinfu(depth_device_);
+                }
+
+                if (has_image)
+                    show_raycasted(kinfu);
+
+                show_depth(depth);
+                cv::imshow("Image", image);
+
+                if (!interactive_mode_)
+                {
+                    viz.setViewerPose(kinfu.getCameraPose());
+                    viz1.setViewerPose(kinfu.getCameraPose());
+                }
+
+                int key = cv::waitKey(pause_ ? 0 : 3);
+                take_cloud(kinfu);
+                switch(key)
+                {
+                    case 't': case 'T' : take_cloud(kinfu); break;
+                    case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
+                    case 27: exit_ = true; break;
+                    case 32: pause_ = !pause_; break;
+                }
+
+                //exit_ = exit_ || i > 100;
+                viz.spinOnce(3, true);
+                viz1.spinOnce(3, true);
+            }
+        else
         {
-            std::vector<Vec3f> frame;
-            frame.push_back(Vec3f(0,0,0));
-            frame.push_back(Vec3f(1,2.2342,2.234));
-            std::vector<utils::DualQuaternion<float>> nodes = kinfu.warp(frame, kinfu.tsdf());
-            bool has_frame = capture_.grab(depth, image);
-            if (!has_frame)
-                return std::cout << "Can't grab" << std::endl, false;
+            std::vector<boost::filesystem::path> depths;             // store paths,
+            std::vector<boost::filesystem::path> images;             // store paths,
 
-            depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+            copy(boost::filesystem::directory_iterator(dir_name + "/depth"), boost::filesystem::directory_iterator(), back_inserter(depths));
+            copy(boost::filesystem::directory_iterator(dir_name + "/color"), boost::filesystem::directory_iterator(), back_inserter(images));
 
+            std::sort(depths.begin(), depths.end());
+            std::sort(images.begin(), images.end());
+
+            for(int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++)
             {
-                SampledScopeTime fps(time_ms); (void)fps;
-                has_image = kinfu(depth_device_);
+                image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
+                depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
+                depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+
+                {
+                    SampledScopeTime fps(time_ms); (void)fps;
+                    has_image = kinfu(depth_device_);
+                }
+
+                if (has_image)
+                    show_raycasted(kinfu);
+
+                show_depth(depth);
+                cv::imshow("Image", image);
+
+                if (!interactive_mode_)
+                {
+                    viz.setViewerPose(kinfu.getCameraPose());
+                    viz1.setViewerPose(kinfu.getCameraPose());
+                }
+
+                int key = cv::waitKey(pause_ ? 0 : 3);
+                take_cloud(kinfu);
+                switch(key)
+                {
+                    case 't': case 'T' : take_cloud(kinfu); break;
+                    case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
+                    case 27: exit_ = true; break;
+                    case 32: pause_ = !pause_; break;
+                }
+
+                //exit_ = exit_ || i > 100;
+                viz.spinOnce(3, true);
+                viz1.spinOnce(3, true);
             }
-
-            if (has_image)
-                show_raycasted(kinfu);
-
-            show_depth(depth);
-            cv::imshow("Image", image);
-
-            if (!interactive_mode_)
-                viz.setViewerPose(kinfu.getCameraPose());
-
-            int key = cv::waitKey(pause_ ? 0 : 3);
-            take_cloud(kinfu);
-            switch(key)
-            {
-            case 't': case 'T' : take_cloud(kinfu); break;
-            case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
-            case 27: exit_ = true; break;
-            case 32: pause_ = !pause_; break;
-            }
-
-            //exit_ = exit_ || i > 100;
-            viz.spinOnce(3, true);
         }
         return true;
     }
 
     bool pause_ /*= false*/;
-    bool exit_, interactive_mode_;
+    bool exit_, interactive_mode_, directory;
+    std::string dir_name;
     OpenNISource& capture_;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
+    cv::viz::Viz3d viz1;
 
     cv::Mat view_host_;
     cuda::Image view_device_;
     cuda::Depth depth_device_;
-    cuda::DeviceArray<Point> cloud_buffer;
-    cuda::DeviceArray<Normal> normal_buffer;
 };
 
 
@@ -141,17 +203,22 @@ int main (int argc, char* argv[])
     cuda::printShortCudaDeviceInfo (device);
 
     if(cuda::checkIfPreFermiGPU(device))
-        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, 1;
+        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
 
-    OpenNISource capture;
-    capture.open(argv[1]);
-
-    KinFuApp app (capture);
-
+    KinFuApp *app;
+    if(boost::filesystem::is_directory(argv[1]))
+        app = new KinFuApp(argv[1]);
+    else
+    {
+        OpenNISource capture;
+        capture.open(argv[1]);
+        app = new KinFuApp(capture);
+    }
     // executing
-    try { app.execute (); }
+    try { app->execute (); }
     catch (const std::bad_alloc& /*e*/) { std::cout << "Bad alloc" << std::endl; }
     catch (const std::exception& /*e*/) { std::cout << "Exception" << std::endl; }
 
+    delete app;
     return 0;
 }

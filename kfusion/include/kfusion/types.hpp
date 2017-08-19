@@ -11,7 +11,9 @@ struct CUevent_st;
 namespace kfusion
 {
     typedef cv::Matx33f Mat3f;
+    typedef cv::Matx44f Mat4f;
     typedef cv::Vec3f Vec3f;
+    typedef cv::Vec4f Vec4f;
     typedef cv::Vec3i Vec3i;
     typedef cv::Affine3f Affine3f;
 

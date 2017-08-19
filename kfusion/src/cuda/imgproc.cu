@@ -1,3 +1,4 @@
+#include <host_defines.h>
 #include "device.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,6 +270,17 @@ namespace kfusion
                 dists(y, x) = __float2half_rn(depth(y, x) * lambda * 0.001f); //meters
             }
         }
+
+        __global__ void cloud_to_depth_kernel(const PtrStep<Point> cloud, PtrStepSz<ushort> depth)
+        {
+            int x = threadIdx.x + blockIdx.x * blockDim.x;
+            int y = threadIdx.y + blockIdx.y * blockDim.y;
+
+            if (x < depth.cols || y < depth.rows)
+            {
+                depth(y, x) = cloud(y, x).z * 1000; //meters
+            }
+        }
     }
 }
 
@@ -278,6 +290,15 @@ void kfusion::device::compute_dists(const Depth& depth, Dists dists, float2 f, f
     dim3 grid (divUp (depth.cols (), block.x), divUp (depth.rows (), block.y));
 
     compute_dists_kernel<<<grid, block>>>(depth, dists, make_float2(1.f/f.x, 1.f/f.y), c);
+    cudaSafeCall ( cudaGetLastError () );
+}
+
+void kfusion::device::cloud_to_depth(const Points& cloud, Depth depth)
+{
+    dim3 block (32, 8);
+    dim3 grid (divUp (cloud.cols (), block.x), divUp (cloud.rows (), block.y));
+
+    cloud_to_depth_kernel<<<grid, block>>>(cloud, depth);
     cudaSafeCall ( cudaGetLastError () );
 }
 
