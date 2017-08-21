@@ -13,9 +13,11 @@ Key changes/features:
 Dependencies:
 * Fermi or Kepler or newer
 * CUDA 5.0 or higher
-* OpenCV 2.4.9 with new Viz module (only opencv_core, opencv_highgui, opencv_imgproc, opencv_viz modules required). Make sure that WITH_VTK flag is enabled in CMake during OpenCV configuration.
+* OpenCV 2.4.9 with new Viz module (only opencv_core, opencv_highgui, opencv_calib3d opencv_imgproc, opencv_viz modules required). Make sure that WITH_VTK flag is enabled in CMake during OpenCV configuration.
 * OpenNI v1.5.4 (for Windows can download and install from http://pointclouds.org/downloads/windows.html)
 * GTest for testing
+* Nanoflann (included in the repository)
+* Boost (libraries system and filesystem, only used in the demo)
 
 
 Implicit dependency (needed by opencv_viz):
@@ -25,3 +27,6 @@ Building instructions:
 
 Use cmake to build the project. Set BUILD_TESTS to ON to build tests as well.
 To run, go to <build_directory>/bin/demo and pass a path to an .oni file.
+
+For linux users, go to the root of the project and run
+`chmod +x download_data` then `./download_data`. To run, use `./demo <project_root>/data/umbrella`
