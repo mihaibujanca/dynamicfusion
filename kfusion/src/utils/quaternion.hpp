@@ -108,6 +108,20 @@ namespace kfusion{
             }
 
             /**
+            /**
+             * \fn void rotate( T& x, T& y, T& z)
+             * \brief rotate a vector3 (x,y,z) by the angle theta about the axis
+             * (U_x, U_y, U_z) stored in the quaternion.
+             */
+            void rotate(Vec3f& v)
+            {
+//                Faster way to compute rotation
+                normalize();
+                Vec3f q_vec(x_, y_, z_);
+                v += (q_vec*2.f).cross( q_vec.cross(v) + v*w_ );
+            }
+
+            /**
              * Quaternion Mathematical Properties
              * implemented below
              **/
@@ -306,7 +320,6 @@ namespace kfusion{
             T x_;
             T y_;
             T z_;
-            typedef T point_type;
         };
     }
 }

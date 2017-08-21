@@ -18,6 +18,8 @@ namespace kfusion
 
         KF_EXPORTS void computeDists(const Depth& depth, Dists& dists, const Intr& intr);
 
+        KF_EXPORTS void cloudToDepth(const Cloud& cloud, Depth& depth);
+
         KF_EXPORTS void resizeDepthNormals(const Depth& depth, const Normals& normals, Depth& depth_out, Normals& normals_out);
 
         KF_EXPORTS void resizePointsNormals(const Cloud& points, const Normals& normals, Cloud& points_out, Normals& normals_out);

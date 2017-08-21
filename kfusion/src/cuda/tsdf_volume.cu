@@ -1,6 +1,8 @@
+#include <vector_functions.h>
 #include "device.hpp"
 #include "texture_binder.hpp"
-
+#include "../internal.hpp"
+#include "math_constants.h"
 using namespace kfusion::device;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,13 +42,12 @@ void kfusion::device::clear_volume(TsdfVolume volume)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Volume integration
-
+float3 test;
 namespace kfusion
 {
     namespace device
     {
         texture<float, 2> dists_tex(0, cudaFilterModePoint, cudaAddressModeBorder, cudaCreateChannelDescHalf());
-
         struct TsdfIntegrator
         {
             Aff3f vol2cam;
@@ -103,9 +104,37 @@ namespace kfusion
                     }
                 }  // for(;;)
             }
+
+
         };
 
+
         __global__ void integrate_kernel( const TsdfIntegrator integrator, TsdfVolume volume) { integrator(volume); };
+
+        __global__
+        void project_kernel(const Projector proj, PtrStep<Point> points, PtrStepSz<ushort> depth, int rows, int cols)
+        {
+
+            int x = threadIdx.x + blockIdx.x * blockDim.x;
+            int y = threadIdx.y + blockIdx.y * blockDim.y;
+            float qnan = numeric_limits<float>::quiet_NaN ();
+            if (x < cols || y < rows) {
+                auto pt = points(y, x);
+                if(isnan(pt.x) || isnan(pt.y) || isnan(pt.z))
+                    return;
+                auto point = make_float3(pt.x, pt.y, pt.z);
+                float2 coo = proj(point);
+                if (coo.x < 0 || coo.y < 0 || coo.y >= rows || coo.x >= cols)
+                {
+                    points(y, x) = make_float4(qnan, qnan, qnan, 0.f);
+                    return;
+                }
+
+                float Dp = tex2D(dists_tex, coo.x, coo.y);
+                depth(coo.y, coo.x) = 0;
+                points(y, x) = make_float4(coo.x * Dp, coo.y * Dp, Dp, 0.f);
+            }
+        }
     }
 }
 
@@ -129,6 +158,38 @@ void kfusion::device::integrate(const PtrStepSz<ushort>& dists, TsdfVolume& volu
     integrate_kernel<<<grid, block>>>(ti, volume);
     cudaSafeCall ( cudaGetLastError () );
     cudaSafeCall ( cudaDeviceSynchronize() );
+}
+
+//TODO: rename as now projecting + removing from depth
+void kfusion::device::project_and_remove(const PtrStepSz<ushort>& dists, Points &vertices, const Projector &proj)
+{
+    dists_tex.filterMode = cudaFilterModePoint;
+    dists_tex.addressMode[0] = cudaAddressModeBorder;
+    dists_tex.addressMode[1] = cudaAddressModeBorder;
+    dists_tex.addressMode[2] = cudaAddressModeBorder;
+    TextureBinder binder(dists, dists_tex, cudaCreateChannelDescHalf()); (void)binder;
+
+    dim3 block(32, 8);
+    dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
+
+    project_kernel <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
+    cudaSafeCall ( cudaGetLastError () );
+}
+
+//TODO: rename as now projecting + removing from depth
+void kfusion::device::project(const PtrStepSz<ushort> &dists, Points &vertices, const Projector &proj)
+{
+    dists_tex.filterMode = cudaFilterModePoint;
+    dists_tex.addressMode[0] = cudaAddressModeBorder;
+    dists_tex.addressMode[1] = cudaAddressModeBorder;
+    dists_tex.addressMode[2] = cudaAddressModeBorder;
+    TextureBinder binder(dists, dists_tex, cudaCreateChannelDescHalf()); (void)binder;
+
+    dim3 block(32, 8);
+    dim3 grid(divUp(vertices.cols(), block.x), divUp(vertices.rows(), block.y));
+
+    project_kernel <<<grid, block>>>(proj, vertices, dists, dists.rows, dists.cols);
+    cudaSafeCall ( cudaGetLastError () );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -366,7 +427,7 @@ namespace kfusion
         };
 
         inline TsdfRaycaster::TsdfRaycaster(const TsdfVolume& _volume, const Aff3f& _aff, const Mat3f& _Rinv, const Reprojector& _reproj)
-            : volume(_volume), aff(_aff), Rinv(_Rinv), reproj(_reproj) {}
+                : volume(_volume), aff(_aff), Rinv(_Rinv), reproj(_reproj) {}
 
         __global__ void raycast_kernel(const TsdfRaycaster raycaster, PtrStepSz<ushort> depth, PtrStep<Normal> normals)
         { raycaster(depth, normals); };

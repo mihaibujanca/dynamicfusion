@@ -162,7 +162,7 @@ namespace kfusion {
             {
                 DualQuaternion<T> result;
                 result.rotation_ = 1 / divisor.first * rotation_;
-                result.translation_ = 1/ divisor.second * translation_;
+                result.translation_ = 1 / divisor.second * translation_;
                 return result;
             }
 
@@ -186,6 +186,19 @@ namespace kfusion {
                 result.rotation_ = rotation_.conjugate();
                 result.translation_ = translation_.conjugate();
                 return result;
+            }
+
+            inline DualQuaternion identity()
+            {
+                return DualQuaternion(Quaternion<T>(0, 0, 0, 0),Quaternion<T>(0, 1, 0, 0));
+            }
+
+            void transform(Vec3f& point) // TODO: this should be a lot more generic
+            {
+                Vec3f translation;
+                getTranslation(translation);
+                rotation_.rotate(point);
+//                point += translation;
             }
 
             std::pair<T,T> magnitude()

@@ -10,6 +10,7 @@
 #include <nanoflann/nanoflann.hpp>
 #include <knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
+#define KNN_NEIGHBOURS 8
 
 namespace kfusion
 {
@@ -31,7 +32,7 @@ namespace kfusion
      * Index of the node in the canonical frame. Equivalent to dg_v
      *
      * \var node::transform
-     * Translation and rotation of a node, equivalent to dg_se in the paper
+     * Transform from canonical point to warped point, equivalent to dg_se in the paper.
      *
      * \var node::weight
      * Equivalent to dg_w
@@ -40,7 +41,8 @@ namespace kfusion
     {
         Vec3f vertex;
         kfusion::utils::DualQuaternion<float> transform;
-        float weight;
+        float weight = 0;
+        bool valid = true;
     };
     class WarpField
     {
@@ -48,7 +50,7 @@ namespace kfusion
         WarpField();
         ~WarpField();
 
-        void init(const cuda::Cloud &frame, const cuda::Normals& normals);
+        void init(const cv::Mat& first_frame, const cv::Mat& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -69,25 +71,32 @@ namespace kfusion
 
         float huberPenalty(float a, float delta) const;
 
-        void warp(std::vector<Point, std::allocator<Point>>& cloud_host,
-                  std::vector<Point, std::allocator<Point>>& normals_host) const;
+        void warp(std::vector<Point, std::allocator<Point>>& points,
+                  std::vector<Point, std::allocator<Point>>& normals) const;
 
-        utils::DualQuaternion<float> warp(Vec3f point) const;
+        void warp(std::vector<Vec3f>& points) const;
 
-        utils::DualQuaternion<float> DQB(Vec3f vertex, float voxel_size) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
 
-        float weighting(Vec3f vertex, Vec3f voxel_center, float weight) const;
+        float weighting(float squared_dist, float weight) const;
+        void KNN(Vec3f point) const;
 
         //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
-
+        const cv::Mat getNodesAsMat() const;
+        void setWarpToLive(const Affine3f &pose);
+        std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
 
     private:
-        //    Possibly have an internal kd-tree of nodes rather than a vector?
         //    FIXME: should be a pointer
         std::vector<deformation_node> nodes;
+        kd_tree_t* index;
+        std::vector<size_t> ret_index;
+        nanoflann::KNNResultSet<float> *resultSet;
+        Affine3f warp_to_live;
+        void buildKDTree();
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP

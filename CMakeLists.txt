@@ -44,9 +44,10 @@ include(cmake/Targets.cmake)
 
 # ---[ find dependencies
 find_package(OpenCV 2.4.8 REQUIRED COMPONENTS core viz highgui calib3d)
-find_package(CUDA 5.0 REQUIRED)
+find_package(CUDA 8.0 REQUIRED)
 find_package(OpenNI REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR} "kfusion/src/utils" "kfusion/include/nanoflann")
+find_package(Boost REQUIRED COMPONENTS system filesystem)
+include_directories(${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR} "kfusion/src/utils" "kfusion/include/nanoflann")
 
 # ---[ misc settings
 if(USE_PROJECT_FOLDERS)
@@ -67,6 +68,7 @@ warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)
+SET(BUILD_TESTS ON)
 if(BUILD_TESTS)
   find_package(GTest REQUIRED)
   if( GTEST_FOUND )

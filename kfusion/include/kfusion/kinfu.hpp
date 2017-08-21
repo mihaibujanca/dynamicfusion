@@ -24,6 +24,7 @@ namespace kfusion
     struct KF_EXPORTS KinFuParams
     {
         static KinFuParams default_params();
+        static KinFuParams default_params_dynamicfusion();
 
         int cols;  //pixels
         int rows;  //pixels
@@ -79,6 +80,7 @@ namespace kfusion
 
         void renderImage(cuda::Image& image, int flags = 0);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
+        void reprojectToDepth();
 
         Affine3f getCameraPose (int time = -1) const;
     private:
@@ -90,7 +92,7 @@ namespace kfusion
         std::vector<Affine3f> poses_;
 
         cuda::Dists dists_;
-        cuda::Frame curr_, prev_;
+        cuda::Frame curr_, prev_, first_;
 
         cuda::Cloud points_;
         cuda::Normals normals_;

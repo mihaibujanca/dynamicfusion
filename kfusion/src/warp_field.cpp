@@ -9,10 +9,19 @@
 #define VOXEL_SIZE 100
 
 using namespace kfusion;
-
+std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
+utils::PointCloud cloud;
 
 WarpField::WarpField()
-{}
+{
+    index = new kd_tree_t(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    ret_index = std::vector<size_t>(KNN_NEIGHBOURS);
+    out_dist_sqr = std::vector<float>(KNN_NEIGHBOURS);
+    resultSet = new nanoflann::KNNResultSet<float>(KNN_NEIGHBOURS);
+    resultSet->init(&ret_index[0], &out_dist_sqr[0]);
+    neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
+
+}
 
 WarpField::~WarpField()
 {}
@@ -23,44 +32,33 @@ WarpField::~WarpField()
  * \note The pose is assumed to be the identity, as this is the first frame
  */
 // maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
-void WarpField::init(const cuda::Cloud &frame, const cuda::Normals &normals)
+void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 {
-    assert(normals.cols()==frame.cols());
-    assert(normals.rows()==frame.rows());
-    int cols = frame.cols();
+    assert(first_frame.rows == normals.rows);
+    assert(first_frame.cols == normals.cols);
+    nodes.resize(first_frame.cols * first_frame.rows);
 
-    std::vector<Point, std::allocator<Point>> cloud_host(size_t(frame.rows()*frame.cols()));
-    frame.download(cloud_host, cols);
-
-    std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
-    normals.download(normals_host, cols);
-
-    nodes.reserve(cloud_host.size());
-
-    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++) // FIXME: for now just stop at the number of nodes
-    {
-        auto point = cloud_host[i];
-        auto norm = normals_host[i];
-        if(!std::isnan(point.x))
+    for(int i = 0; i < first_frame.rows; i++)
+        for(int j = 0; j < first_frame.cols; j++)
         {
-            // TODO:    transform by pose
-            Vec3f position(point.x,point.y,point.z);
-            Vec3f normal(norm.x,norm.y,norm.z);
+            auto point = first_frame.at<Point>(i,j);
+            auto norm = normals.at<Normal>(i,j);
+            if(!std::isnan(point.x))
+            {
+                nodes[i*first_frame.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                                                     utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-            utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,position[0], position[1], position[2]),
-                                                        utils::Quaternion<float>(normal));
-
-            nodes[i].vertex = position;
-            nodes[i].transform = dualQuaternion;
+                nodes[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
+                nodes[i*first_frame.cols+j].weight = VOXEL_SIZE;
+            }
+            else
+            {
+                nodes[i*first_frame.cols+j].valid = false;
+            }
         }
-        else
-        {
-            //    FIXME: will need to deal with the case when we get NANs
-            std::cout<<"NANS"<<std::endl;
-            break;
-        }
-    }
+    buildKDTree();
 }
+
 
 /**
  * \brief
@@ -80,11 +78,6 @@ void WarpField::energy(const cuda::Cloud &frame,
     assert(normals.cols()==frame.cols());
     assert(normals.rows()==frame.rows());
 
-    //  TODO: proper implementation. At the moment just initialise the positions with the old Quaternion positions
-    for(auto node : nodes)
-        node.transform.getTranslation(node.vertex);
-
-
     int cols = frame.cols();
 
     std::vector<Point, std::allocator<Point>> cloud_host(size_t(frame.rows()*frame.cols()));
@@ -92,29 +85,20 @@ void WarpField::energy(const cuda::Cloud &frame,
 
     std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
     normals.download(normals_host, cols);
-    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++) // FIXME: for now just stop at the number of nodes
+    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++)
     {
         auto point = cloud_host[i];
         auto norm = normals_host[i];
         if(!std::isnan(point.x))
         {
-            // TODO:    transform by pose
-            Vec3f position(point.x,point.y,point.z);
-            Vec3f normal(norm.x,norm.y,norm.z);
 
-            utils::DualQuaternion<float> dualQuaternion(utils::Quaternion<float>(0,position[0], position[1], position[2]),
-                                                        utils::Quaternion<float>(normal));
-            nodes[i].transform = dualQuaternion;
         }
         else
         {
-            //    FIXME: will need to deal with the case when we get NANs
             std::cout<<"NANS"<<std::endl;
             break;
         }
     }
-
-
 }
 
 /**
@@ -171,87 +155,65 @@ float WarpField::huberPenalty(float a, float delta) const
 
 /**
  * Modifies the
- * @param cloud_host
- * @param normals_host
+ * @param points
  */
-void WarpField::warp(std::vector<Point, std::allocator<Point>>& cloud_host,
-                     std::vector<Point, std::allocator<Point>>& normals_host) const
+void WarpField::warp(std::vector<Vec3f>& points) const
 {
-
-    for (auto point : cloud_host)
+    int i = 0;
+    int nans = 0;
+    for (auto& point : points)
     {
-        Vec3f vertex(point.x,point.y,point.z);
-        utils::DualQuaternion<float> node = warp(vertex);
-        //       Apply the transformation to the vertex and the normal
+        i++;
+        if(std::isnan(point[0]) || std::isnan(point[1]) || std::isnan(point[2]))
+        {
+            nans++;
+            continue;
+        }
+        KNN(point);
+        utils::DualQuaternion<float> dqb = DQB(point);
+        point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
+//        dqb.transform(point);
     }
 }
 
-/**
- * \brief
- * \param point
- * \return
- */
-utils::DualQuaternion<float> kfusion::WarpField::warp(Vec3f point) const
-{
-    utils::DualQuaternion<float> out;
-    utils::PointCloud cloud;
-    cloud.pts.resize(nodes.size());
-    for(size_t i = 0; i < nodes.size(); i++)
-        nodes[i].transform.getTranslation(cloud.pts[i]);
-
-    kd_tree_t index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-    index.buildIndex();
-
-    const size_t k = 8; //FIXME: number of neighbours should be a hyperparameter
-    std::vector<utils::DualQuaternion<float>> neighbours(k);
-    std::vector<size_t> ret_index(k);
-    std::vector<float> out_dist_sqr(k);
-    nanoflann::KNNResultSet<float> resultSet(k);
-    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
-
-    index.findNeighbors(resultSet, point.val, nanoflann::SearchParams(10));
-
-    for (size_t i = 0; i < k; i++)
-        neighbours.push_back(nodes[ret_index[i]].transform);
-
-    utils::DualQuaternion<float> node = DQB(point, VOXEL_SIZE);
-    neighbours.clear();
-    return node;
-}
 
 /**
  * \brief
  * \param vertex
- * \param voxel_size
+ * \param weight
  * \return
  */
-utils::DualQuaternion<float> WarpField::DQB(Vec3f vertex, float voxel_size) const
+utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
     utils::DualQuaternion<float> quaternion_sum;
-    for(auto node : nodes)
-    {
-        utils::Quaternion<float> translation = node.transform.getTranslation();
-        Vec3f voxel_center(translation.x_,translation.y_,translation.z_);
-        quaternion_sum = quaternion_sum + weighting(vertex, voxel_center, voxel_size) * node.transform;
-    }
+    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+        //FIXME: accessing nodes[ret_index[i]].transform VERY SLOW. Assignment also very slow
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform;
+
     auto norm = quaternion_sum.magnitude();
 
     return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
                                         quaternion_sum.getTranslation() / norm.second);
 }
 
-//TODO: KNN already gives the squared distance as well, can pass here instead
 /**
  * \brief
- * \param vertex
- * \param voxel_center
+ * \param squared_dist
  * \param weight
  * \return
  */
-float WarpField::weighting(Vec3f vertex, Vec3f voxel_center, float weight) const
+float WarpField::weighting(float squared_dist, float weight) const
 {
-    double diff = cv::norm(voxel_center, vertex, cv::NORM_L2);
-    return (float) exp(-(diff * diff) / (2 * weight * weight)); // FIXME: Not exactly clean
+    return (float) exp(-squared_dist / (2 * weight * weight));
+}
+
+/**
+ * \brief
+ * \return
+ */
+void WarpField::KNN(Vec3f point) const
+{
+    index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
 }
 
 /**
@@ -265,8 +227,34 @@ const std::vector<deformation_node>* WarpField::getNodes() const
 
 /**
  * \brief
+ * \return
+ */
+void WarpField::buildKDTree()
+{
+    //    Build kd-tree with current warp nodes.
+    cloud.pts.resize(nodes.size());
+    for(size_t i = 0; i < nodes.size(); i++)
+        nodes[i].transform.getTranslation(cloud.pts[i]);
+    index->buildIndex();
+}
+
+//TODO: This can be optimised
+const cv::Mat WarpField::getNodesAsMat() const
+{
+    cv::Mat matrix(1, nodes.size(), CV_32FC3);
+    for(int i = 0; i < nodes.size(); i++)
+        matrix.at<cv::Vec3f>(i) = nodes[i].vertex;
+    return matrix;
+}
+
+/**
+ * \brief
  */
 void WarpField::clear()
 {
 
+}
+void WarpField::setWarpToLive(const Affine3f &pose)
+{
+    warp_to_live = pose;
 }
