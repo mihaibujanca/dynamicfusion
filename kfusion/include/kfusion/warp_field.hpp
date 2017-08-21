@@ -63,7 +63,7 @@ namespace kfusion
                          const Affine3f &pose,
                          const cuda::TsdfVolume &tsdfVolume
         );
-
+        void energy_data(Vec3f point, Vec3f normal);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
@@ -75,6 +75,7 @@ namespace kfusion
                   std::vector<Point, std::allocator<Point>>& normals) const;
 
         void warp(std::vector<Vec3f>& points) const;
+        void WarpField::warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
 

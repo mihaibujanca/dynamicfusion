@@ -1,0 +1,8 @@
+
+namespace kfusion
+{
+    namespace device
+    {
+
+    }
+}

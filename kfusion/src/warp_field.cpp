@@ -87,6 +87,7 @@ void WarpField::energy(const cuda::Cloud &frame,
     normals.download(normals_host, cols);
     for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++)
     {
+        break;
         auto point = cloud_host[i];
         auto norm = normals_host[i];
         if(!std::isnan(point.x))
@@ -95,12 +96,107 @@ void WarpField::energy(const cuda::Cloud &frame,
         }
         else
         {
-            std::cout<<"NANS"<<std::endl;
-            break;
+//            std::cout<<"NANS"<<std::endl;
+//            break;
         }
     }
+
+//    if (m_pWarpField->getNumNodesInLevel(0) == 0)
+//    {
+//        printf("no warp nodes, return\n");
+//        return FLT_MAX;
+//    }
+//
+//    m_vmap_warp = &vmap_warp;
+//    m_nmap_warp = &nmap_warp;
+//    m_vmap_live = &vmap_live;
+//    m_nmap_live = &nmap_live;
+//
+//    // perform Gauss-Newton iteration
+//    //for (int k = 0; k < 100; k++)
+//    float totalEnergy = 0.f, data_energy=0.f, reg_energy=0.f;
+//    m_pWarpField->extract_nodes_info_no_allocation(m_nodesKnn, m_twist, m_nodesVw);
+//    for (int iter = 0; iter < m_param->fusion_GaussNewton_maxIter; iter++)
+//    {
+//
+//        m_Hd = 0.f;
+//        cudaSafeCall(cudaMemset(m_g.ptr(), 0, sizeof(float)*m_g.size()),
+//                     "GpuGaussNewtonSolver::solve, setg=0");
+//
+//        checkNan(m_twist, m_numNodes, ("twist_" + std::to_string(iter)).c_str());
+//
+//        // 1. calculate data term: Hd += Jd'Jd; g += Jd'fd
+//        // 2. calculate reg term: Jr = [Jr0 Jr1; 0 Jr3]; fr;
+//        // 3. calculate Hessian: Hd += Jr0'Jr0; B = Jr0'Jr1; Hr = Jr1'Jr1 + Jr3'Jr3; g=-(g+Jr'*fr)
+//        // 4. solve H*h = g
+//        if (m_param->graph_single_level)
+//            singleLevelSolve();
+//        else
+//            blockSolve()
+//        // if not fix step, we perform line search
+//        if (m_param->fusion_GaussNewton_fixedStep <= 0.f)
+//        {
+//            float old_energy = calcTotalEnergy(data_energy, reg_energy);
+//            float new_energy = 0.f;
+//            float alpha = 1.f;
+//            const static float alpha_stop = 1e-2;
+//            cudaSafeCall(cudaMemcpy(m_tmpvec.ptr(), m_twist.ptr(), m_Jr->cols()*sizeof(float),
+//                                    cudaMemcpyDeviceToDevice), "copy tmp vec to twist");
+//            for (; alpha > alpha_stop; alpha *= 0.5)
+//            {
+//                // x += alpha * h
+//                updateTwist_inch(m_h.ptr(), alpha);
+//                new_energy = calcTotalEnergy(data_energy, reg_energy);
+//                if (new_energy < old_energy)
+//                    break;
+//                // reset x
+//                cudaSafeCall(cudaMemcpy(m_twist.ptr(), m_tmpvec.ptr(),
+//                                        m_Jr->cols()*sizeof(float), cudaMemcpyDeviceToDevice), "copy twist to tmp vec");
+//            }
+//            totalEnergy = new_energy;
+//            if (alpha <= alpha_stop)
+//                break;
+//            float norm_h = 0.f, norm_g = 0.f;
+//            cublasStatus_t st = cublasSnrm2(m_cublasHandle, m_Jr->cols(),
+//                                            m_h.ptr(), 1, &norm_h);
+//            st = cublasSnrm2(m_cublasHandle, m_Jr->cols(),
+//                             m_g.ptr(), 1, &norm_g);
+//            if (norm_h < (norm_g + 1e-6f) * 1e-6f)
+//                break;
+//        }
+//            // else, we perform fixed step update.
+//        else
+//        {
+//            // 5. accumulate: x += step * h;
+//            updateTwist_inch(m_h.ptr(), m_param->fusion_GaussNewton_fixedStep);
+//        }
+//    }// end for iter
+//
+//    if (m_param->fusion_GaussNewton_fixedStep > 0.f)
+//        totalEnergy = calcTotalEnergy(data_energy, reg_energy);
+//
+//    if (data_energy_)
+//        *data_energy_ = data_energy;
+//    if (reg_energy_)
+//        *reg_energy_ = reg_energy;
+//
+//    return totalEnergy;
+//}
 }
 
+/**
+ * \brief
+ * \param frame
+ * \param pose
+ * \param tsdfVolume
+ */
+void WarpField::energy_data(Vec3f v,
+                            Vec3f n
+)
+{
+    if (std::isnan(n[0]) || std::isnan(v[0]))
+        return;
+}
 /**
  * \brief
  * \param frame
@@ -112,10 +208,81 @@ void WarpField::energy_data(const cuda::Depth &frame,
                             const cuda::TsdfVolume &tsdfVolume
 )
 {
-
-
+//    const int x = threadIdx.x + blockIdx.x * blockDim.x;
+//    const int y = threadIdx.y + blockIdx.y * blockDim.y;
+//    if (x >= imgWidth || y >= imgHeight)
+//        return;
+//
+//    const KnnIdx knn = vmapKnn(y, x);
+//    Tbx::Point3 v(convert(read_float3_4(vmap_cano(y, x))));
+//    Tbx::Vec3 n(convert(read_float3_4(nmap_cano(y, x))));
+//
+//    if (isnan(n.x) || isnan(v.x))
+//        return;
+//
+//    // 1. get all nodes params
+//    // 2. compute function
+//    float wk[KnnK];
+//    auto dq = calc_pixel_dq(knn, v, wk);
+//    float norm_dq = dq.norm();
+//    if (norm_dq < Tbx::Dual_quat_cu::epsilon())
+//        return;
+//    auto dq_not_normalized = dq;
+//    dq = dq * (1.f / norm_dq); // normalize
+//
+//    // compute vl
+//
+//    // the grad energy
+//    const float f = nwarp.dot(vwarp - vl); //normal * (v-vl)
+//    const float psi_f = data_term_penalty(f);
+//
+//    // 3. compute jacobi
+//    for (int knnK = 0; knnK < KnnK; knnK++)
+//    {
+//        if (knn_k(knn, knnK) >= nNodes)
+//            break;
+//        float df[6];
+//
+//        // 3.0 p_rotation[0:2]
+//        for (int i = 0; i < 3; i++)
+//        {
+//            float inc;
+//            Tbx::Dual_quat_cu dq1 = dq_not_normalized;
+//            exchange_ri_k(knn, wk, knnK, i, dq1, inc);
+//            dq1 *= (1.f / dq1.norm());
+//            nwarp = Tlw*dq1.rotate(n);
+//            vwarp = Tlw*dq1.transform(v);
+//
+//            float f1 = nwarp.dot(vwarp - vl);
+//            df[i] = (f1 - f) / inc;
+//        }// i=0:3
+//
+//        // 3.1 p_translation[0:2]
+//        for (int i = 0; i < 3; i++)
+//        {
+//            float inc;
+//            Tbx::Dual_quat_cu dq1 = dq_not_normalized;
+//            exchange_ti_k(knn, wk, knnK, i, dq1, inc);
+//            dq1 *= (1.f / dq1.norm());
+//            nwarp = Tlw*dq1.rotate(n);
+//            vwarp = Tlw*dq1.transform(v);
+//
+//            float f1 = nwarp.dot(vwarp - vl);
+//            df[i+3] = (f1 - f) / inc;
+//        }// i=0:3
+//
+//        //// reduce--------------------------------------------------
+//        int shift = knn_k(knn, knnK) * VarPerNode2;
+//        int shift_g = knn_k(knn, knnK) * VarPerNode;
+//        for (int i = 0; i < VarPerNode; ++i)
+//        {
+//            for (int j = 0; j <= i; ++j)
+//                atomicAdd(&Hd_[shift + j], df[i] * df[j]);
+//            atomicAdd(&g_[shift_g + i], df[i] * psi_f);
+//            shift += VarPerNode;
+//        }
+//    }
 }
-
 /**
  * \brief
  * \param edges
@@ -174,6 +341,30 @@ void WarpField::warp(std::vector<Vec3f>& points) const
         point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
 //        dqb.transform(point);
     }
+}
+
+
+/**
+ * Modifies the
+ * @param points
+ */
+void WarpField::warp(cuda::Cloud& points) const
+{
+    int i = 0;
+    int nans = 0;
+//    for (auto& point : points)
+//    {
+//        i++;
+//        if(std::isnan(point[0]) || std::isnan(point[1]) || std::isnan(point[2]))
+//        {
+//            nans++;
+//            continue;
+//        }
+//        KNN(point);
+//        utils::DualQuaternion<float> dqb = DQB(point);
+//        point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
+//        dqb.transform(point);
+//    }
 }
 
 
