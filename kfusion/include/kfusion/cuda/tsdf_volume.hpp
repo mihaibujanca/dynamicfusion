@@ -52,11 +52,13 @@ namespace kfusion
             std::vector<float> psdf(const std::vector<Vec3f>& warped, Dists& depth_img, const Intr& intr);
 //            float psdf(const std::vector<Vec3f>& warped, Dists& dists, const Intr& intr);
             float weighting(const std::vector<float>& dist_sqr, int k) const;
-            void compute_tsdf_value(Vec3f vertex, Vec3f voxel_center, float weight);
             void surface_fusion(const WarpField& warp_field,
-                                const cuda::Dists& depth_img,
-                                const Affine3f& camera_pose,
-                                const Intr& intr);
+                                                           std::vector<Vec3f> warped,
+                                                           std::vector<Vec3f> canonical,
+                                                           cuda::Depth depth,
+                                                           const Affine3f& camera_pose,
+                                                           const Intr& intr);
+
             virtual void clear();
             virtual void applyAffine(const Affine3f& affine);
             virtual void integrate(const Dists& dists, const Affine3f& camera_pose, const Intr& intr);
@@ -68,7 +70,7 @@ namespace kfusion
             DeviceArray<Point> fetchCloud(DeviceArray<Point>& cloud_buffer) const;
             void fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const;
             void compute_points();
-            void compute_normals() ;
+            void compute_normals();
 
 
         private:
@@ -81,7 +83,7 @@ namespace kfusion
             cv::Mat *normal_host;
 
             float trunc_dist_;
-            int max_weight_;
+            float max_weight_;
             Vec3i dims_;
             Vec3f size_;
             Affine3f pose_;

@@ -282,24 +282,10 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
 
-    tsdf().surface_fusion(getWarp(), dists_, poses_.back(), p.intr);
+    dynamicfusion(depth);
     volume_->compute_points();
     volume_->compute_normals();
 
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    // Volume integration
-
-    // We do not integrate volume if camera does not move.
-    float rnorm = (float)cv::norm(affine.rvec());
-    float tnorm = (float)cv::norm(affine.translation());
-    bool integrate = (rnorm + tnorm)/2 >= p.tsdf_min_camera_movement;
-
-    integrate = false;
-    if (integrate)
-    {
-        //ScopeTime time("tsdf");
-        volume_->integrate(dists_, poses_.back(), p.intr);
-    }
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Ray casting
     {
@@ -349,6 +335,51 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 
     }
 #undef PASS1
+}
+
+/**
+ * \brief
+ * \param image
+ * \param flag
+ */
+void kfusion::KinFu::dynamicfusion(const cuda::Depth& depth)
+{
+    cuda::Cloud cloud;
+    cuda::Normals normals;
+    cloud.create(depth.rows(), depth.cols());
+    normals.create(depth.rows(), depth.cols());
+    auto camera_pose = poses_.back();
+    tsdf().raycast(camera_pose, params_.intr, cloud, normals);
+
+    cv::Mat cloud_host(depth.rows(), depth.cols(), CV_32FC4);
+    cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
+    std::vector<Vec3f> warped(cloud_host.rows * cloud_host.cols);
+    auto inverse_pose = camera_pose.inv(cv::DECOMP_SVD);
+    for (int i = 0; i < cloud_host.rows; i++)
+        for (int j = 0; j < cloud_host.cols; j++) {
+            Point point = cloud_host.at<Point>(i, j);
+            warped[i * cloud_host.cols + j][0] = point.x;
+            warped[i * cloud_host.cols + j][1] = point.y;
+            warped[i * cloud_host.cols + j][2] = point.z;
+            warped[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
+        }
+
+    cv::Mat normal_host(cloud_host.rows, cloud_host.cols, CV_32FC4);
+    normals.download(normal_host.ptr<Normal>(), normal_host.step);
+
+    std::vector<Vec3f> warped_normals(normal_host.rows * normal_host.cols);
+    for (int i = 0; i < normal_host.rows; i++)
+        for (int j = 0; j < normal_host.cols; j++) {
+            auto point = normal_host.at<Normal>(i, j);
+            warped_normals[i * normal_host.cols + j][0] = point.x;
+            warped_normals[i * normal_host.cols + j][1] = point.y;
+            warped_normals[i * normal_host.cols + j][2] = point.z;
+        }
+
+    std::vector<Vec3f> canonical_visible(warped);
+    getWarp().warp(warped, warped_normals);
+    //ScopeTime time("fusion");
+    tsdf().surface_fusion(getWarp(), warped, canonical_visible, depth, camera_pose, params_.intr);
 }
 
 /**

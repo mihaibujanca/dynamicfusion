@@ -59,23 +59,22 @@ namespace kfusion
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
 
-        void energy_data(const cuda::Depth &frame,
-                         const Affine3f &pose,
-                         const cuda::TsdfVolume &tsdfVolume
-        );
+        float energy_data(const std::vector<Vec3f> &warped_vertices,
+                          const std::vector<Vec3f> &warped_normals,
+                          const Intr &intr);
         void energy_data(Vec3f point, Vec3f normal);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        float tukeyPenalty(float x, float c) const;
+        float tukeyPenalty(float x, float c = 4.685) const;
 
         float huberPenalty(float a, float delta) const;
 
         void warp(std::vector<Point, std::allocator<Point>>& points,
                   std::vector<Point, std::allocator<Point>>& normals) const;
 
-        void warp(std::vector<Vec3f>& points) const;
-        void WarpField::warp(cuda::Cloud& points) const;
+        void warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const;
+        void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
 

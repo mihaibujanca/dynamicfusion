@@ -88,17 +88,7 @@ void WarpField::energy(const cuda::Cloud &frame,
     for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++)
     {
         break;
-        auto point = cloud_host[i];
-        auto norm = normals_host[i];
-        if(!std::isnan(point.x))
-        {
 
-        }
-        else
-        {
-//            std::cout<<"NANS"<<std::endl;
-//            break;
-        }
     }
 
 
@@ -117,6 +107,8 @@ void WarpField::energy_data(Vec3f v,
 {
     if (std::isnan(n[0]) || std::isnan(v[0]))
         return;
+    //    const KnnIdx knn = vmapKnn(y, x); //get a list of k neighbours
+
 }
 /**
  * \brief
@@ -124,12 +116,25 @@ void WarpField::energy_data(Vec3f v,
  * \param pose
  * \param tsdfVolume
  */
-void WarpField::energy_data(const cuda::Depth &frame,
-                            const Affine3f &pose,
-                            const cuda::TsdfVolume &tsdfVolume
+float WarpField::energy_data(const std::vector<Vec3f> &warped_vertices,
+                             const std::vector<Vec3f> &warped_normals,
+                             const Intr& intr
 )
 {
+    float total_energy = 0;
+//get dual quaternion for that vertex/normal and K neighbouring dual quaternions
 
+    int i = 0;
+    for(auto v : warped_vertices)
+    {
+        if(std::isnan(warped_normals[i][0]) || std::isnan(v[0]))
+            continue;
+        Vec3f vl(v[0] * intr.fx / -v[2] + intr.cx, v[1] * intr.fy / v[2] + intr.cy, v[2]);
+        const float energy = tukeyPenalty(warped_normals[i].dot(v - vl)); // normal (warp - live)
+        total_energy += energy;
+        i++;
+    }
+    return total_energy;
 }
 /**
  * \brief
@@ -151,14 +156,17 @@ void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuate
  * The value c = 4.685 is usually used for this loss function, and
  * it provides an asymptotic efficiency 95% that of linear
  * regression for the normal distribution
+ *
+ * In the paper, a value of 0.01 is suggested for c
  */
 float WarpField::tukeyPenalty(float x, float c) const
 {
-    return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0;
+    return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0f;
 }
 
 /**
  * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
+ * In the paper, a value of 0.0001 is suggested for delta
  * \param a
  * \param delta
  * \return
@@ -172,22 +180,21 @@ float WarpField::huberPenalty(float a, float delta) const
  * Modifies the
  * @param points
  */
-void WarpField::warp(std::vector<Vec3f>& points) const
+void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const
 {
     int i = 0;
-    int nans = 0;
     for (auto& point : points)
     {
-        i++;
-        if(std::isnan(point[0]) || std::isnan(point[1]) || std::isnan(point[2]))
-        {
-            nans++;
+        if(std::isnan(point[0]) || std::isnan(normals[i][0]))
             continue;
-        }
         KNN(point);
         utils::DualQuaternion<float> dqb = DQB(point);
-        point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
-//        dqb.transform(point);
+        dqb.transform(point);
+        point = warp_to_live * point;
+
+        dqb.transform(normals[i]);
+        normals[i] = warp_to_live * normals[i];
+        i++;
     }
 }
 

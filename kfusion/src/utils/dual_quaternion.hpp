@@ -2,7 +2,7 @@
 #define DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #include<iostream>
 #include<quaternion.hpp>
-//TODO: Quaternion class can be forward declared rather than included
+
 //Adapted from https://github.com/Poofjunior/QPose
 /**
  * \brief a dual quaternion class for encoding transformations.
@@ -198,15 +198,12 @@ namespace kfusion {
                 Vec3f translation;
                 getTranslation(translation);
                 rotation_.rotate(point);
-//                point += translation;
+                point += translation;
             }
 
             std::pair<T,T> magnitude()
             {
                 DualQuaternion result = (*this) * (*this).conjugate();
-                // TODO: only print when debugging
-//                std::cout << result.rotation_;
-//                std::cout << result.translation_;
                 return std::make_pair(result.rotation_.w_, result.translation_.w_);
             }
 

@@ -74,7 +74,7 @@ struct KinFuApp
     void take_cloud(KinFu& kinfu)
     {
 //        cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
-//        cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
+        cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
         cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
 
 //        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
