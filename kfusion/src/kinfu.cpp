@@ -280,8 +280,6 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
 
     poses_.push_back(poses_.back() * affine); // curr -> global
 
-    warp_->energy(curr_.points_pyr[0], curr_.normals_pyr[0], poses_.back(), tsdf(), edges);
-
     dynamicfusion(depth);
     volume_->compute_points();
     volume_->compute_normals();

@@ -78,19 +78,6 @@ void WarpField::energy(const cuda::Cloud &frame,
     assert(normals.cols()==frame.cols());
     assert(normals.rows()==frame.rows());
 
-    int cols = frame.cols();
-
-    std::vector<Point, std::allocator<Point>> cloud_host(size_t(frame.rows()*frame.cols()));
-    frame.download(cloud_host, cols);
-
-    std::vector<Normal, std::allocator<Normal>> normals_host(size_t(normals.rows()*normals.cols()));
-    normals.download(normals_host, cols);
-    for(size_t i = 0; i < cloud_host.size() && i < nodes.size(); i++)
-    {
-        break;
-
-    }
-
 //    if (m_pWarpField->getNumNodesInLevel(0) == 0)
 //    {
 //        printf("no warp nodes, return\n");
