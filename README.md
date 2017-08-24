@@ -18,7 +18,7 @@ Dependencies:
 * GTest for testing
 * Nanoflann (included in the repository)
 * Boost (libraries system and filesystem, only used in the demo)
-
+* Ceres solver
 
 Implicit dependency (needed by opencv_viz):
 * VTK 5.8.0 or higher. (apt-get install on linux, for windows please download and compile from www.vtk.org)
