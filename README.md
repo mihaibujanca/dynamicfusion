@@ -13,11 +13,11 @@ Key changes/features:
 Dependencies:
 * Fermi or Kepler or newer
 * CUDA 5.0 or higher
-* OpenCV 2.4.9 with new Viz module (only opencv_core, opencv_highgui, opencv_calib3d opencv_imgproc, opencv_viz modules required). Make sure that WITH_VTK flag is enabled in CMake during OpenCV configuration.
+* OpenCV 2.4.8 or higher (modules opencv_core, opencv_highgui, opencv_calib3d, opencv_imgproc, opencv_viz required). Make sure that WITH_VTK flag is enabled in CMake during OpenCV configuration. You will need to build OpenCV from source
 * OpenNI v1.5.4 (for Windows can download and install from http://pointclouds.org/downloads/windows.html)
 * GTest for testing
 * Nanoflann (included in the repository)
-* Boost (libraries system and filesystem, only used in the demo)
+* Boost (libraries system and filesystem, only used in the demo. Tested with [1.64.0](http://www.boost.org/users/history/version_1_64_0.html))
 * Ceres solver
 
 Implicit dependency (needed by opencv_viz):
