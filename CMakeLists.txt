@@ -43,9 +43,9 @@ include(cmake/Utils.cmake)
 include(cmake/Targets.cmake)
 
 # ---[ find dependencies
-find_package(OpenCV 2.4.8 REQUIRED COMPONENTS core viz highgui calib3d)
+find_package(OpenCV REQUIRED COMPONENTS core viz highgui calib3d)
 find_package(CUDA REQUIRED)
-find_package(OpenNI)
+find_package(OpenNI REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 include_directories(${OpenCV_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR} "kfusion/src/utils" "kfusion/include/nanoflann")

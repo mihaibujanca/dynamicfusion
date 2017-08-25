@@ -6,6 +6,7 @@
 #include <knn_point_cloud.hpp>
 #include <numeric>
 #include <opencv/cv.h>
+#include <opencv2/viz/vizcore.hpp>
 #include <opencv/highgui.h>
 using namespace kfusion;
 using namespace kfusion::cuda;
@@ -241,12 +242,6 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
                                                const Intr& intr)
 {
     std::vector<float> ro = psdf(warped, depth, intr);
-
-    cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
-    depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
-    cv::Mat display;
-    depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-    cv::imshow("Depth_FKED", display);
 
     cuda::Dists dists;
     cuda::computeDists(depth, dists, intr);
