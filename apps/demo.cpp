@@ -26,18 +26,6 @@ struct KinFuApp
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false), directory(false)
-    {
-        KinFuParams params = KinFuParams::default_params();
-        kinfu_ = KinFu::Ptr( new KinFu(params) );
-
-        capture_.setRegistration(true);
-
-        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
-        viz.showWidget("cube", cube, params.volume_pose);
-        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
-        viz.registerKeyboardCallback(KeyboardCallback, this);
-    }
     KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), capture_ (*(new OpenNISource())), pause_(false), directory(true), dir_name(dir)
     {
         KinFuParams params = KinFuParams::default_params_dynamicfusion();
@@ -208,12 +196,7 @@ int main (int argc, char* argv[])
     KinFuApp *app;
     if(boost::filesystem::is_directory(argv[1]))
         app = new KinFuApp(argv[1]);
-    else
-    {
-        OpenNISource capture;
-        capture.open(argv[1]);
-        app = new KinFuApp(capture);
-    }
+
     // executing
     try { app->execute (); }
     catch (const std::bad_alloc& /*e*/) { std::cout << "Bad alloc" << std::endl; }

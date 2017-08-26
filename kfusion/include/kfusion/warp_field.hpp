@@ -42,7 +42,6 @@ namespace kfusion
         Vec3f vertex;
         kfusion::utils::DualQuaternion<float> transform;
         float weight = 0;
-        bool valid = true;
     };
     class WarpField
     {
@@ -76,6 +75,7 @@ namespace kfusion
         void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const;
 
         float weighting(float squared_dist, float weight) const;
         void KNN(Vec3f point) const;
