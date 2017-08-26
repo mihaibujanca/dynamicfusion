@@ -1,8 +1,0 @@
-
-namespace kfusion
-{
-    namespace device
-    {
-
-    }
-}
