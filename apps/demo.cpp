@@ -3,11 +3,13 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
-#include <io/capture.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#ifdef OPENNI_FOUND
+#include <io/capture.hpp>
+#endif
 using namespace kfusion;
 
 struct KinFuApp
@@ -26,7 +28,22 @@ struct KinFuApp
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), capture_ (*(new OpenNISource())), pause_(false), directory(true), dir_name(dir)
+#ifdef OPENNI_FOUND
+    KinFuApp(OpenNISource& source) : exit_ (false), interactive_mode_(false), capture_ (source), pause_(false), directory(false)
+    {
+        KinFuParams params = KinFuParams::default_params();
+        kinfu_ = KinFu::Ptr( new KinFu(params) );
+
+        capture_.setRegistration(true);
+
+        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
+        viz.showWidget("cube", cube, params.volume_pose);
+        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
+        viz.registerKeyboardCallback(KeyboardCallback, this);
+    }
+#endif
+
+    KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), pause_(false), directory(true), dir_name(dir)
     {
         KinFuParams params = KinFuParams::default_params_dynamicfusion();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -76,7 +93,7 @@ struct KinFuApp
         cv::Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
-
+#ifdef OPENNI_FOUND
         if(!directory)
             for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
             {
@@ -118,60 +135,72 @@ struct KinFuApp
             }
         else
         {
-            std::vector<boost::filesystem::path> depths;             // store paths,
-            std::vector<boost::filesystem::path> images;             // store paths,
+#endif
+        std::vector<boost::filesystem::path> depths;             // store paths,
+        std::vector<boost::filesystem::path> images;             // store paths,
 
-            copy(boost::filesystem::directory_iterator(dir_name + "/depth"), boost::filesystem::directory_iterator(), back_inserter(depths));
-            copy(boost::filesystem::directory_iterator(dir_name + "/color"), boost::filesystem::directory_iterator(), back_inserter(images));
+        copy(boost::filesystem::directory_iterator(dir_name + "/depth"), boost::filesystem::directory_iterator(),
+             back_inserter(depths));
+        copy(boost::filesystem::directory_iterator(dir_name + "/color"), boost::filesystem::directory_iterator(),
+             back_inserter(images));
 
-            std::sort(depths.begin(), depths.end());
-            std::sort(images.begin(), images.end());
+        std::sort(depths.begin(), depths.end());
+        std::sort(images.begin(), images.end());
 
-            for(int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++)
+        for (int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++) {
+            image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
+            depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
+            depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+
             {
-                image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
-                depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
-                depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
-
-                {
-                    SampledScopeTime fps(time_ms); (void)fps;
-                    has_image = kinfu(depth_device_);
-                }
-
-                if (has_image)
-                    show_raycasted(kinfu);
-
-                show_depth(depth);
-                cv::imshow("Image", image);
-
-                if (!interactive_mode_)
-                {
-                    viz.setViewerPose(kinfu.getCameraPose());
-                    viz1.setViewerPose(kinfu.getCameraPose());
-                }
-
-                int key = cv::waitKey(pause_ ? 0 : 3);
-                take_cloud(kinfu);
-                switch(key)
-                {
-                    case 't': case 'T' : take_cloud(kinfu); break;
-                    case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
-                    case 27: exit_ = true; break;
-                    case 32: pause_ = !pause_; break;
-                }
-
-                //exit_ = exit_ || i > 100;
-                viz.spinOnce(3, true);
-                viz1.spinOnce(3, true);
+                SampledScopeTime fps(time_ms);
+                (void) fps;
+                has_image = kinfu(depth_device_);
             }
+
+            if (has_image)
+                show_raycasted(kinfu);
+
+            show_depth(depth);
+            cv::imshow("Image", image);
+
+            if (!interactive_mode_) {
+                viz.setViewerPose(kinfu.getCameraPose());
+                viz1.setViewerPose(kinfu.getCameraPose());
+            }
+
+            int key = cv::waitKey(pause_ ? 0 : 3);
+            take_cloud(kinfu);
+            switch (key) {
+                case 't':
+                case 'T' :
+                    take_cloud(kinfu);
+                    break;
+                case 'i':
+                case 'I' :
+                    interactive_mode_ = !interactive_mode_;
+                    break;
+                case 27:
+                    exit_ = true;
+                    break;
+                case 32:
+                    pause_ = !pause_;
+                    break;
+            }
+
+            //exit_ = exit_ || i > 100;
+            viz.spinOnce(3, true);
+            viz1.spinOnce(3, true);
         }
+#ifdef OPENNI_FOUND
+        }
+#endif
         return true;
     }
 
     bool pause_ /*= false*/;
     bool exit_, interactive_mode_, directory;
     std::string dir_name;
-    OpenNISource& capture_;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
     cv::viz::Viz3d viz1;
@@ -179,6 +208,11 @@ struct KinFuApp
     cv::Mat view_host_;
     cuda::Image view_device_;
     cuda::Depth depth_device_;
+
+#ifdef OPENNI_FOUND
+    OpenNISource& capture_;
+#endif
+
 };
 
 
@@ -196,7 +230,14 @@ int main (int argc, char* argv[])
     KinFuApp *app;
     if(boost::filesystem::is_directory(argv[1]))
         app = new KinFuApp(argv[1]);
-
+#ifdef OPENNI_FOUND
+    else
+    {
+        OpenNISource capture;
+        capture.open(argv[1]);
+        app = new KinFuApp(capture);
+    }
+#endif
     // executing
     try { app->execute (); }
     catch (const std::bad_alloc& /*e*/) { std::cout << "Bad alloc" << std::endl; }

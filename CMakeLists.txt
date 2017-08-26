@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 3.5.0)
 
 # ---[ Configurations types
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Possible configurations" FORCE)
@@ -7,7 +7,7 @@ if (DEFINED CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif()
 
-find_package(Doxygen)
+#find_package(Doxygen)
 if(DOXYGEN_FOUND)
 
   set(DOXYGEN_INPUT ${SOURCE_FILES})
@@ -45,11 +45,13 @@ include(cmake/Targets.cmake)
 # ---[ find dependencies
 find_package(OpenCV REQUIRED COMPONENTS core viz highgui calib3d)
 find_package(CUDA REQUIRED)
-#find_package(OpenNI REQUIRED)
+#find_package(OpenNI)
 find_package(Ceres REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 include_directories(${OpenCV_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR} "kfusion/src/utils" "kfusion/include/nanoflann")
-
+if(OPENNI_FOUND)
+    message("FOUND OPENNI AT: ${OPENNI_INCLUDE_DIR}")
+endif()
 # ---[ misc settings
 if(USE_PROJECT_FOLDERS)
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -62,7 +64,7 @@ set(HAVE_CUDA 1)
 list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50")
 
 if(UNIX OR APPLE)
-  list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC,-std=c++11")
+  list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC;")
 endif()
 
 warnings_disable(CMAKE_CXX_FLAGS /wd4985)
