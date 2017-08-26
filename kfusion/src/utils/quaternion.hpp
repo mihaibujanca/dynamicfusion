@@ -42,7 +42,7 @@ namespace kfusion{
 
                 Vec3f t1 = normal.cross(t0);
                 t1 = cv::normalize(t1);
-                //TODO: IMPORTANT. Check if this is row major or column majorl
+
                 cv::Mat3f matrix;
                 matrix.push_back(t0);
                 matrix.push_back(t1);
@@ -84,7 +84,11 @@ namespace kfusion{
              */
             void getRodrigues(T& x, T& y, T& z)
             {
-//                FIXME: breaks for w_ = 1
+                if(w_ == 1)
+                {
+                    x = y = z = 0;
+                    return;
+                }
                 T half_theta = acos(w_);
                 T k = sin(half_theta) * tan(half_theta);
                 x = x_ / k;
