@@ -48,7 +48,14 @@ struct DynamicFusionDataEnergy {
     template <typename T>
     bool operator()(const T* const epsilon,
                     T* residuals) const {
-//        auto quaternion = warpField_->DQB(cv::Vec3f((double)vertex[0],(float)vertex[1],(float)vertex[2]));
+        float weights[KNN_NEIGHBOURS];
+        warpField_->getWeightsAndUpdateKNN(vertex_canonical_, weights);
+        kfusion::utils::DualQuaternion<float> quats[KNN_NEIGHBOURS];
+        auto nodes = warpField_->getNodes();
+        for(int i = 0; i < KNN_NEIGHBOURS; i++)
+            quats[i] = nodes->at(warpField_->ret_index[i]).transform;
+
+
         T predicted_x, predicted_y, predicted_z;
         // The error is the difference between the predicted and observed position.
         residuals[0] = predicted_x - vertex_live[0];
@@ -59,7 +66,7 @@ struct DynamicFusionDataEnergy {
     // Factory to hide the construction of the CostFunction object from
     // the client code.{
     static ceres::CostFunction* Create(const cv::Vec3d observed,const cv::Vec3f canonical, kfusion::WarpField* warpField) {
-        return (new ceres::AutoDiffCostFunction<DynamicFusionDataEnergy, 3, 9>(
+        return (new ceres::AutoDiffCostFunction<DynamicFusionDataEnergy, 1, 6>(
                 new DynamicFusionDataEnergy(observed, canonical, warpField)));
     }
     const cv::Vec3d vertex_live;

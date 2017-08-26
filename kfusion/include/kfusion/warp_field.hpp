@@ -89,12 +89,11 @@ namespace kfusion
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
         std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
+        std::vector<size_t> ret_index;
 
     private:
-        //    FIXME: should be a pointer
-        std::vector<deformation_node> nodes;
+        std::vector<deformation_node>* nodes;
         kd_tree_t* index;
-        std::vector<size_t> ret_index;
         nanoflann::KNNResultSet<float> *resultSet;
         Affine3f warp_to_live;
         void buildKDTree();

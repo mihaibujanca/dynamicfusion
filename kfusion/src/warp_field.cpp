@@ -14,6 +14,7 @@ utils::PointCloud cloud;
 
 WarpField::WarpField()
 {
+    nodes = new std::vector<deformation_node>();
     index = new kd_tree_t(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
     ret_index = std::vector<size_t>(KNN_NEIGHBOURS);
     out_dist_sqr = std::vector<float>(KNN_NEIGHBOURS);
@@ -36,7 +37,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 {
     assert(first_frame.rows == normals.rows);
     assert(first_frame.cols == normals.cols);
-    nodes.resize(first_frame.cols * first_frame.rows);
+    nodes->resize(first_frame.cols * first_frame.rows);
 
     for(int i = 0; i < first_frame.rows; i++)
         for(int j = 0; j < first_frame.cols; j++)
@@ -45,11 +46,11 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
             auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                nodes[i*first_frame.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
                                                                                      utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                nodes[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
-                nodes[i*first_frame.cols+j].weight = VOXEL_SIZE;
+                nodes->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
+                nodes->at(i*first_frame.cols+j).weight = VOXEL_SIZE;
             }
         }
     buildKDTree();
@@ -198,7 +199,8 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform;
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight) *
+                                                  nodes->at(ret_index[i]).transform;
 
     auto norm = quaternion_sum.magnitude();
 
@@ -226,7 +228,8 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[
     {
         // epsilon [0:2] is rotation [3:5] is translation
         eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform * eps;
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight) *
+                                                  nodes->at(ret_index[i]).transform * eps;
     }
 
     auto norm = quaternion_sum.magnitude();
@@ -245,10 +248,8 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
 {
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-    {
         // epsilon [0:2] is rotation [3:5] is translation
-        weights[i] = weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight);
-    }
+        weights[i] = weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight);
 }
 
 /**
@@ -277,7 +278,7 @@ void WarpField::KNN(Vec3f point) const
  */
 const std::vector<deformation_node>* WarpField::getNodes() const
 {
-    return &nodes;
+    return nodes;
 }
 
 /**
@@ -287,17 +288,17 @@ const std::vector<deformation_node>* WarpField::getNodes() const
 void WarpField::buildKDTree()
 {
     //    Build kd-tree with current warp nodes.
-    cloud.pts.resize(nodes.size());
-    for(size_t i = 0; i < nodes.size(); i++)
-        nodes[i].transform.getTranslation(cloud.pts[i]);
+    cloud.pts.resize(nodes->size());
+    for(size_t i = 0; i < nodes->size(); i++)
+        nodes->at(i).transform.getTranslation(cloud.pts[i]);
     index->buildIndex();
 }
 
 const cv::Mat WarpField::getNodesAsMat() const
 {
-    cv::Mat matrix(1, nodes.size(), CV_32FC3);
-    for(int i = 0; i < nodes.size(); i++)
-        matrix.at<cv::Vec3f>(i) = nodes[i].vertex;
+    cv::Mat matrix(1, nodes->size(), CV_32FC3);
+    for(int i = 0; i < nodes->size(); i++)
+        matrix.at<cv::Vec3f>(i) = nodes->at(i).vertex;
     return matrix;
 }
 
