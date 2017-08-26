@@ -51,10 +51,6 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
                 nodes[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
                 nodes[i*first_frame.cols+j].weight = VOXEL_SIZE;
             }
-            else
-            {
-                nodes[i*first_frame.cols+j].valid = false;
-            }
         }
     buildKDTree();
 }
@@ -208,6 +204,51 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 
     return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
                                         quaternion_sum.getTranslation() / norm.second);
+}
+
+
+/**
+ * \brief
+ * \param vertex
+ * \param weight
+ * \return
+ */
+utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const
+{
+    if(epsilon == NULL)
+    {
+        std::cerr<<"Invalid pointer in DQB"<<std::endl;
+        exit(-1);
+    }
+    utils::DualQuaternion<float> quaternion_sum;
+    utils::DualQuaternion<float> eps;
+    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+    {
+        // epsilon [0:2] is rotation [3:5] is translation
+        eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight) * nodes[ret_index[i]].transform * eps;
+    }
+
+    auto norm = quaternion_sum.magnitude();
+
+    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
+                                        quaternion_sum.getTranslation() / norm.second);
+}
+
+/**
+ * \brief
+ * \param vertex
+ * \param weight
+ * \return
+ */
+void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS])
+{
+    KNN(vertex);
+    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+    {
+        // epsilon [0:2] is rotation [3:5] is translation
+        weights[i] = weighting(out_dist_sqr[ret_index[i]], nodes[ret_index[i]].weight);
+    }
 }
 
 /**

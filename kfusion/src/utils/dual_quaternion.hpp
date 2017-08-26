@@ -12,6 +12,10 @@
  */
 namespace kfusion {
     namespace utils {
+        static float epsilon()
+        {
+            return 1e-6;
+        }
         template<typename T>
         class DualQuaternion {
         public:
@@ -199,6 +203,27 @@ namespace kfusion {
                 getTranslation(translation);
                 rotation_.rotate(point);
                 point += translation;
+            }
+
+            void from_twist(const float &r0, const float &r1, const float &r2,
+                            const float &x, const float &y, const float &z)
+            {
+                Vec3f r(r0,r1,r2), t(x,y,z);
+                float norm = sqrt(r0*r0 + r1 * r1 + r2 * r2);
+                Quaternion<T> rotation;
+                if (norm > epsilon())
+                {
+                    float cosNorm = cos(norm);
+                    float sign = (cosNorm > 0.f) - (cosNorm < 0.f);
+                    cosNorm *= sign;
+                    float sinNorm_norm = sign * sin(norm) / norm;
+                    rotation = Quaternion<T>(cosNorm, r0 * sinNorm_norm, r1 * sinNorm_norm, r2 * sinNorm_norm);
+                }
+                else
+                    rotation = Quaternion<T>();
+
+                translation_ = Quaternion<T>(0, x, y, z);
+                rotation_ = rotation;
             }
 
             std::pair<T,T> magnitude()
