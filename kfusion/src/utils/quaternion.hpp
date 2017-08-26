@@ -69,10 +69,11 @@ namespace kfusion{
              */
             void encodeRotation(T theta, T x, T y, T z)
             {
+                auto sin_half = sin(theta / 2);
                 w_ = cos(theta / 2);
-                x_ = x * sin(theta / 2);
-                y_ = y * sin(theta / 2);
-                z_ = z * sin(theta / 2);
+                x_ = x * sin_half;
+                y_ = y * sin_half;
+                z_ = z * sin_half;
                 normalize();
             }
 
@@ -85,9 +86,10 @@ namespace kfusion{
             {
 //                FIXME: breaks for w_ = 1
                 T half_theta = acos(w_);
-                x = x_ / sin(half_theta) * tan(half_theta);
-                y = y_ / sin(half_theta) * tan(half_theta);
-                z = z_ / sin(half_theta) * tan(half_theta);
+                T k = sin(half_theta) * tan(half_theta);
+                x = x_ / k;
+                y = y_ / k;
+                z = z_ / k;
             }
 
 
@@ -115,7 +117,6 @@ namespace kfusion{
              */
             void rotate(Vec3f& v)
             {
-//                Faster way to compute rotation
                 normalize();
                 Vec3f q_vec(x_, y_, z_);
                 v += (q_vec*2.f).cross( q_vec.cross(v) + v*w_ );

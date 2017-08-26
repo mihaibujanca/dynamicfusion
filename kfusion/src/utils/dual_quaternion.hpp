@@ -66,6 +66,14 @@ namespace kfusion {
             {
                 rotation_.encodeRotation(angle, x, y, z);
             }
+            /**
+             * \brief store a rotation
+             * \param angle is in radians
+             */
+            void encodeRotation(T x, T y, T z)
+            {
+                rotation_.encodeRotation(sqrt(x*x+y*y+z*z), x, y, z);
+            }
 
             void encodeTranslation(T x, T y, T z)
             {
@@ -73,7 +81,7 @@ namespace kfusion {
             }
 
             /// handle accumulating error.
-            void normalizeRotation()
+            void normalize()
             {
                 T x, y, z;
                 getTranslation(x, y, z);

@@ -50,10 +50,12 @@ struct DynamicFusionDataEnergy {
                     T* residuals) const {
         float weights[KNN_NEIGHBOURS];
         warpField_->getWeightsAndUpdateKNN(vertex_canonical_, weights);
-        kfusion::utils::DualQuaternion<float> quats[KNN_NEIGHBOURS];
         auto nodes = warpField_->getNodes();
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
-            quats[i] = nodes->at(warpField_->ret_index[i]).transform;
+        {
+            auto quat = weights[i] * nodes->at(warpField_->ret_index[i]).transform;
+
+        }
 
 
         T predicted_x, predicted_y, predicted_z;
