@@ -6,7 +6,7 @@
 #include "internal.hpp"
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
-#define VOXEL_SIZE 100
+#include <kfusion/optimisation.hpp>
 
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
@@ -38,7 +38,8 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
     assert(first_frame.rows == normals.rows);
     assert(first_frame.cols == normals.cols);
     nodes->resize(first_frame.cols * first_frame.rows);
-
+    auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
+                      kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
     for(int i = 0; i < first_frame.rows; i++)
         for(int j = 0; j < first_frame.cols; j++)
         {
@@ -46,11 +47,11 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
             auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                (*nodes)[i*first_frame.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
                                                                                      utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                nodes->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
-                nodes->at(i*first_frame.cols+j).weight = VOXEL_SIZE;
+                (*nodes)[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
+                nodes->at(i*first_frame.cols+j).weight = voxel_size;
             }
         }
     buildKDTree();
@@ -82,25 +83,47 @@ void WarpField::energy(const cuda::Cloud &frame,
  * \param pose
  * \param tsdfVolume
  */
-float WarpField::energy_data(const std::vector<Vec3f> &warped_vertices,
-                             const std::vector<Vec3f> &warped_normals,
+float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
+                             const std::vector<Vec3f> &canonical_normals,
+                             const std::vector<Vec3f> &live_vertices,
+                             const std::vector<Vec3f> &live_normals,
                              const Intr& intr
 )
 {
-    float total_energy = 0;
-//get dual quaternion for that vertex/normal and K neighbouring dual quaternions
-
+    // Create residuals for each observation in the bundle adjustment problem. The
+    // parameters for cameras and points are added automatically.
+    ceres::Problem problem;
     int i = 0;
-    for(auto v : warped_vertices)
+    double *epsilon = new double[getNodes()->size() * 6];
+    for(auto v : canonical_vertices)
     {
-        if(std::isnan(warped_normals[i][0]) || std::isnan(v[0]))
+        // Each Residual block takes a point and a camera as input and outputs a 2
+        // dimensional residual. Internally, the cost function stores the observed
+        // image location and compares the reprojection against the observation.
+        if(std::isnan(v[0]))
             continue;
-        Vec3f vl(v[0] * intr.fx / -v[2] + intr.cx, v[1] * intr.fy / v[2] + intr.cy, v[2]);
-        const float energy = tukeyPenalty(warped_normals[i].dot(v - vl)); // normal (warp - live)
-        total_energy += energy;
+//        else
+//            std::cout<<"NOTNAN"<<std::endl;
+        cv::Vec3f vl(v[0] + 1,v[0] + 2,v[0] + 3);
+
+        ceres::CostFunction* cost_function =
+                DynamicFusionDataEnergy::Create(vl, v, this);
+        problem.AddResidualBlock(cost_function,
+                                 NULL /* squared loss */,
+                                 epsilon);
         i++;
     }
-    return total_energy;
+    // Make Ceres automatically detect the bundle structure. Note that the
+    // standard solver, SPARSE_NORMAL_CHOLESKY, also works fine but it is slower
+    // for standard bundle adjustment problems.
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.minimizer_progress_to_stdout = true;
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+    std::cout << summary.FullReport() << "\n";
+
+    return 0;
 }
 /**
  * \brief
@@ -249,7 +272,7 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
         // epsilon [0:2] is rotation [3:5] is translation
-        weights[i] = weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight);
+        weights[i] = weighting(out_dist_sqr[i], nodes->at(ret_index[i]).weight);
 }
 
 /**

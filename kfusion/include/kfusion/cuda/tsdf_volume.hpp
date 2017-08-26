@@ -53,11 +53,11 @@ namespace kfusion
 //            float psdf(const std::vector<Vec3f>& warped, Dists& dists, const Intr& intr);
             float weighting(const std::vector<float>& dist_sqr, int k) const;
             void surface_fusion(const WarpField& warp_field,
-                                                           std::vector<Vec3f> warped,
-                                                           std::vector<Vec3f> canonical,
-                                                           cuda::Depth depth,
-                                                           const Affine3f& camera_pose,
-                                                           const Intr& intr);
+                                std::vector<Vec3f> warped,
+                                std::vector<Vec3f> canonical,
+                                cuda::Depth &depth,
+                                const Affine3f& camera_pose,
+                                const Intr& intr);
 
             virtual void clear();
             virtual void applyAffine(const Affine3f& affine);

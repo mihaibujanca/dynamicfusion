@@ -41,7 +41,19 @@ struct KinFuApp
         viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
         viz.registerKeyboardCallback(KeyboardCallback, this);
     }
-#endif
+    KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), capture_ (*(new OpenNISource())), pause_(false), directory(true), dir_name(dir)
+    {
+        KinFuParams params = KinFuParams::default_params_dynamicfusion();
+        kinfu_ = KinFu::Ptr( new KinFu(params) );
+
+
+        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
+        viz.showWidget("cube", cube, params.volume_pose);
+        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
+        viz.registerKeyboardCallback(KeyboardCallback, this);
+
+    }
+#else
 
     KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), pause_(false), directory(true), dir_name(dir)
     {
@@ -53,8 +65,9 @@ struct KinFuApp
         viz.showWidget("cube", cube, params.volume_pose);
         viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
         viz.registerKeyboardCallback(KeyboardCallback, this);
-    }
 
+    }
+#endif
     static void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;

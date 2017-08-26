@@ -58,9 +58,11 @@ namespace kfusion
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
 
-        float energy_data(const std::vector<Vec3f> &warped_vertices,
-                          const std::vector<Vec3f> &warped_normals,
-                          const Intr &intr);
+        float energy_data(const std::vector<Vec3f> &canonical_vertices,
+                          const std::vector<Vec3f> &canonical_normals,
+                          const std::vector<Vec3f> &live_vertices,
+                          const std::vector<Vec3f> &live_normals,
+                          const Intr& intr);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 

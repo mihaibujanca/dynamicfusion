@@ -8,7 +8,8 @@
 #include <kfusion/warp_field.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv/highgui.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/viz/vizcore.hpp>
 
 using namespace std;
 using namespace kfusion;
@@ -279,8 +280,11 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     }
 
     poses_.push_back(poses_.back() * affine); // curr -> global
-
-    dynamicfusion(depth);
+//    auto d = depth;
+    auto d = curr_.depth_pyr[0];
+    auto pts = curr_.points_pyr[0];
+    auto n = curr_.normals_pyr[0];
+    dynamicfusion(d, pts, n);
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -339,7 +343,7 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
  * \param image
  * \param flag
  */
-void kfusion::KinFu::dynamicfusion(const cuda::Depth& depth)
+void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame, cuda::Normals current_normals)
 {
     cuda::Cloud cloud;
     cuda::Normals normals;
@@ -347,6 +351,7 @@ void kfusion::KinFu::dynamicfusion(const cuda::Depth& depth)
     normals.create(depth.rows(), depth.cols());
     auto camera_pose = poses_.back();
     tsdf().raycast(camera_pose, params_.intr, cloud, normals);
+
 
     cv::Mat cloud_host(depth.rows(), depth.cols(), CV_32FC4);
     cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
@@ -373,16 +378,32 @@ void kfusion::KinFu::dynamicfusion(const cuda::Depth& depth)
             warped_normals[i * normal_host.cols + j][2] = point.z;
         }
 
+
+//    current_frame.download(cloud_host.ptr<Point>(), cloud_host.step);
+//    std::vector<Vec3f> live(cloud_host.rows * cloud_host.cols);
+//    for (int i = 0; i < cloud_host.rows; i++)
+//        for (int j = 0; j < cloud_host.cols; j++) {
+//            Point point = cloud_host.at<Point>(i, j);
+//            live[i * cloud_host.cols + j][0] = point.x;
+//            live[i * cloud_host.cols + j][1] = point.y;
+//            live[i * cloud_host.cols + j][2] = point.z;
+//            live[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
+//        }
+
+
+
     std::vector<Vec3f> canonical_visible(warped);
-    getWarp().warp(warped, warped_normals);
-    //ScopeTime time("fusion");
+    getWarp().energy_data(warped, warped_normals, warped, warped_normals, params_.intr);
+
+//    getWarp().warp(warped, warped_normals);
+//    //ScopeTime time("fusion");
     tsdf().surface_fusion(getWarp(), warped, canonical_visible, depth, camera_pose, params_.intr);
 
     cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
     depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
     cv::Mat display;
     depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-    cv::viz::imshow("Depth diff", display);
+    cv::imshow("Depth diff", display);
     volume_->compute_points();
     volume_->compute_normals();
 }
@@ -422,9 +443,3 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     }
 #undef PASS1
 }
-/**
- * \brief
- * \param image
- * \param pose
- * \param flag
- */

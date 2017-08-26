@@ -32,3 +32,22 @@ TEST(DualQuaternionTest, get6DOF)
     EXPECT_EQ(pitch, 2);
     EXPECT_EQ(yaw, 3);
 }
+
+TEST(DualQuaternionTest, isAssociative)
+{
+    DualQuaternion<float> dualQuaternion(1, 2, 3, 1, 2, 3);
+    DualQuaternion<float> dualQuaternion1(3, 4, 5, 3, 4, 5);
+    dualQuaternion.encodeRotation(1,2,3);
+    dualQuaternion1.encodeRotation(3,4,5);
+    cv::Vec3f test11(1,0,0);
+    cv::Vec3f test12(1,0,0);
+    cv::Vec3f test2(1,0,0);
+    auto cumul = dualQuaternion1 + dualQuaternion;
+    cumul.normalize();
+    dualQuaternion.transform(test11);
+    dualQuaternion1.transform(test12);
+    cumul.transform(test2);
+    auto result = test11 + test12;
+
+    EXPECT_NE(test2, result);
+}

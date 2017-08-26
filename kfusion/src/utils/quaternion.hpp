@@ -1,6 +1,6 @@
 #ifndef DYNAMIC_FUSION_QUATERNION_HPP
 #define DYNAMIC_FUSION_QUATERNION_HPP
-
+#pragma once
 #include <iostream>
 #include <kfusion/types.hpp>
 //Adapted from https://github.com/Poofjunior/QPose
