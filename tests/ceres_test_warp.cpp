@@ -13,31 +13,40 @@ int main(int argc, char** argv) {
         return 1;
     }
     kfusion::WarpField warpField;
-    WarpProblem warpProblem(warpField);
-    const auto observations_vector = warpProblem.observations_vector();
-    // Create residuals for each observation in the bundle adjustment problem. The
-    // parameters for cameras and points are added automatically.
-    ceres::Problem problem;
+    std::vector<cv::Vec3f> warp_init;
+    std::vector<cv::Vec3f> warp_normals;
+    for(int i=0; i < KNN_NEIGHBOURS; i++)
+        warp_normals.push_back(cv::Vec3f(0,0,1));
 
-    for (int i = 0; i < warpProblem.num_observations(); ++i) {
-        // Each Residual block takes a point and a camera as input and outputs a 2
-        // dimensional residual. Internally, the cost function stores the observed
-        // image location and compares the reprojection against the observation.
-        cv::Vec3f canonical;
-        ceres::CostFunction* cost_function =
-                DynamicFusionDataEnergy::Create(observations_vector[i], canonical, &warpField);
-        problem.AddResidualBlock(cost_function,
-                                 NULL /* squared loss */,
-                                 warpProblem.mutable_epsilon());
-    }
-    // Make Ceres automatically detect the bundle structure. Note that the
-    // standard solver, SPARSE_NORMAL_CHOLESKY, also works fine but it is slower
-    // for standard bundle adjustment problems.
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
-    options.minimizer_progress_to_stdout = true;
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    warp_init.push_back(cv::Vec3f(1,1,1));
+    warp_init.push_back(cv::Vec3f(1,1,-1));
+    warp_init.push_back(cv::Vec3f(1,-1,1));
+    warp_init.push_back(cv::Vec3f(1,-1,-1));
+    warp_init.push_back(cv::Vec3f(-1,1,1));
+    warp_init.push_back(cv::Vec3f(-1,1,-1));
+    warp_init.push_back(cv::Vec3f(-1,-1,1));
+    warp_init.push_back(cv::Vec3f(-1,-1,-1));
+
+    warpField.init(warp_init, warp_normals);
+    float weights[KNN_NEIGHBOURS];
+    warpField.getWeightsAndUpdateKNN(cv::Vec3f(0,0,0), weights);
+
+    std::vector<cv::Vec3f> canonical_vertices;
+    canonical_vertices.push_back(cv::Vec3f(0,0,0));
+    canonical_vertices.push_back(cv::Vec3f(2,2,2));
+
+    std::vector<cv::Vec3f> canonical_normals;
+    canonical_normals.push_back(cv::Vec3f(0,0,1));
+    canonical_normals.push_back(cv::Vec3f(0,0,1));
+
+    std::vector<cv::Vec3f> live_vertices;
+    live_vertices.push_back(cv::Vec3f(0.01,0.01,0.01));
+    live_vertices.push_back(cv::Vec3f(2.01,2.01,2.01));
+
+    std::vector<cv::Vec3f> live_normals;
+    live_normals.push_back(cv::Vec3f(0,0,1));
+    live_normals.push_back(cv::Vec3f(0,0,1));
+    
+    warpField.energy_data(canonical_vertices, canonical_normals,live_vertices, live_normals);
     return 0;
 }

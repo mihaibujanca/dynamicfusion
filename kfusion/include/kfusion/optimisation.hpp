@@ -17,8 +17,9 @@ struct DynamicFusionDataEnergy {
               canonical_normal_(canonical_normal),
               warpField_(warpField) {}
     template <typename T>
-    bool operator()(const T* const epsilon, T* residuals) const
+    bool operator()(T const * const * epsilon_, T* residuals) const
     {
+        T const * epsilon = epsilon_[0];
         float weights[KNN_NEIGHBOURS];
         warpField_->getWeightsAndUpdateKNN(canonical_vertex_, weights);
         auto nodes = warpField_->getNodes();
@@ -26,11 +27,12 @@ struct DynamicFusionDataEnergy {
         T total_translation[3];
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
-            auto quat = weights[i] * nodes->at(warpField_->ret_index[i]).transform;
+            int ret_index_i = warpField_->ret_index[i];
+            auto quat = weights[i] * nodes->at(ret_index_i).transform;
             T t[3];
 
-                T eps_r[3] = {epsilon[6*i],epsilon[6*i + 1],epsilon[6*i + 2]};
-                T eps_t[3] = {epsilon[6*i + 3],epsilon[6*i + 4],epsilon[6*i + 5]};
+                T eps_r[3] = {epsilon[ret_index_i],epsilon[ret_index_i + 1],epsilon[ret_index_i + 2]};
+                T eps_t[3] = {epsilon[ret_index_i + 3],epsilon[ret_index_i + 4],epsilon[ret_index_i + 5]};
                 float temp[3];
                 auto r_quat = quat.getRotation();
                 T r[4] = { T(r_quat.w_), T(r_quat.x_), T(r_quat.y_), T(r_quat.z_)};
@@ -91,8 +93,13 @@ struct DynamicFusionDataEnergy {
                                        const cv::Vec3f canonical_vertex,
                                        const cv::Vec3f canonical_normal,
                                        kfusion::WarpField* warpField) {
-        return (new ceres::AutoDiffCostFunction<DynamicFusionDataEnergy, 1, 6>(
-                new DynamicFusionDataEnergy(live_vertex, live_normal, canonical_vertex, canonical_normal, warpField)));
+        {
+            auto cost_function = new ceres::DynamicAutoDiffCostFunction<DynamicFusionDataEnergy, 4>(
+                    new DynamicFusionDataEnergy(live_vertex, live_normal, canonical_vertex, canonical_normal, warpField));
+            cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
+            cost_function->SetNumResiduals(1);
+            return cost_function;
+        }
     }
     const cv::Vec3d live_vertex_;
     const cv::Vec3d live_normal_;
@@ -103,7 +110,7 @@ struct DynamicFusionDataEnergy {
 
 class WarpProblem {
 public:
-    WarpProblem(kfusion::WarpField warp) : warpField_(&warp)
+    WarpProblem(kfusion::WarpField* warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
         mutable_epsilon_ = new double*[KNN_NEIGHBOURS * 6];
@@ -114,28 +121,22 @@ public:
             delete[] mutable_epsilon_[i];
         delete[] mutable_epsilon_;
     }
-    int num_observations()                 const  { return num_observations_;               }
-    const cv::Vec3d* observations_vector() const  { return observations_vector_;            }
-    double** mutable_epsilon(int *index_list)
+    double **mutable_epsilon(int *index_list)
     {
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
             for(int j = 0; j < 6; j++)
                 mutable_epsilon_[i * 6 + j] = &(parameters_[index_list[i] + j]);
         return mutable_epsilon_;
     }
-    double* mutable_params()
+    double *mutable_params()
     {
         return parameters_;
     }
 
 
 private:
-    int num_observations_;
-
-    int* epsilon_index;
     double **mutable_epsilon_;
-    cv::Vec3d* observations_vector_;
-    double* parameters_;
+    double *parameters_;
 
     kfusion::WarpField* warpField_;
 };

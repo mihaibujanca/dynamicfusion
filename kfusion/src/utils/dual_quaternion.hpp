@@ -108,9 +108,13 @@ namespace kfusion {
              * \brief a reference-based method for acquiring the latest
              *        translation data.
              */
+//FIXME: need to make sure rotation is normalized in all getTranslation functions.
             void getTranslation(Vec3f& vec3f) const
             {
-                Quaternion<T> result = 2 * translation_ * rotation_.conjugate();
+
+                auto rot = rotation_;
+                rot.normalize();
+                Quaternion<T> result = 2 * translation_ * rot.conjugate();
                 vec3f = Vec3f(result.x_, result.y_, result.z_);
             }
 

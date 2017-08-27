@@ -47,16 +47,43 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
             auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                (*nodes)[i*first_frame.cols+j].transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                                                     utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
+                                                                                        utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
-                (*nodes)[i*first_frame.cols+j].vertex = Vec3f(point.x,point.y,point.z);
+                nodes->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes->at(i*first_frame.cols+j).weight = voxel_size;
             }
         }
     buildKDTree();
 }
 
+/**
+ *
+ * @param frame
+ * \note The pose is assumed to be the identity, as this is the first frame
+ */
+// maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
+void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals)
+{
+    nodes->resize(first_frame.size());
+    auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
+                      kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
+    for (int i = 0; i < first_frame.size(); i++)
+    {
+        auto point = first_frame[i];
+        auto norm = normals[i];
+        if (!std::isnan(point[0]))
+        {
+            utils::Quaternion<float> t(0.f, point[0], point[1], point[2]);
+            utils::Quaternion<float> r(norm);
+            nodes->at(i).transform = utils::DualQuaternion<float>(t,r);
+
+            nodes->at(i).vertex = point;
+            nodes->at(i).weight = 1; //FIXME: this is just a test
+        }
+    }
+    buildKDTree();
+}
 
 /**
  * \brief
@@ -86,16 +113,15 @@ void WarpField::energy(const cuda::Cloud &frame,
 float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                              const std::vector<Vec3f> &canonical_normals,
                              const std::vector<Vec3f> &live_vertices,
-                             const std::vector<Vec3f> &live_normals,
-                             const Intr& intr
+                             const std::vector<Vec3f> &live_normals
 )
 {
     // Create residuals for each observation in the bundle adjustment problem. The
     // parameters for cameras and points are added automatically.
     ceres::Problem problem;
     int i = 0;
-    double *epsilon = new double[getNodes()->size() * 6];
 
+    double *parameters_ = new double[nodes->size() * 6];
     std::vector<cv::Vec3d> double_vertices;
     for(auto v : canonical_vertices)
     {
@@ -110,7 +136,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(vl, Vec3f(1,0,0), v, Vec3f(1,0,0), this); // FIXME: send proper parameters, this is a test
         problem.AddResidualBlock(cost_function,
                                  NULL /* squared loss */,
-                                 epsilon);
+                                 parameters_);
         i++;
     }
     // Make Ceres automatically detect the bundle structure. Note that the
@@ -121,8 +147,15 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    std::cout << summary.FullReport() << std::endl;
 
+    for(int i = 0; i < nodes->size() * 6; i++)
+    {
+        std::cout<<parameters_[i]<<" ";
+        if((i+1) % 6 == 0)
+            std::cout<<std::endl;
+    }
+    delete[] parameters_;
     return 0;
 }
 /**
@@ -223,7 +256,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
         quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight) *
-                                                  nodes->at(ret_index[i]).transform;
+                                          nodes->at(ret_index[i]).transform;
 
     auto norm = quaternion_sum.magnitude();
 
@@ -252,7 +285,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[
         // epsilon [0:2] is rotation [3:5] is translation
         eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
         quaternion_sum = quaternion_sum + weighting(out_dist_sqr[ret_index[i]], nodes->at(ret_index[i]).weight) *
-                                                  nodes->at(ret_index[i]).transform * eps;
+                                          nodes->at(ret_index[i]).transform * eps;
     }
 
     auto norm = quaternion_sum.magnitude();
@@ -313,7 +346,7 @@ void WarpField::buildKDTree()
     //    Build kd-tree with current warp nodes.
     cloud.pts.resize(nodes->size());
     for(size_t i = 0; i < nodes->size(); i++)
-        nodes->at(i).transform.getTranslation(cloud.pts[i]);
+        cloud.pts[i] = nodes->at(i).vertex;
     index->buildIndex();
 }
 

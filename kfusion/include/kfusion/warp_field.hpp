@@ -50,6 +50,7 @@ namespace kfusion
         ~WarpField();
 
         void init(const cv::Mat& first_frame, const cv::Mat& normals);
+        void init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -61,8 +62,7 @@ namespace kfusion
         float energy_data(const std::vector<Vec3f> &canonical_vertices,
                           const std::vector<Vec3f> &canonical_normals,
                           const std::vector<Vec3f> &live_vertices,
-                          const std::vector<Vec3f> &live_normals,
-                          const Intr& intr);
+                          const std::vector<Vec3f> &live_normals);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
