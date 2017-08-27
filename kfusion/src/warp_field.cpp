@@ -48,7 +48,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
             if(!std::isnan(point.x))
             {
                 nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                                                        utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                                                                                         utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
 
                 nodes->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes->at(i*first_frame.cols+j).weight = voxel_size;
@@ -121,7 +121,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Problem problem;
     int i = 0;
 
-    double *parameters_ = new double[nodes->size() * 6];
+    double *parameters = new double[nodes->size() * 6];
     std::vector<cv::Vec3d> double_vertices;
     for(auto v : canonical_vertices)
     {
@@ -136,7 +136,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(vl, Vec3f(1,0,0), v, Vec3f(1,0,0), this); // FIXME: send proper parameters, this is a test
         problem.AddResidualBlock(cost_function,
                                  NULL /* squared loss */,
-                                 parameters_);
+                                 parameters);
         i++;
     }
     // Make Ceres automatically detect the bundle structure. Note that the
@@ -151,11 +151,55 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     for(int i = 0; i < nodes->size() * 6; i++)
     {
-        std::cout<<parameters_[i]<<" ";
+        std::cout<<parameters[i]<<" ";
         if((i+1) % 6 == 0)
             std::cout<<std::endl;
     }
-    delete[] parameters_;
+
+
+
+    float weights[KNN_NEIGHBOURS];
+    auto canonical2 = canonical_vertices;
+    for(auto v : canonical_vertices)
+    {
+        utils::Quaternion<float> rotation(0,0,0,0);
+        Vec3f translation(0,0,0);
+        getWeightsAndUpdateKNN(v, weights);
+        for(int i = 0; i < KNN_NEIGHBOURS; i++)
+        {
+            auto block_position = ret_index[i];
+            std::cout<<ret_index[i]<<" Weight:"<<weights[i]<<" ";
+            utils::Quaternion<float> rotation1(Vec3f(parameters[block_position],
+                                                     parameters[block_position+1],
+                                                     parameters[block_position+2]));
+            rotation = rotation + weights[i] * rotation1 * nodes->at(block_position).transform.getRotation();
+
+            Vec3f translation1(parameters[block_position+3],
+                               parameters[block_position+4],
+                               parameters[block_position+5]);
+            Vec3f t;
+            nodes->at(block_position).transform.getTranslation(t[0],t[1],t[2]);
+            translation += weights[i]*t + translation1;
+        }
+        rotation.rotate(v);
+        v += translation;
+        std::cout<<std::endl<<"Value of v:"<<v<<std::endl;
+    }
+    for(auto v : canonical_vertices)
+    {
+        utils::DualQuaternion<float> final_quat = DQB(v, parameters);
+        final_quat.transform(v);
+        std::cout<<"Value of v[ "<<i<<" ]:"<<v<<std::endl;
+    }
+//    for(int i = 0; i < nodes->size() * 6; i+=6)
+//    {
+//        utils::Quaternion<float> rotation(Vec3f(parameters[i], parameters[i+1], parameters[i+2]));
+//        utils::Quaternion<float> translation(0, parameters[i+3], parameters[i+4], parameters[i+5]);
+//        auto epsilon = utils::DualQuaternion<float>(translation, rotation);
+//        final_quat = final_quat + nodes->at(i / 6).transform * epsilon;
+//    }
+
+    delete[] parameters;
     return 0;
 }
 /**
@@ -325,6 +369,7 @@ float WarpField::weighting(float squared_dist, float weight) const
  */
 void WarpField::KNN(Vec3f point) const
 {
+//    resultSet->init(&ret_index[0], &out_dist_sqr[0]);
     index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
 }
 
