@@ -22,15 +22,15 @@ TEST(DualQuaternionTest, DualQuaternionConstructor)
 
 TEST(DualQuaternionTest, get6DOF)
 {
-    DualQuaternion<float> dualQuaternion(1, 2, 3, 1, 2, 3);
+    DualQuaternion<float> dualQuaternion(1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f);
     float x, y, z, roll, pitch, yaw;
     dualQuaternion.get6DOF(x, y, z, roll, pitch, yaw);
-    EXPECT_EQ(x, 1);
-    EXPECT_EQ(y, 2);
-    EXPECT_EQ(z, 3);
-    EXPECT_EQ(roll, 1);
-    EXPECT_EQ(pitch, 2);
-    EXPECT_EQ(yaw, 3);
+    EXPECT_FLOAT_EQ(x, 1.0f);
+    EXPECT_FLOAT_EQ(y, 2.0f);
+    EXPECT_FLOAT_EQ(z, 3.0f);
+    EXPECT_FLOAT_EQ(roll, 1.0f);
+    EXPECT_FLOAT_EQ(pitch, 2.0f);
+    EXPECT_FLOAT_EQ(yaw, 3.0f);
 }
 
 TEST(DualQuaternionTest, isAssociative)
@@ -50,4 +50,30 @@ TEST(DualQuaternionTest, isAssociative)
     auto result = test11 + test12;
 
     EXPECT_NE(test2, result);
+}
+TEST(DualQuaternionTest, canSplitOperations)
+{
+    DualQuaternion<float> dualQuaternion(1, 2, 3, 1, 2, 3);
+    DualQuaternion<float> dualQuaternion1(3, 4, 5, 3, 4, 5);
+    dualQuaternion.encodeRotation(1,2,3);
+    dualQuaternion1.encodeRotation(3,4,5);
+    cv::Vec3f test1(1,0,0);
+    cv::Vec3f test2(1,0,0);
+    cv::Vec3f t1, t2;
+
+    auto cumul = dualQuaternion1 + dualQuaternion;
+    auto quat1 = dualQuaternion.getRotation() + dualQuaternion1.getRotation();
+    dualQuaternion.getTranslation(t1);
+    dualQuaternion1.getTranslation(t2);
+    auto trans = t1 + t2;
+
+
+    cumul.normalize();
+    cumul.transform(test1);
+//    auto result = test1 + test12;
+    quat1.rotate(test2);
+    auto result = test2 + trans;
+    std::cout<<test1<<std::endl;
+    std::cout<<test2<<std::endl;
+    EXPECT_NE(test1, result);
 }

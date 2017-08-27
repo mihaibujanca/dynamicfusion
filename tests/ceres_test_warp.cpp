@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     // Create residuals for each observation in the bundle adjustment problem. The
     // parameters for cameras and points are added automatically.
     ceres::Problem problem;
+
     for (int i = 0; i < warpProblem.num_observations(); ++i) {
         // Each Residual block takes a point and a camera as input and outputs a 2
         // dimensional residual. Internally, the cost function stores the observed

@@ -95,6 +95,8 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Problem problem;
     int i = 0;
     double *epsilon = new double[getNodes()->size() * 6];
+
+    std::vector<cv::Vec3d> double_vertices;
     for(auto v : canonical_vertices)
     {
         // Each Residual block takes a point and a camera as input and outputs a 2
@@ -102,12 +104,10 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         // image location and compares the reprojection against the observation.
         if(std::isnan(v[0]))
             continue;
-//        else
-//            std::cout<<"NOTNAN"<<std::endl;
+
         cv::Vec3f vl(v[0] + 1,v[0] + 2,v[0] + 3);
 
-        ceres::CostFunction* cost_function =
-                DynamicFusionDataEnergy::Create(vl, v, this);
+        ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(vl, Vec3f(1,0,0), v, Vec3f(1,0,0), this); // FIXME: send proper parameters, this is a test
         problem.AddResidualBlock(cost_function,
                                  NULL /* squared loss */,
                                  epsilon);
