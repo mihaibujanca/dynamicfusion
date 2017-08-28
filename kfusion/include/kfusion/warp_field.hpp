@@ -66,12 +66,9 @@ namespace kfusion
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        float tukeyPenalty(float x, float c = 4.685) const;
+        float tukeyPenalty(float x, float c = 0.01) const;
 
         float huberPenalty(float a, float delta) const;
-
-        void warp(std::vector<Point, std::allocator<Point>>& points,
-                  std::vector<Point, std::allocator<Point>>& normals) const;
 
         void warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const;
         void warp(cuda::Cloud& points) const;
@@ -84,13 +81,14 @@ namespace kfusion
         float weighting(float squared_dist, float weight) const;
         void KNN(Vec3f point) const;
 
-        //        std::vector<kfusion::utils::DualQuaternion<float>> getQuaternions() const;
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
-        std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
+
+
+        std::vector<float> out_dist_sqr;
         std::vector<size_t> ret_index;
 
     private:

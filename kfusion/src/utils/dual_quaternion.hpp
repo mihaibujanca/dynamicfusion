@@ -28,6 +28,7 @@ namespace kfusion {
              * \brief constructor that takes cartesian coordinates and Euler angles as
              *        arguments.
              */
+//            FIXME: always use Rodrigues angles, not Euler
             DualQuaternion(T x, T y, T z, T roll, T pitch, T yaw)
             {
                 // convert here.

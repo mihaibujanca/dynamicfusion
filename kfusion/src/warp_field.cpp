@@ -25,14 +25,17 @@ WarpField::WarpField()
 }
 
 WarpField::~WarpField()
-{}
+{
+    delete[] nodes;
+    delete resultSet;
+    delete index;
+}
 
 /**
  *
- * @param frame
- * \note The pose is assumed to be the identity, as this is the first frame
+ * @param first_frame
+ * @param normals
  */
-// maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
 void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 {
     assert(first_frame.rows == normals.rows);
@@ -47,8 +50,12 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
             auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(utils::Quaternion<float>(0,point.x, point.y, point.z),
-                                                                                         utils::Quaternion<float>(Vec3f(norm.x,norm.y,norm.z)));
+                utils::Quaternion<float> r(Vec3f(norm.x,norm.y,norm.z));
+                if(std::isnan(r.w_) || std::isnan(r.x_) ||std::isnan(r.y_) ||std::isnan(r.z_))
+                    continue;
+
+                utils::Quaternion<float> t(0,point.x, point.y, point.z);
+                nodes->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, r);
 
                 nodes->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes->at(i*first_frame.cols+j).weight = voxel_size;
@@ -59,10 +66,9 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 
 /**
  *
- * @param frame
- * \note The pose is assumed to be the identity, as this is the first frame
+ * @param first_frame
+ * @param normals
  */
-// maybe remove this later and do everything as part of energy since all this code is written twice. Leave it for now.
 void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals)
 {
     nodes->resize(first_frame.size());
@@ -79,7 +85,7 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
             nodes->at(i).transform = utils::DualQuaternion<float>(t,r);
 
             nodes->at(i).vertex = point;
-            nodes->at(i).weight = 1; //FIXME: this is just a test
+            nodes->at(i).weight = voxel_size;
         }
     }
     buildKDTree();
@@ -105,10 +111,12 @@ void WarpField::energy(const cuda::Cloud &frame,
 }
 
 /**
- * \brief
- * \param frame
- * \param pose
- * \param tsdfVolume
+ *
+ * @param canonical_vertices
+ * @param canonical_normals
+ * @param live_vertices
+ * @param live_normals
+ * @return
  */
 float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                              const std::vector<Vec3f> &canonical_normals,
@@ -116,32 +124,22 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                              const std::vector<Vec3f> &live_normals
 )
 {
-    // Create residuals for each observation in the bundle adjustment problem. The
-    // parameters for cameras and points are added automatically.
+
     ceres::Problem problem;
     int i = 0;
 
-    double *parameters = new double[nodes->size() * 6];
+    auto parameters = new double[nodes->size() * 6];
     std::vector<cv::Vec3d> double_vertices;
     for(auto v : canonical_vertices)
     {
-        // Each Residual block takes a point and a camera as input and outputs a 2
-        // dimensional residual. Internally, the cost function stores the observed
-        // image location and compares the reprojection against the observation.
         if(std::isnan(v[0]))
             continue;
-
-        cv::Vec3f vl(v[0] + 1,v[0] + 2,v[0] + 3);
-
-        ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(vl, Vec3f(1,0,0), v, Vec3f(1,0,0), this); // FIXME: send proper parameters, this is a test
+        ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i], Vec3f(1,0,0), v, Vec3f(1,0,0), this);
         problem.AddResidualBlock(cost_function,
                                  NULL /* squared loss */,
                                  parameters);
         i++;
     }
-    // Make Ceres automatically detect the bundle structure. Note that the
-    // standard solver, SPARSE_NORMAL_CHOLESKY, also works fine but it is slower
-    // for standard bundle adjustment problems.
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;
     options.minimizer_progress_to_stdout = true;
@@ -191,13 +189,6 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         final_quat.transform(v);
         std::cout<<"Value of v[ "<<i<<" ]:"<<v<<std::endl;
     }
-//    for(int i = 0; i < nodes->size() * 6; i+=6)
-//    {
-//        utils::Quaternion<float> rotation(Vec3f(parameters[i], parameters[i+1], parameters[i+2]));
-//        utils::Quaternion<float> translation(0, parameters[i+3], parameters[i+4], parameters[i+5]);
-//        auto epsilon = utils::DualQuaternion<float>(translation, rotation);
-//        final_quat = final_quat + nodes->at(i / 6).transform * epsilon;
-//    }
 
     delete[] parameters;
     return 0;
@@ -243,8 +234,9 @@ float WarpField::huberPenalty(float a, float delta) const
 }
 
 /**
- * Modifies the
+ *
  * @param points
+ * @param normals
  */
 void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const
 {
@@ -263,31 +255,6 @@ void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) co
         i++;
     }
 }
-
-
-/**
- * Modifies the
- * @param points
- */
-void WarpField::warp(cuda::Cloud& points) const
-{
-    int i = 0;
-    int nans = 0;
-//    for (auto& point : points)
-//    {
-//        i++;
-//        if(std::isnan(point[0]) || std::isnan(point[1]) || std::isnan(point[2]))
-//        {
-//            nans++;
-//            continue;
-//        }
-//        KNN(point);
-//        utils::DualQuaternion<float> dqb = DQB(point);
-//        point = warp_to_live * point; // Apply T_lw first. Is this not inverse of the pose?
-//        dqb.transform(point);
-//    }
-}
-
 
 /**
  * \brief
