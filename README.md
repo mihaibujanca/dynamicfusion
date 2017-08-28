@@ -28,9 +28,9 @@ Optional dependencies:
 * Doxygen for documentation
 * OpenNI v1.5.4 for getting input straight from a kinect device.
 
-# Building instructions:
+## Building instructions:
 
-## Linux
+### Linux
 Install NVIDIA drivers.A good tutorial with some common issues covered can be found [here](
 https://askubuntu.com/a/61433/167689).
 
@@ -77,22 +77,22 @@ To build documentation, go to the project root directory and execute
 doxygen -g
 doxygen Doxyfile
 ```
-## Windows
-Install [NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
-To install LAPACK, follow instructions [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
-To install VTK, [download](http://www.vtk.org/download/) and build from source.\
-Download and install opencv - [instructions here](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
-Install [Boost](http://www.boost.org/users/download/)
+### Windows
+[Install NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
+[Install LAPACK](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
+[Install VTK](http://www.vtk.org/download/) (download and build from source)\
+[Install OpenCV](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
+[Install Boost](http://www.boost.org/users/download/)
 
  
 Optionals:\
-Doxygen has a downloadable installer which you can find [here](http://www.stack.nl/~dimitri/doxygen/download.html).\
+[Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html).\
 [GTest](https://github.com/google/googletest) \
 [OpenNI]( http://pointclouds.org/downloads/windows.html)
 
 
 
-# Run instructions
+## Run instructions
 For Unix users, go to the root of the project and run `chmod +x download_data` then `./download_data` to download an example dataset. 
 To run, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
 
