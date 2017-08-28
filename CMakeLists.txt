@@ -7,7 +7,7 @@ if (DEFINED CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif()
 
-#find_package(Doxygen)
+find_package(Doxygen)
 if(DOXYGEN_FOUND)
 
   set(DOXYGEN_INPUT ${SOURCE_FILES})
@@ -60,7 +60,6 @@ endif()
 
 # ---[ cuda settings
 set(HAVE_CUDA 1)
-#list(APPEND CUDA_NVCC_FLAGS "-arch;compute_20")
 list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_61,code=sm_61")
 
 if(UNIX OR APPLE)
