@@ -51,6 +51,7 @@ namespace kfusion{
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
+                normalize();
             }
 
             ~Quaternion()
@@ -119,11 +120,12 @@ namespace kfusion{
              * \brief rotate a vector3 (x,y,z) by the angle theta about the axis
              * (U_x, U_y, U_z) stored in the quaternion.
              */
-            void rotate(Vec3f& v)
+            void rotate(Vec3f& v) const
             {
-                normalize();
-                Vec3f q_vec(x_, y_, z_);
-                v += (q_vec*2.f).cross( q_vec.cross(v) + v*w_ );
+                auto rot= *this;
+                rot.normalize();
+                Vec3f q_vec(rot.x_, rot.y_, rot.z_);
+                v += (q_vec*2.f).cross( q_vec.cross(v) + v*rot.w_ );
             }
 
             /**
