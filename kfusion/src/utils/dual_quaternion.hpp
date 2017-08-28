@@ -2,7 +2,7 @@
 #define DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #include<iostream>
 #include<quaternion.hpp>
-//TODO: Quaternion class can be forward declared rather than included
+
 //Adapted from https://github.com/Poofjunior/QPose
 /**
  * \brief a dual quaternion class for encoding transformations.
@@ -12,6 +12,10 @@
  */
 namespace kfusion {
     namespace utils {
+        static float epsilon()
+        {
+            return 1e-6;
+        }
         template<typename T>
         class DualQuaternion {
         public:
@@ -62,6 +66,14 @@ namespace kfusion {
             {
                 rotation_.encodeRotation(angle, x, y, z);
             }
+            /**
+             * \brief store a rotation
+             * \param angle is in radians
+             */
+            void encodeRotation(T x, T y, T z)
+            {
+                rotation_.encodeRotation(sqrt(x*x+y*y+z*z), x, y, z);
+            }
 
             void encodeTranslation(T x, T y, T z)
             {
@@ -69,7 +81,7 @@ namespace kfusion {
             }
 
             /// handle accumulating error.
-            void normalizeRotation()
+            void normalize()
             {
                 T x, y, z;
                 getTranslation(x, y, z);
@@ -85,7 +97,9 @@ namespace kfusion {
              */
             void getTranslation(T &x, T &y, T &z) const
             {
-                Quaternion<T> result = 2 * translation_ * rotation_.conjugate();
+                auto rot = rotation_;
+                rot.normalize();
+                Quaternion<T> result = 2 * translation_ * rot.conjugate();
                 /// note: inverse of a quaternion is the same as the conjugate.
                 x = result.x_;
                 y = result.y_;
@@ -96,9 +110,13 @@ namespace kfusion {
              * \brief a reference-based method for acquiring the latest
              *        translation data.
              */
+//FIXME: need to make sure rotation is normalized in all getTranslation functions.
             void getTranslation(Vec3f& vec3f) const
             {
-                Quaternion<T> result = 2 * translation_ * rotation_.conjugate();
+
+                auto rot = rotation_;
+                rot.normalize();
+                Quaternion<T> result = 2 * translation_ * rot.conjugate();
                 vec3f = Vec3f(result.x_, result.y_, result.z_);
             }
 
@@ -198,15 +216,33 @@ namespace kfusion {
                 Vec3f translation;
                 getTranslation(translation);
                 rotation_.rotate(point);
-//                point += translation;
+                point += translation;
+            }
+
+            void from_twist(const float &r0, const float &r1, const float &r2,
+                            const float &x, const float &y, const float &z)
+            {
+                Vec3f r(r0,r1,r2), t(x,y,z);
+                float norm = sqrt(r0*r0 + r1 * r1 + r2 * r2);
+                Quaternion<T> rotation;
+                if (norm > epsilon())
+                {
+                    float cosNorm = cos(norm);
+                    float sign = (cosNorm > 0.f) - (cosNorm < 0.f);
+                    cosNorm *= sign;
+                    float sinNorm_norm = sign * sin(norm) / norm;
+                    rotation = Quaternion<T>(cosNorm, r0 * sinNorm_norm, r1 * sinNorm_norm, r2 * sinNorm_norm);
+                }
+                else
+                    rotation = Quaternion<T>();
+
+                translation_ = Quaternion<T>(0, x, y, z);
+                rotation_ = rotation;
             }
 
             std::pair<T,T> magnitude()
             {
                 DualQuaternion result = (*this) * (*this).conjugate();
-                // TODO: only print when debugging
-//                std::cout << result.rotation_;
-//                std::cout << result.translation_;
                 return std::make_pair(result.rotation_.w_, result.translation_.w_);
             }
 

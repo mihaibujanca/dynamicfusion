@@ -162,7 +162,7 @@ void kfusion::OpenNISource::open(const std::string& filename, bool repeat /*= fa
         sprintf (impl_->strError, "Open failed: %s\n", xnGetStatusString (rc));
         REPORT_ERROR (impl_->strError);
     }
-    
+
     impl_->player_.SetRepeat(repeat);
 
     rc = impl_->context.FindExistingNode (XN_NODE_TYPE_DEPTH, impl_->depth);

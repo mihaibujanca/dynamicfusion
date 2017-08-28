@@ -119,10 +119,10 @@ namespace kfusion
             int y = threadIdx.y + blockIdx.y * blockDim.y;
             float qnan = numeric_limits<float>::quiet_NaN ();
             if (x < cols || y < rows) {
-                auto pt = points(y, x);
+                Point pt = points(y, x);
                 if(isnan(pt.x) || isnan(pt.y) || isnan(pt.z))
                     return;
-                auto point = make_float3(pt.x, pt.y, pt.z);
+                float3 point = make_float3(pt.x, pt.y, pt.z);
                 float2 coo = proj(point);
                 if (coo.x < 0 || coo.y < 0 || coo.y >= rows || coo.x >= cols)
                 {

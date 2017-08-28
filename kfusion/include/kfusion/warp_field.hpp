@@ -42,7 +42,6 @@ namespace kfusion
         Vec3f vertex;
         kfusion::utils::DualQuaternion<float> transform;
         float weight = 0;
-        bool valid = true;
     };
     class WarpField
     {
@@ -51,6 +50,7 @@ namespace kfusion
         ~WarpField();
 
         void init(const cv::Mat& first_frame, const cv::Mat& normals);
+        void init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -59,24 +59,27 @@ namespace kfusion
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
 
-        void energy_data(const cuda::Depth &frame,
-                         const Affine3f &pose,
-                         const cuda::TsdfVolume &tsdfVolume
-        );
-
+        float energy_data(const std::vector<Vec3f> &canonical_vertices,
+                          const std::vector<Vec3f> &canonical_normals,
+                          const std::vector<Vec3f> &live_vertices,
+                          const std::vector<Vec3f> &live_normals);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        float tukeyPenalty(float x, float c) const;
+        float tukeyPenalty(float x, float c = 4.685) const;
 
         float huberPenalty(float a, float delta) const;
 
         void warp(std::vector<Point, std::allocator<Point>>& points,
                   std::vector<Point, std::allocator<Point>>& normals) const;
 
-        void warp(std::vector<Vec3f>& points) const;
+        void warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const;
+        void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const;
+
+        void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]);
 
         float weighting(float squared_dist, float weight) const;
         void KNN(Vec3f point) const;
@@ -88,12 +91,11 @@ namespace kfusion
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
         std::vector<float> out_dist_sqr; //FIXME: shouldn't be public
+        std::vector<size_t> ret_index;
 
     private:
-        //    FIXME: should be a pointer
-        std::vector<deformation_node> nodes;
+        std::vector<deformation_node>* nodes;
         kd_tree_t* index;
-        std::vector<size_t> ret_index;
         nanoflann::KNNResultSet<float> *resultSet;
         Affine3f warp_to_live;
         void buildKDTree();

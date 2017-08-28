@@ -1,6 +1,6 @@
 #ifndef DYNAMIC_FUSION_QUATERNION_HPP
 #define DYNAMIC_FUSION_QUATERNION_HPP
-
+#pragma once
 #include <iostream>
 #include <kfusion/types.hpp>
 //Adapted from https://github.com/Poofjunior/QPose
@@ -42,7 +42,7 @@ namespace kfusion{
 
                 Vec3f t1 = normal.cross(t0);
                 t1 = cv::normalize(t1);
-                //TODO: IMPORTANT. Check if this is row major or column majorl
+
                 cv::Mat3f matrix;
                 matrix.push_back(t0);
                 matrix.push_back(t1);
@@ -51,6 +51,7 @@ namespace kfusion{
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
+                normalize();
             }
 
             ~Quaternion()
@@ -69,10 +70,11 @@ namespace kfusion{
              */
             void encodeRotation(T theta, T x, T y, T z)
             {
+                auto sin_half = sin(theta / 2);
                 w_ = cos(theta / 2);
-                x_ = x * sin(theta / 2);
-                y_ = y * sin(theta / 2);
-                z_ = z * sin(theta / 2);
+                x_ = x * sin_half;
+                y_ = y * sin_half;
+                z_ = z * sin_half;
                 normalize();
             }
 
@@ -83,11 +85,16 @@ namespace kfusion{
              */
             void getRodrigues(T& x, T& y, T& z)
             {
-//                FIXME: breaks for w_ = 1
+                if(w_ == 1)
+                {
+                    x = y = z = 0;
+                    return;
+                }
                 T half_theta = acos(w_);
-                x = x_ / sin(half_theta) * tan(half_theta);
-                y = y_ / sin(half_theta) * tan(half_theta);
-                z = z_ / sin(half_theta) * tan(half_theta);
+                T k = sin(half_theta) * tan(half_theta);
+                x = x_ / k;
+                y = y_ / k;
+                z = z_ / k;
             }
 
 
@@ -113,12 +120,12 @@ namespace kfusion{
              * \brief rotate a vector3 (x,y,z) by the angle theta about the axis
              * (U_x, U_y, U_z) stored in the quaternion.
              */
-            void rotate(Vec3f& v)
+            void rotate(Vec3f& v) const
             {
-//                Faster way to compute rotation
-                normalize();
-                Vec3f q_vec(x_, y_, z_);
-                v += (q_vec*2.f).cross( q_vec.cross(v) + v*w_ );
+                auto rot= *this;
+                rot.normalize();
+                Vec3f q_vec(rot.x_, rot.y_, rot.z_);
+                v += (q_vec*2.f).cross( q_vec.cross(v) + v*rot.w_ );
             }
 
             /**
