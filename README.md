@@ -59,7 +59,7 @@ cmake .. -DWITH_VTK=ON -DBUILD_opencv_calib3d=ON BUILD_opencv_imgproc=ON
 make -j4
 sudo make install
 ```
-Get Boost [1.64.0](http://www.boost.org/users/history/version_1_64_0.html) or above. Don't install it through apt-get as it sometimes results in linking errors on Ubuntu 16.04.
+Get [Boost 1.64.0](http://www.boost.org/users/download/) or above. Don't install it through apt-get as it sometimes results in linking errors on Ubuntu 16.04.
 
 Optionals:
 Doxygen can be installed through apt-get: `sudo apt-get install doxygen`.
@@ -75,10 +75,20 @@ cmake ..
 make -j4
 ```
 ## Windows
-Install [NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)
-To install LAPACK, follow instructions [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/).
-To install VTK, [download](http://www.vtk.org/download/) and build from source.
-Download and install opencv - [instructions here](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html) 
+Install [NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
+To install LAPACK, follow instructions [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
+To install VTK, [download](http://www.vtk.org/download/) and build from source.\
+Download and install opencv - [instructions here](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
+Install [Boost](http://www.boost.org/users/download/)
+
+ 
+Optionals:\
+Doxygen has a downloadable installer which you can find [here](http://www.stack.nl/~dimitri/doxygen/download.html).\
+[GTest](https://github.com/google/googletest) \
+[OpenNI]( http://pointclouds.org/downloads/windows.html)
+
+
+
 # Run instructions
 For Unix users, go to the root of the project and run `chmod +x download_data` then `./download_data` to download an example dataset. 
 To run, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
@@ -106,3 +116,7 @@ url = "http://dx.doi.org/10.1007/978-3-319-46484-8_22"
 }
 ```
 
+To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
+
+---
+Note: currently, the framerate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
