@@ -32,14 +32,7 @@ Optional dependencies:
 
 ## Linux
 Install NVIDIA drivers and CUDA.
-
-For Ubuntu 16.04:
-```
-sudo apt-get purge nvidia*
-sudo apt-get nvidia-375 nvidia-settings
-```
-For laptops with an integrated Intel GPU and a discrete NVIDIA one, also install nvidia-prime:
-`sudo apt-get nvidia-prime`. A complete tutorial with some common issues covered can be found [here](
+A complete good tutorial with some common issues covered can be found [here](
 https://askubuntu.com/a/61433/167689).
 
 Download and install CUDA from the [NVIDIA website](https://developer.nvidia.com/cuda-downloads).
@@ -49,8 +42,7 @@ Install VTK, SuiteSparse, BLAS and LAPACK
 sudo apt-get install libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev
 ```
 
-Clone and install Ceres Solver
-`git clone https://ceres-solver.googlesource.com/ceres-solver`.
+Clone Ceres Solver `git clone https://ceres-solver.googlesource.com/ceres-solver`, then build and install using `cmake` and `make`.
 
 Clone and install opencv. The project should work with any version above 2.4.8
 ```
