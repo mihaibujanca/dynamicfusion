@@ -1,4 +1,5 @@
 include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
+find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
 
 add_executable(dynamicfusion demo.cpp)
 target_link_libraries(dynamicfusion ${OpenCV_LIBS} ${Boost_LIBRARIES} kfusion)
