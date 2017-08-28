@@ -9,11 +9,11 @@
 
 using namespace kfusion;
 
-struct KinFuApp
+struct DynamicFusionApp
 {
     static void KeyboardCallback(const cv::viz::KeyboardEvent& event, void* pthis)
     {
-        KinFuApp& kinfu = *static_cast<KinFuApp*>(pthis);
+        DynamicFusionApp& kinfu = *static_cast<DynamicFusionApp*>(pthis);
 
         if(event.action != cv::viz::KeyboardEvent::KEY_DOWN)
             return;
@@ -25,7 +25,7 @@ struct KinFuApp
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
     }
 
-    KinFuApp(std::string dir) : exit_ (false), interactive_mode_(false), pause_(false), directory(true), dir_name(dir)
+    DynamicFusionApp(std::string dir) : exit_ (false), interactive_mode_(false), pause_(false), directory(true), dir_name(dir)
     {
         KinFuParams params = KinFuParams::default_params_dynamicfusion();
         kinfu_ = KinFu::Ptr( new KinFu(params) );
@@ -65,7 +65,7 @@ struct KinFuApp
 
     bool execute()
     {
-        KinFu& kinfu = *kinfu_;
+        KinFu& dfusion = *kinfu_;
         cv::Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
@@ -88,26 +88,26 @@ struct KinFuApp
             {
                 SampledScopeTime fps(time_ms);
                 (void) fps;
-                has_image = kinfu(depth_device_);
+                has_image = dfusion(depth_device_);
             }
 
             if (has_image)
-                show_raycasted(kinfu);
+                show_raycasted(dfusion);
 
             show_depth(depth);
             cv::imshow("Image", image);
 
             if (!interactive_mode_) {
-                viz.setViewerPose(kinfu.getCameraPose());
-                viz1.setViewerPose(kinfu.getCameraPose());
+                viz.setViewerPose(dfusion.getCameraPose());
+                viz1.setViewerPose(dfusion.getCameraPose());
             }
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-            show_warp(kinfu);
+            show_warp(dfusion);
             switch (key) {
                 case 't':
                 case 'T' :
-                    show_warp(kinfu);
+                    show_warp(dfusion);
                     break;
                 case 'i':
                 case 'I' :
@@ -154,9 +154,9 @@ int main (int argc, char* argv[])
     if(cuda::checkIfPreFermiGPU(device))
         return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
 
-    KinFuApp *app;
+    DynamicFusionApp *app;
     if(boost::filesystem::is_directory(argv[1]))
-        app = new KinFuApp(argv[1]);
+        app = new DynamicFusionApp(argv[1]);
 
     // executing
     try { app->execute (); }
