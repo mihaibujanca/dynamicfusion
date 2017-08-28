@@ -22,7 +22,7 @@ Dependencies:
 
 Implicit dependency (needed by opencv_viz):
 * VTK 5.8.0 or higher. (apt-get install on linux, for windows please download and compile from www.vtk.org)
-* 
+* SuiteSparse, BLAS and LAPACK for ceres
 Optional dependencies:
 * GTest for testing
 * Doxygen for documentation
@@ -48,6 +48,10 @@ Install VTK, SuiteSparse, BLAS and LAPACK
 ```
 sudo apt-get install libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev
 ```
+
+Clone and install Ceres Solver
+`git clone https://ceres-solver.googlesource.com/ceres-solver`.
+
 Clone and install opencv. The project should work with any version above 2.4.8
 ```
 git clone https://github.com/opencv/opencv
