@@ -2,15 +2,6 @@ DynamicFusion
 ============
 Implementation of [Newcombe et al. 2015 DynamicFusion paper](http://grail.cs.washington.edu/projects/dynamicfusion/papers/DynamicFusion.pdf).
 
-```
-@InProceedings{Newcombe_2015_CVPR,
-author = {Newcombe, Richard A. and Fox, Dieter and Seitz, Steven M.},
-title = {DynamicFusion: Reconstruction and Tracking of Non-Rigid Scenes in Real-Time},
-booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-month = {June},
-year = {2015}
-}
-```
 The code is based on this [KinectFusion implemenation](https://github.com/Nerei/kinfu_remake)
 
 Dependencies:
@@ -78,29 +69,52 @@ doxygen -g
 doxygen Doxyfile
 ```
 ### Windows
-[Install NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
-[Install LAPACK](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
-[Install VTK](http://www.vtk.org/download/) (download and build from source)\
-[Install OpenCV](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
-[Install Boost](http://www.boost.org/users/download/)
+* [Install NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)
+* [Install LAPACK](http://icl.cs.utk.edu/lapack-for-windows/lapack/).
+* [Install VTK](http://www.vtk.org/download/) (download and build from source)
+* [Install OpenCV](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
+* [Install Boost](http://www.boost.org/users/download/)
 
  
 Optionals:\
-[Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html).\
-[GTest](https://github.com/google/googletest) \
-[OpenNI]( http://pointclouds.org/downloads/windows.html)
+* [Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html)
+* [GTest](https://github.com/google/googletest) 
+* [OpenNI]( http://pointclouds.org/downloads/windows.html)
 
 
 
 ## Run instructions
-For Unix users, go to the root of the project and run `chmod +x download_data` then `./download_data` to download an example dataset. 
-To run, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
+### Unix
+Download an example dataset using `./download_data`. 
+To run the project, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
 
-For Windows users, download the data from [here](http://lgdv.cs.fau.de/uploads/publications/data/innmann2016deform/umbrella_data.zip).
-Create a `data` folder inside the project root directory. Unzip the archive into `data` and remove any files that are not .png. 
-Inside `data`, create directories `color` and `depth`, and move frames to their corresponding folders.
+### Windows
+[Download the dataset](http://lgdv.cs.fau.de/uploads/publications/data/innmann2016deform/umbrella_data.zip).\
+Create a `data` folder inside the project root directory. \
+Unzip the archive into `data` and remove any files that are not .png. \
+Inside `data`, create directories `color` and `depth`, and move color and depth frames to their corresponding folders.
 
-The data is taken from the [VolumeDeform project](http://lgdv.cs.fau.de/publications/publication/Pub.2016.tech.IMMD.IMMD9.volume_6/).
+
+
+To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
+
+---
+Note: currently, the frame rate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
+
+## References
+[DynamicFusion project page](http://grail.cs.washington.edu/projects/dynamicfusion/)
+
+```
+@InProceedings{Newcombe_2015_CVPR,
+author = {Newcombe, Richard A. and Fox, Dieter and Seitz, Steven M.},
+title = {DynamicFusion: Reconstruction and Tracking of Non-Rigid Scenes in Real-Time},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+month = {June},
+year = {2015}
+}
+```
+
+The example dataset is taken from the [VolumeDeform project](http://lgdv.cs.fau.de/publications/publication/Pub.2016.tech.IMMD.IMMD9.volume_6/).
 ```
 @inbook{innmann2016volume,
 author = "Innmann, Matthias and Zollh{\"o}fer, Michael and Nie{\ss}ner, Matthias and Theobalt, Christian 
@@ -118,8 +132,3 @@ doi = "10.1007/978-3-319-46484-8_22",
 url = "http://dx.doi.org/10.1007/978-3-319-46484-8_22"
 }
 ```
-
-To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
-
----
-Note: currently, the frame rate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
