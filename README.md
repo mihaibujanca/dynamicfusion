@@ -78,6 +78,14 @@ cd build
 cmake ..
 make -j4
 ```
+
+If you want to build the tests as well, make sure you pass `-DBUILD_TESTS=ON` to the cmake command.
+
+To build documentation, go to the project root directory and execute
+```
+doxygen -g
+doxygen Doxyfile
+```
 ## Windows
 Install [NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
 To install LAPACK, follow instructions [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
