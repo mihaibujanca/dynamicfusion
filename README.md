@@ -21,7 +21,7 @@ Dependencies:
 * Ceres solver (Tested with version [1.13.0](http://ceres-solver.org/ceres-solver-1.13.0.tar.gz))
 
 Implicit dependency (needed by opencv_viz):
-* VTK 5.8.0 or higher. (apt-get install on linux, for windows please download and compile from www.vtk.org)
+* VTK 5.8.0 or higher
 * SuiteSparse, BLAS and LAPACK for ceres
 Optional dependencies:
 * GTest for testing
@@ -123,4 +123,4 @@ url = "http://dx.doi.org/10.1007/978-3-319-46484-8_22"
 To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
 
 ---
-Note: currently, the framerate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
+Note: currently, the frame rate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
