@@ -31,8 +31,7 @@ Optional dependencies:
 # Building instructions:
 
 ## Linux
-Install NVIDIA drivers and CUDA.
-A complete good tutorial with some common issues covered can be found [here](
+Install NVIDIA drivers.A good tutorial with some common issues covered can be found [here](
 https://askubuntu.com/a/61433/167689).
 
 Download and install CUDA from the [NVIDIA website](https://developer.nvidia.com/cuda-downloads).
