@@ -19,7 +19,7 @@ struct KinFuApp
             return;
 
         if(event.code == 't' || event.code == 'T')
-            kinfu.take_cloud(*kinfu.kinfu_);
+            kinfu.show_warp(*kinfu.kinfu_);
 
         if(event.code == 'i' || event.code == 'I')
             kinfu.interactive_mode_ = !kinfu.interactive_mode_;
@@ -40,7 +40,6 @@ struct KinFuApp
     static void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;
-        //cv::normalize(depth, display, 0, 255, cv::NORM_MINMAX, CV_8U);
         depth.convertTo(display, CV_8U, 255.0/4000);
         cv::imshow("Depth", display);
     }
@@ -58,14 +57,9 @@ struct KinFuApp
         cv::imshow("Scene", view_host_);
     }
 
-    void take_cloud(KinFu& kinfu)
+    void show_warp(KinFu &kinfu)
     {
-//        cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
-        cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
         cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
-
-//        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-//        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
         viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
@@ -75,49 +69,6 @@ struct KinFuApp
         cv::Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
-#ifdef OPENNI_FOUND
-        if(!directory)
-            for (int i = 0; !exit_ && !viz.wasStopped(); ++i)
-            {
-                bool has_frame = capture_.grab(depth, image);
-                if (!has_frame)
-                    return std::cout << "Can't grab" << std::endl, false;
-                depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
-
-                {
-                    SampledScopeTime fps(time_ms); (void)fps;
-                    has_image = kinfu(depth_device_);
-                }
-
-                if (has_image)
-                    show_raycasted(kinfu);
-
-                show_depth(depth);
-                cv::imshow("Image", image);
-
-                if (!interactive_mode_)
-                {
-                    viz.setViewerPose(kinfu.getCameraPose());
-                    viz1.setViewerPose(kinfu.getCameraPose());
-                }
-
-                int key = cv::waitKey(pause_ ? 0 : 3);
-                take_cloud(kinfu);
-                switch(key)
-                {
-                    case 't': case 'T' : take_cloud(kinfu); break;
-                    case 'i': case 'I' : interactive_mode_ = !interactive_mode_; break;
-                    case 27: exit_ = true; break;
-                    case 32: pause_ = !pause_; break;
-                }
-
-                //exit_ = exit_ || i > 100;
-                viz.spinOnce(3, true);
-                viz1.spinOnce(3, true);
-            }
-        else
-        {
-#endif
         std::vector<boost::filesystem::path> depths;             // store paths,
         std::vector<boost::filesystem::path> images;             // store paths,
 
@@ -152,11 +103,11 @@ struct KinFuApp
             }
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-            take_cloud(kinfu);
+            show_warp(kinfu);
             switch (key) {
                 case 't':
                 case 'T' :
-                    take_cloud(kinfu);
+                    show_warp(kinfu);
                     break;
                 case 'i':
                 case 'I' :
@@ -174,9 +125,6 @@ struct KinFuApp
             viz.spinOnce(3, true);
             viz1.spinOnce(3, true);
         }
-#ifdef OPENNI_FOUND
-        }
-#endif
         return true;
     }
 
