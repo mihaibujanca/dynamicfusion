@@ -1,3 +1,4 @@
+#ifdef OPENNI_FOUND
 #pragma warning (disable :4996)
 #undef _CRT_SECURE_NO_DEPRECATE
 #include "XnCppWrapper.h"
@@ -335,3 +336,4 @@ bool kfusion::OpenNISource::setRegistration (bool value)
     getParams ();
     return rc == XN_STATUS_OK;
 }
+#endif

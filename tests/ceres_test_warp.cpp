@@ -8,10 +8,7 @@
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
-    if (argc != 2) {
-        std::cerr << "usage: simple_bundle_adjuster <bal_problem>\n";
-        return 1;
-    }
+
     kfusion::WarpField warpField;
     std::vector<cv::Vec3f> warp_init;
     std::vector<cv::Vec3f> warp_normals;
