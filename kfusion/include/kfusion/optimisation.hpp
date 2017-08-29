@@ -11,25 +11,30 @@ struct DynamicFusionDataEnergy
                             cv::Vec3f live_normal,
                             cv::Vec3f canonical_vertex,
                             cv::Vec3f canonical_normal,
-                            kfusion::WarpField* warpField)
+                            kfusion::WarpField *warpField,
+                            const float weights[KNN_NEIGHBOURS],
+                            const unsigned long ret_index[KNN_NEIGHBOURS])
             : live_vertex_(live_vertex),
               live_normal_(live_normal),
               canonical_vertex_(canonical_vertex),
               canonical_normal_(canonical_normal),
-              warpField_(warpField) {}
+              warpField_(warpField),
+              weights_(weights),
+              ret_index_(ret_index)
+
+    {}
     template <typename T>
     bool operator()(T const * const * epsilon_, T* residuals) const
     {
         T const * epsilon = epsilon_[0];
-        float weights[KNN_NEIGHBOURS];
-        warpField_->getWeightsAndUpdateKNN(canonical_vertex_, weights);
+
         auto nodes = warpField_->getNodes();
         T total_quaternion[4] = {T(0), T(0), T(0), T(0)};
         T total_translation[3] = {T(0), T(0), T(0)};
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
-            int ret_index_i = warpField_->ret_index[i];
-            auto quat = weights[i] * nodes->at(ret_index_i).transform;
+            int ret_index_i = ret_index_[i];
+            auto quat = weights_[i] * nodes->at(ret_index_i).transform;
 
             T eps_r[3] = {epsilon[ret_index_i],epsilon[ret_index_i + 1],epsilon[ret_index_i + 2]};
             T eps_t[3] = {epsilon[ret_index_i + 3],epsilon[ret_index_i + 4],epsilon[ret_index_i + 5]};
@@ -106,23 +111,34 @@ struct DynamicFusionDataEnergy
     // Factory to hide the construction of the CostFunction object from
     // the client code.
 //      TODO: this will only have one residual at the end, remember to change
-    static ceres::CostFunction* Create(const cv::Vec3d live_vertex,
-                                       const cv::Vec3d live_normal,
-                                       const cv::Vec3f canonical_vertex,
-                                       const cv::Vec3f canonical_normal,
-                                       kfusion::WarpField* warpField) {
-        {
-            auto cost_function = new ceres::DynamicAutoDiffCostFunction<DynamicFusionDataEnergy, 4>(
-                    new DynamicFusionDataEnergy(live_vertex, live_normal, canonical_vertex, canonical_normal, warpField));
-            cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
-            cost_function->SetNumResiduals(3);
-            return cost_function;
-        }
+    static ceres::CostFunction* Create(const cv::Vec3d& live_vertex,
+                                       const cv::Vec3d& live_normal,
+                                       const cv::Vec3f& canonical_vertex,
+                                       const cv::Vec3f& canonical_normal,
+                                       kfusion::WarpField* warpField,
+                                       const float weights[KNN_NEIGHBOURS],
+                                       const unsigned long ret_index[KNN_NEIGHBOURS])
+    {
+        auto cost_function = new ceres::DynamicAutoDiffCostFunction<DynamicFusionDataEnergy, 4>(
+                new DynamicFusionDataEnergy(live_vertex,
+                                            live_normal,
+                                            canonical_vertex,
+                                            canonical_normal,
+                                            warpField,
+                                            weights,
+                                            ret_index));
+        cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
+        cost_function->SetNumResiduals(3);
+        return cost_function;
     }
     const cv::Vec3d live_vertex_;
     const cv::Vec3d live_normal_;
     const cv::Vec3f canonical_vertex_;
     const cv::Vec3f canonical_normal_;
+
+    const float *weights_;
+    const unsigned long *ret_index_;
+
     kfusion::WarpField *warpField_;
 };
 

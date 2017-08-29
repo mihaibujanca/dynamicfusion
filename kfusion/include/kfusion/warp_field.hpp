@@ -83,14 +83,14 @@ namespace kfusion
         void setWarpToLive(const Affine3f &pose);
 
 
-        std::vector<float> out_dist_sqr;
-        std::vector<size_t> ret_index;
+        std::vector<float> out_dist_sqr_;
+        std::vector<size_t> ret_index_;
 
     private:
-        std::vector<deformation_node>* nodes;
-        kd_tree_t* index;
-        nanoflann::KNNResultSet<float> *resultSet;
-        Affine3f warp_to_live;
+        std::vector<deformation_node>* nodes_;
+        kd_tree_t* index_;
+        nanoflann::KNNResultSet<float> *resultSet_;
+        Affine3f warp_to_live_;
         void buildKDTree();
     };
 }
