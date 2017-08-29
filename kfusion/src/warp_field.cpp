@@ -315,7 +315,6 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
 {
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        // epsilon [0:2] is rotation [3:5] is translation
         weights[i] = weighting(out_dist_sqr[i], nodes->at(ret_index[i]).weight);
 }
 
@@ -336,7 +335,6 @@ float WarpField::weighting(float squared_dist, float weight) const
  */
 void WarpField::KNN(Vec3f point) const
 {
-//    resultSet->init(&ret_index[0], &out_dist_sqr[0]);
     index->findNeighbors(*resultSet, point.val, nanoflann::SearchParams(10));
 }
 
