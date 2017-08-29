@@ -106,7 +106,6 @@ struct DynamicFusionDataEnergy
     // Factory to hide the construction of the CostFunction object from
     // the client code.
 //      TODO: this will only have one residual at the end, remember to change
-//      TODO: find out how to sum residuals
     static ceres::CostFunction* Create(const cv::Vec3d live_vertex,
                                        const cv::Vec3d live_normal,
                                        const cv::Vec3f canonical_vertex,
@@ -124,12 +123,12 @@ struct DynamicFusionDataEnergy
     const cv::Vec3d live_normal_;
     const cv::Vec3f canonical_vertex_;
     const cv::Vec3f canonical_normal_;
-    kfusion::WarpField* warpField_;
+    kfusion::WarpField *warpField_;
 };
 
 class WarpProblem {
 public:
-    WarpProblem(kfusion::WarpField* warp) : warpField_(warp)
+    WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
         mutable_epsilon_ = new double*[KNN_NEIGHBOURS * 6];
@@ -157,12 +156,7 @@ private:
     double **mutable_epsilon_;
     double *parameters_;
 
-    kfusion::WarpField* warpField_;
+    kfusion::WarpField *warpField_;
 };
-
-class Optimisation {
-
-};
-
 
 #endif //KFUSION_OPTIMISATION_H

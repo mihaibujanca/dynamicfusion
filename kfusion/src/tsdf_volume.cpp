@@ -225,8 +225,7 @@ void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, De
     device::extractNormals(volume, c, aff, Rinv, gradient_delta_factor_, (float4*)normals.ptr());
 }
 
-//TODO: in order to make this more efficient, we can just pass in the already warped canonical points (x_t)
-// and the canonical points
+
 /**
  * \brief
  * \param warp_field
@@ -255,10 +254,10 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
             float weight = weighting(warp_field.out_dist_sqr, KNN_NEIGHBOURS);
             float coeff = std::min(ro[i], trunc_dist_);
 
-////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
-////            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
-////
-////            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
+//            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_weight + weight;
+//
+//            tsdf_entries[i].tsdf_weight = std::min(tsdf_entries[i].tsdf_weight + weight, W_MAX);
         }
     }
 }

@@ -20,19 +20,6 @@ TEST(DualQuaternionTest, DualQuaternionConstructor)
     EXPECT_NEAR(rotation.z_, 0.454649, 0.01);
 }
 
-TEST(DualQuaternionTest, get6DOF)
-{
-    DualQuaternion<float> dualQuaternion(1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f);
-    float x, y, z, roll, pitch, yaw;
-    dualQuaternion.get6DOF(x, y, z, roll, pitch, yaw);
-    EXPECT_FLOAT_EQ(x, 1.0f);
-    EXPECT_FLOAT_EQ(y, 2.0f);
-    EXPECT_FLOAT_EQ(z, 3.0f);
-    EXPECT_FLOAT_EQ(roll, 1.0f);
-    EXPECT_FLOAT_EQ(pitch, 2.0f);
-    EXPECT_FLOAT_EQ(yaw, 3.0f);
-}
-
 TEST(DualQuaternionTest, isAssociative)
 {
     DualQuaternion<float> dualQuaternion(1, 2, 3, 1, 2, 3);
@@ -70,10 +57,7 @@ TEST(DualQuaternionTest, canSplitOperations)
 
     cumul.normalize();
     cumul.transform(test1);
-//    auto result = test1 + test12;
     quat1.rotate(test2);
     auto result = test2 + trans;
-    std::cout<<test1<<std::endl;
-    std::cout<<test2<<std::endl;
     EXPECT_NE(test1, result);
 }

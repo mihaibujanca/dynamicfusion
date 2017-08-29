@@ -29,7 +29,7 @@ namespace kfusion{
              * Encodes rotation from a normal
              * @param normal
              */
-            Quaternion(Vec3f normal)
+            Quaternion(const Vec3f& normal)
             {
                 Vec3f a(1, 0, 0);
                 Vec3f b(0, 1, 0);
@@ -48,10 +48,10 @@ namespace kfusion{
                 matrix.push_back(t1);
                 matrix.push_back(normal);
                 w_ = sqrt(1.0 + matrix.at<float>(0,0) + matrix.at<float>(1,1) + matrix.at<float>(2,2)) / 2.0;
+//                FIXME: this breaks when w_ = 0;
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
-                normalize();
             }
 
             ~Quaternion()
@@ -188,41 +188,6 @@ namespace kfusion{
                 );
             }
 
-            /// Quaternion Power function
-            /**
-             * \fn static Quaternion power(const Quaternion q1, T p)
-             * \brief perform the power operation on a quaternion
-             * \details A quaternion Q = (w, x, y, z) may be written as the
-             * product of a scalar and a unit quaternion: Q = N*q =
-             * N[sin(theta) + U_x*cos(theta) + U_y*cos(theta) + U_k*cos(theta)], where N is
-             * a scalar and U is a vector3 (U_x, U_y, U_z) representing the normalized
-             * vector component of the original quaternion, aka: (x,y,z). Raising a
-             * quaternion to a p._v.w*_v.y - rhs._v.x*_v.z + rhs._v.y*_v.w + rhs._v.z*_v.x,wer can be done most easily in this form.
-             */
-            Quaternion power(T exponent)
-            {
-                T magnitude = this->norm();
-
-                Quaternion<T> unitQuaternion = *this;
-                unitQuaternion.normalize();
-
-                // unitQuaternion.w_ will always be less than 1, so no domain error.
-                T theta = acos(unitQuaternion.w_);
-
-
-                // Perform math:
-                // N^exponent * [cos(exponent * theta)  + U*sin(exponent * theta)], where U is a vector.
-                T poweredMag = pow(magnitude, exponent);  // N^exponent
-                T cospTheta = cos(exponent * theta);
-                T sinpTheta = sin(exponent * theta);
-
-                return Quaternion( poweredMag * cospTheta,
-                                   poweredMag * unitQuaternion.x_ * sinpTheta,
-                                   poweredMag * unitQuaternion.y_ * sinpTheta,
-                                   poweredMag * unitQuaternion.z_ * sinpTheta);
-            }
-
-
             /**
              * \fn static T dotProduct(Quaternion q1, Quaternion q2)
              * \brief returns the dot product of two quaternions.
@@ -243,11 +208,6 @@ namespace kfusion{
                 return sqrt((w_ * w_) + (x_ * x_) + (y_ * y_) + (z_ * z_));
             }
 
-            Quaternion inverse()
-            {
-                return (1 / (*this).norm()) * (*this).conjugate();
-            }
-
             /**
              * \fn void normalize()
              * \brief normalizes the quaternion to magnitude 1
@@ -260,53 +220,6 @@ namespace kfusion{
                 T theNorm = norm();
                 assert(theNorm > 0);
                 (*this) = (1.0/theNorm) * (*this);
-                return;
-            }
-
-
-            /**
-             * \fn static Quaternion slerp( Quaternion q1 Quaternion q2, T percentage)
-             * \brief return a quaternion that is the spherical linear interpolation between q1 and q2
-             *        where percentage (from 0 to 1) defines the amount of interpolation
-             * \details morph one quaternion into the other with constant 'velocity.'
-             *          Implementation details from Wikipedia article on Slerp.
-             */
-            Quaternion slerp(Quaternion other, double t)
-            {
-                // Only unit quaternions_ are valid rotations.
-                // Normalize to avoid undefined behavior.
-                normalize();
-                other.normalize();
-
-                // Compute the cosine of the angle between the two vectors.
-                double dot = dotProduct(other);
-
-                const double DOT_THRESHOLD = 0.9995;
-                if (fabs(dot) > DOT_THRESHOLD) {
-                    // If the inputs are too close for comfort, linearly interpolate
-                    // and normalize the result.
-
-                    Quaternion<T> result = *this + t*(other - *this);
-                    result.normalize();
-                    return result;
-                }
-
-                // If the dot product is negative, the quaternions_
-                // have opposite handed-ness and slerp won't take
-                // the shorter path. Fix by reversing one quaternion.
-                if (dot < 0.0f) {
-                    other = -other;
-                    dot = -dot;
-                }
-
-                //            Clamp(dot, -1, 1);           // Robustness: Stay within domain of acos()
-                double theta_0 = acos(dot);  // theta_0 = angle between input vectors
-                double theta = theta_0*t;    // theta = angle between v0 and result
-
-                Quaternion<T> v2 = other - dot * (*this);
-                v2.normalize();              // { v0, v2 } is now an orthonormal basis
-
-                return cos(theta)* (*this) + sin(theta) * v2;
             }
 
             /**

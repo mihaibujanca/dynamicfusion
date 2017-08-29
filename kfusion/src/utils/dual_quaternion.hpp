@@ -28,6 +28,7 @@ namespace kfusion {
              * \brief constructor that takes cartesian coordinates and Euler angles as
              *        arguments.
              */
+//            FIXME: always use Rodrigues angles, not Euler
             DualQuaternion(T x, T y, T z, T roll, T pitch, T yaw)
             {
                 // convert here.
@@ -140,16 +141,6 @@ namespace kfusion {
             Quaternion<T> getRotation() const
             {
                 return rotation_;
-            }
-
-
-            /**
-             * \brief Extraction everything (in a nice format)
-             */
-            void get6DOF(T &x, T &y, T &z, T &roll, T &pitch, T &yaw)
-            {
-                getTranslation(x, y, z);
-                getEuler(roll, pitch, yaw);
             }
 
             DualQuaternion operator+(const DualQuaternion &other)
