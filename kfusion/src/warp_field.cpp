@@ -165,7 +165,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
 
-    for(int i = 0; i < nodes_->size() * 6; i++)
+    for(i = 0; i < nodes_->size() * 6; i++)
     {
         std::cout<<parameters[i]<<" ";
         if((i+1) % 6 == 0)
@@ -179,35 +179,38 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     {
         utils::Quaternion<float> rotation(0,0,0,0);
         Vec3f translation(0,0,0);
-        getWeightsAndUpdateKNN(v, weights);
-        for(int i = 0; i < KNN_NEIGHBOURS; i++)
+        KNN(v);
+        for(i = 0; i < KNN_NEIGHBOURS; i++)
         {
-            auto block_position = ret_index[i];
-            std::cout<<ret_index[i]<<" Weight:"<<weights[i]<<" ";
+            auto block_position = ret_index_[i] * 6;
             utils::Quaternion<float> rotation1(Vec3f(parameters[block_position],
                                                      parameters[block_position+1],
                                                      parameters[block_position+2]));
-            rotation = rotation + weights[i] * rotation1 * nodes_->at(block_position).transform.getRotation();
+            rotation = rotation + weights[i] * rotation1 * nodes_->at(ret_index_[i]).transform.getRotation();
 
             Vec3f translation1(parameters[block_position+3],
                                parameters[block_position+4],
                                parameters[block_position+5]);
             Vec3f t;
-            nodes_->at(block_position).transform.getTranslation(t[0],t[1],t[2]);
+            nodes_->at(ret_index_[i]).transform.getTranslation(t[0],t[1],t[2]);
             translation += weights[i]*t + translation1;
         }
-        rotation.rotate(v);
+//        if(rotation.norm() > 0)
+//            rotation.rotate(v);
+        double norm = cv::norm(translation);
+        //translation = translation * (1 / norm);
         v += translation;
         std::cout<<std::endl<<"Value of v:"<<v<<std::endl;
+        std::cout<<std::endl<<"Norm:"<<norm<<std::endl;
     }
-    for(auto v : canonical_vertices)
-    {
-        utils::DualQuaternion<float> final_quat = DQB(v, parameters);
-        final_quat.transform(v);
-        std::cout<<"Value of v[ "<<i<<" ]:"<<v<<std::endl;
-    }
+//    for(auto v : canonical_vertices)
+//    {
+//        utils::DualQuaternion<float> final_quat = DQB(v, parameters);
+//        final_quat.transform(v);
+//        std::cout<<"Value of v[ "<<i<<" ]:"<<v<<std::endl;
+//    }
 
-    delete[] parameters;
+//    delete[] parameters;
     return 0;
 }
 /**
@@ -333,7 +336,9 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
-        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
+//        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
+//        FIXME: remove, this is just for testing
+        weights[i] = 1;
         std::cout<<"Weight [" << i << "] = " << weights[i] << " ";
     }
     std::cout<<std::endl;

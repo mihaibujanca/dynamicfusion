@@ -14,69 +14,84 @@ struct DynamicFusionDataEnergy
                             kfusion::WarpField *warpField,
                             const float weights[KNN_NEIGHBOURS],
                             const unsigned long ret_index[KNN_NEIGHBOURS])
-            : live_vertex_(live_vertex),
-              live_normal_(live_normal),
-              canonical_vertex_(canonical_vertex),
-              canonical_normal_(canonical_normal),
-              warpField_(warpField),
-              weights_(weights),
-              ret_index_(ret_index)
-
-    {}
+                                : live_vertex_(live_vertex),
+                                  live_normal_(live_normal),
+                                  canonical_vertex_(canonical_vertex),
+                                  canonical_normal_(canonical_normal),
+                                  warpField_(warpField),
+                                  weights_(weights),
+                                  ret_index_(ret_index) {}
     template <typename T>
     bool operator()(T const * const * epsilon_, T* residuals) const
     {
         T const * epsilon = epsilon_[0];
 
         auto nodes = warpField_->getNodes();
-        T total_quaternion[4] = {T(0), T(0), T(0), T(0)};
+//        T total_quaternion[4] = {T(0), T(0), T(0), T(0)};
         T total_translation[3] = {T(0), T(0), T(0)};
+        float total_float_t[3] = {0,0,0};
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
             int ret_index_i = ret_index_[i];
-            auto quat = weights_[i] * nodes->at(ret_index_i).transform;
+//            auto quat = weights_[i] * nodes->at(ret_index_i).transform;
 
-            T eps_r[3] = {epsilon[ret_index_i],epsilon[ret_index_i + 1],epsilon[ret_index_i + 2]};
+            ret_index_i *= 6;
+//            T eps_r[3] = {epsilon[ret_index_i],epsilon[ret_index_i + 1],epsilon[ret_index_i + 2]};
             T eps_t[3] = {epsilon[ret_index_i + 3],epsilon[ret_index_i + 4],epsilon[ret_index_i + 5]};
-            float temp[3];
-            auto r_quat = quat.getRotation();
-            T r[4] = { T(r_quat.w_), T(r_quat.x_), T(r_quat.y_), T(r_quat.z_)};
-            quat.getTranslation(temp[0], temp[1], temp[2]);
+//            float temp[3];
+//            auto r_quat = quat.getRotation();
+//            T r[4] = { T(r_quat.w_), T(r_quat.x_), T(r_quat.y_), T(r_quat.z_)};
+//            quat.getTranslation(temp[0], temp[1], temp[2]);
 
+//
+//            T eps_quaternion[4];
+//            ceres::AngleAxisToQuaternion(eps_r, eps_quaternion);
+//            T product[4];
+//
+//            ceres::QuaternionProduct(eps_quaternion, r, product);
+//
+//            total_quaternion[0] += product[0];
+//            total_quaternion[1] += product[1];
+//            total_quaternion[2] += product[2];
+//            total_quaternion[3] += product[3];
 
-            T eps_quaternion[4];
-            ceres::AngleAxisToQuaternion(eps_r, eps_quaternion);
-            T product[4];
+            //FIXME: probably wrong, should do like in quaternion multiplication.
+//            total_translation[0] += T(temp[0]) +  eps_t[0];
+//            total_translation[1] += T(temp[1]) +  eps_t[1];
+//            total_translation[2] += T(temp[2]) +  eps_t[2];
+            total_translation[0] += epsilon[ret_index_i + 3];
+            total_translation[1] += epsilon[ret_index_i + 4];
+            total_translation[2] += epsilon[ret_index_i + 5];
 
-            ceres::QuaternionProduct(eps_quaternion, r, product);
-
-            total_quaternion[0] += product[0];
-            total_quaternion[1] += product[1];
-            total_quaternion[2] += product[2];
-            total_quaternion[3] += product[3];
-
-            //probably wrong, should do like in quaternion multiplication.
-            total_translation[0] += T(temp[0]) +  eps_t[0];
-            total_translation[1] += T(temp[1]) +  eps_t[1];
-            total_translation[2] += T(temp[2]) +  eps_t[2];
+//            total_float_t[0] += temp[0];
+//            total_float_t[1] += temp[1];
+//            total_float_t[2] += temp[2];
 
         }
 
 
-        T predicted_x, predicted_y, predicted_z;
-        T point[3];
-        T predicted[3];
-        ceres::QuaternionRotatePoint(total_quaternion, point, predicted);
-        predicted_x = predicted[0] + total_translation[0];
-        predicted_y = predicted[1] + total_translation[1];
-        predicted_z = predicted[2] + total_translation[2];
+//        T predicted_x, predicted_y, predicted_z;
+//        T point[3];
+//        T predicted[3];
+//        ceres::QuaternionRotatePoint(total_quaternion, point, predicted);
+//        auto norm = ceres::sqrt(total_translation[0] * total_translation[0] +
+//                                total_translation[1] * total_translation[1] +
+//                                total_translation[2] * total_translation[2]);
+//
+//        predicted_x = total_translation[0] + predicted[0];// / norm;
+//        predicted_y = total_translation[1] + predicted[1]; // / norm;
+//        predicted_z = total_translation[2] + predicted[2]; // / norm;
 
 //        T normal[3] = {T(canonical_normal_[0]),T(canonical_normal_[1]),T(canonical_normal_[2])};
 //        T result[3];
         // The error is the difference between the predicted and observed position.
-        residuals[0] = predicted_x - live_vertex_[0];
-        residuals[1] = predicted_y - live_vertex_[1];
-        residuals[2] = predicted_z - live_vertex_[2];
+//        residuals[0] = predicted_x - live_vertex_[0];
+//        residuals[1] = predicted_y - live_vertex_[1];
+//        residuals[2] = predicted_z - live_vertex_[2];
+//
+        residuals[0] = total_translation[0] - live_vertex_[0];
+        residuals[1] = total_translation[1] - live_vertex_[1];
+        residuals[2] = total_translation[2] - live_vertex_[2];
 //        T dotProd = ceres::DotProduct(residuals, normal);
 //
 //        residuals[0] = tukeyPenalty(dotProd);

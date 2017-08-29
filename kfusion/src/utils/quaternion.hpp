@@ -52,7 +52,8 @@ namespace kfusion{
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
-                normalize();
+                if(norm() > 0)
+                    normalize();
             }
 
             ~Quaternion()
