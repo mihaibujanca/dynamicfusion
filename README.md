@@ -2,15 +2,6 @@ DynamicFusion
 ============
 Implementation of [Newcombe et al. 2015 DynamicFusion paper](http://grail.cs.washington.edu/projects/dynamicfusion/papers/DynamicFusion.pdf).
 
-```
-@InProceedings{Newcombe_2015_CVPR,
-author = {Newcombe, Richard A. and Fox, Dieter and Seitz, Steven M.},
-title = {DynamicFusion: Reconstruction and Tracking of Non-Rigid Scenes in Real-Time},
-booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-month = {June},
-year = {2015}
-}
-```
 The code is based on this [KinectFusion implemenation](https://github.com/Nerei/kinfu_remake)
 
 Dependencies:
@@ -21,25 +12,17 @@ Dependencies:
 * Ceres solver (Tested with version [1.13.0](http://ceres-solver.org/ceres-solver-1.13.0.tar.gz))
 
 Implicit dependency (needed by opencv_viz):
-* VTK 5.8.0 or higher. (apt-get install on linux, for windows please download and compile from www.vtk.org)
+* VTK 5.8.0 or higher
 * SuiteSparse, BLAS and LAPACK for ceres
 Optional dependencies:
 * GTest for testing
 * Doxygen for documentation
 * OpenNI v1.5.4 for getting input straight from a kinect device.
 
-# Building instructions:
+## Building instructions:
 
-## Linux
-Install NVIDIA drivers and CUDA.
-
-For Ubuntu 16.04:
-```
-sudo apt-get purge nvidia*
-sudo apt-get nvidia-375 nvidia-settings
-```
-For laptops with an integrated Intel GPU and a discrete NVIDIA one, also install nvidia-prime:
-`sudo apt-get nvidia-prime`. A complete tutorial with some common issues covered can be found [here](
+### Linux
+Install NVIDIA drivers.A good tutorial with some common issues covered can be found [here](
 https://askubuntu.com/a/61433/167689).
 
 Download and install CUDA from the [NVIDIA website](https://developer.nvidia.com/cuda-downloads).
@@ -49,8 +32,7 @@ Install VTK, SuiteSparse, BLAS and LAPACK
 sudo apt-get install libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev
 ```
 
-Clone and install Ceres Solver
-`git clone https://ceres-solver.googlesource.com/ceres-solver`.
+Clone Ceres Solver `git clone https://ceres-solver.googlesource.com/ceres-solver`, then build and install using `cmake` and `make`.
 
 Clone and install opencv. The project should work with any version above 2.4.8
 ```
@@ -78,30 +60,61 @@ cd build
 cmake ..
 make -j4
 ```
-## Windows
-Install [NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)\
-To install LAPACK, follow instructions [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/).\
-To install VTK, [download](http://www.vtk.org/download/) and build from source.\
-Download and install opencv - [instructions here](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
-Install [Boost](http://www.boost.org/users/download/)
+
+If you want to build the tests as well, make sure you pass `-DBUILD_TESTS=ON` to the cmake command.
+
+To build documentation, go to the project root directory and execute
+```
+doxygen -g
+doxygen Doxyfile
+```
+### Windows
+* [Install NVIDIA drivers](https://www.geforce.com/drivers) and [CUDA](https://developer.nvidia.com/cuda-downloads)
+* [Install LAPACK](http://icl.cs.utk.edu/lapack-for-windows/lapack/).
+* [Install VTK](http://www.vtk.org/download/) (download and build from source)
+* [Install OpenCV](http://docs.opencv.org/3.2.0/d3/d52/tutorial_windows_install.html).  
+* [Install Boost](http://www.boost.org/users/download/)
 
  
 Optionals:\
-Doxygen has a downloadable installer which you can find [here](http://www.stack.nl/~dimitri/doxygen/download.html).\
-[GTest](https://github.com/google/googletest) \
-[OpenNI]( http://pointclouds.org/downloads/windows.html)
+* [Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html)
+* [GTest](https://github.com/google/googletest) 
+* [OpenNI]( http://pointclouds.org/downloads/windows.html)
 
 
 
-# Run instructions
-For Unix users, go to the root of the project and run `chmod +x download_data` then `./download_data` to download an example dataset. 
-To run, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
+## Run instructions
+### Unix
+Download an example dataset using `./download_data`. 
+To run the project, use `./build/bin/dynamicfusion <project_root>/data/umbrella`
 
-For Windows users, download the data from [here](http://lgdv.cs.fau.de/uploads/publications/data/innmann2016deform/umbrella_data.zip).
-Create a `data` folder inside the project root directory. Unzip the archive into `data` and remove any files that are not .png. 
-Inside `data`, create directories `color` and `depth`, and move frames to their corresponding folders.
+### Windows
+[Download the dataset](http://lgdv.cs.fau.de/uploads/publications/data/innmann2016deform/umbrella_data.zip).\
+Create a `data` folder inside the project root directory. \
+Unzip the archive into `data` and remove any files that are not .png. \
+Inside `data`, create directories `color` and `depth`, and move color and depth frames to their corresponding folders.
 
-The data is taken from the [VolumeDeform project](http://lgdv.cs.fau.de/publications/publication/Pub.2016.tech.IMMD.IMMD9.volume_6/).
+
+
+To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
+
+---
+Note: currently, the frame rate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
+
+## References
+[DynamicFusion project page](http://grail.cs.washington.edu/projects/dynamicfusion/)
+
+```
+@InProceedings{Newcombe_2015_CVPR,
+author = {Newcombe, Richard A. and Fox, Dieter and Seitz, Steven M.},
+title = {DynamicFusion: Reconstruction and Tracking of Non-Rigid Scenes in Real-Time},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+month = {June},
+year = {2015}
+}
+```
+
+The example dataset is taken from the [VolumeDeform project](http://lgdv.cs.fau.de/publications/publication/Pub.2016.tech.IMMD.IMMD9.volume_6/).
 ```
 @inbook{innmann2016volume,
 author = "Innmann, Matthias and Zollh{\"o}fer, Michael and Nie{\ss}ner, Matthias and Theobalt, Christian 
@@ -119,8 +132,3 @@ doi = "10.1007/978-3-319-46484-8_22",
 url = "http://dx.doi.org/10.1007/978-3-319-46484-8_22"
 }
 ```
-
-To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
-
----
-Note: currently, the framerate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
