@@ -81,7 +81,6 @@ namespace kfusion
         void renderImage(cuda::Image& image, int flags = 0);
         void dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame, cuda::Normals current_normals);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
-        void reprojectToDepth();
 
         Affine3f getCameraPose (int time = -1) const;
     private:

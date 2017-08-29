@@ -27,7 +27,7 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
     const int levels = sizeof(iters)/sizeof(iters[0]);
 
     KinFuParams p;
-// TODO: this should be coming from a calibration file / shouldn't be hardcoded
+
     p.cols = 640;  //pixels
     p.rows = 480;  //pixels
     p.intr = Intr(570.342f, 570.342f, 320.f, 240.f);
@@ -68,7 +68,6 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     const int levels = sizeof(iters)/sizeof(iters[0]);
 
     KinFuParams p;
-// TODO: this should be coming from a calibration file / shouldn't be hardcoded
     p.cols = 640;  //pixels
     p.rows = 480;  //pixels
     p.intr = Intr(525.f, 525.f, p.cols/2 - 0.5f, p.rows/2 - 0.5f);
@@ -378,24 +377,10 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
             warped_normals[i * normal_host.cols + j][2] = point.z;
         }
 
-
-//    current_frame.download(cloud_host.ptr<Point>(), cloud_host.step);
-//    std::vector<Vec3f> live(cloud_host.rows * cloud_host.cols);
-//    for (int i = 0; i < cloud_host.rows; i++)
-//        for (int j = 0; j < cloud_host.cols; j++) {
-//            Point point = cloud_host.at<Point>(i, j);
-//            live[i * cloud_host.cols + j][0] = point.x;
-//            live[i * cloud_host.cols + j][1] = point.y;
-//            live[i * cloud_host.cols + j][2] = point.z;
-//            live[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
-//        }
-
-
-
     std::vector<Vec3f> canonical_visible(warped);
 //    getWarp().energy_data(warped, warped_normals, warped, warped_normals); //crashes, leave out for now
 
-//    getWarp().warp(warped, warped_normals);
+    getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");
     tsdf().surface_fusion(getWarp(), warped, canonical_visible, depth, camera_pose, params_.intr);
 

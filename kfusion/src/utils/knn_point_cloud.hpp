@@ -6,8 +6,6 @@ namespace kfusion
 {
     namespace utils{
 
-        //  floatODO: Adapt this and nanoflann to work with Quaternions. Probably needs an adaptor class
-        // Check https://github.com/jlblancoc/nanoflann/blob/master/examples/pointcloud_adaptor_example.cpp
         struct PointCloud
         {
             std::vector<Vec3f> pts;
