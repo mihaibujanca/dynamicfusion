@@ -52,6 +52,7 @@ namespace kfusion{
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
+                normalize();
             }
 
             ~Quaternion()
@@ -216,7 +217,6 @@ namespace kfusion{
             {
                 // should never happen unless the Quaternion<T> wasn't initialized
                 // correctly.
-                assert( !((w_ == 0) && (x_ == 0) && (y_ == 0) && (z_ == 0)));
                 T theNorm = norm();
                 assert(theNorm > 0);
                 (*this) = (1.0/theNorm) * (*this);
