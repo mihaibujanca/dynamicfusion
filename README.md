@@ -76,7 +76,7 @@ doxygen Doxyfile
 * [Install Boost](http://www.boost.org/users/download/)
 
  
-Optionals:\
+Optionals:
 * [Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html)
 * [GTest](https://github.com/google/googletest) 
 * [OpenNI]( http://pointclouds.org/downloads/windows.html)
