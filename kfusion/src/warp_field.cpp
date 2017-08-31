@@ -134,17 +134,15 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 )
 {
 
-//    assert(canonical_normals.size() == canonical_vertices.size() == live_normals.size() == live_vertices.size());
+//    assert((canonical_normals.size() == canonical_vertices.size()) == (live_normals.size() == live_vertices.size()));
     ceres::Problem problem;
-    int i = 0;
-
-    auto parameters = new double[nodes_->size() * 6];
     std::vector<cv::Vec3d> double_vertices;
     float weights[KNN_NEIGHBOURS];
     unsigned long ret_index[KNN_NEIGHBOURS];
 
     WarpProblem warpProblem(this);
-    for(i = 0; i < live_vertices.size(); i++)
+    std::vector<double*> params;
+    for(int i = 0; i < live_vertices.size(); i++)
     {
         if(std::isnan(canonical_vertices[i][0]))
             continue;
@@ -153,7 +151,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
             ret_index[j] = ret_index_[j];
 
-        auto params = warpProblem.mutable_epsilon(ret_index);
+        params = warpProblem.mutable_epsilon(ret_index);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
                                                                              canonical_vertices[i],
@@ -161,7 +159,8 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                                                                              this,
                                                                              weights,
                                                                              ret_index);
-        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
+//        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
+        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, warpProblem.mutable_params());
 
     }
     ceres::Solver::Options options;
@@ -171,9 +170,11 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
 
-    for(i = 0; i < nodes_->size() * 6; i++)
+
+    auto all_params = warpProblem.params();
+    for(int i = 0; i < nodes_->size() * 6; i++)
     {
-        std::cout<<parameters[i]<<" ";
+        std::cout<<all_params[i]<<" ";
         if((i+1) % 6 == 0)
             std::cout<<std::endl;
     }
@@ -183,16 +184,16 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         utils::Quaternion<float> rotation(0,0,0,0);
         Vec3f translation(0,0,0);
         getWeightsAndUpdateKNN(v, weights);
-        for(i = 0; i < KNN_NEIGHBOURS; i++)
+        for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
             auto block_position = ret_index_[i] * 6;
-            Vec3f translation1(parameters[block_position+3],
-                               parameters[block_position+4],
-                               parameters[block_position+5]);
+            Vec3f translation1(all_params[block_position+3],
+                               all_params[block_position+4],
+                               all_params[block_position+5]);
             Vec3f dq_translation;
             nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
             translation = translation1 + dq_translation;
-            translation *= weights[i];
+            translation *= weights[ret_index_[i]];
             v += translation;
         }
 
@@ -329,15 +330,13 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
-        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
-//        weights[i] = 1;
-//        std::cout<<"Weight [" << i << "] = " << weights[i] << " ";
-//        std::cout<<"weights [" << i << "] = " << weights[i] << " ";
-//        std::cout<<"ret_index [" << i << "] = " << ret_index_[i] << " ";
+//        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
         weights[i] = 1;
     }
-//    weights[5] = 2;
-    std::cout<<std::endl;
+    weights[5] = 2;
+    weights[1] = 2;
+    weights[3] = 2;
+    weights[4] = 5;
 }
 
 /**

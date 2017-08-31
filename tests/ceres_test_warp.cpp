@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
 
     std::vector<cv::Vec3f> live_vertices;
     live_vertices.emplace_back(cv::Vec3f(-1.95f,-1.95f,-1.95f));
