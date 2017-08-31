@@ -35,12 +35,6 @@ TEST(QuaternionTest, quat_product)
     EXPECT_EQ(product.z_, 2);
 }
 
-TEST(QuaternionTest, power)
-{
-    Quaternion<float> quaternion(1,1,2,2);
-    EXPECT_EQ(quaternion.power(2), quaternion*quaternion);
-}
-
 TEST(QuaternionTest, dotProduct)
 {
     Quaternion<float> quaternion(1,1,2,2);
@@ -55,17 +49,6 @@ TEST(QuaternionTest, normalize)
     EXPECT_EQ(quaternion, Quaternion<float>(0.5, 0.5, 0.5, 0.5));
 }
 
-TEST(QuaternionTest, slerp)
-{
-    Quaternion<float> quaternion(1,1,2,2);
-    Quaternion<float> quaternion1(0,0,1,1);
-    Quaternion<float> result = quaternion.slerp(quaternion1, 0.5);
-
-    ASSERT_FLOAT_EQ(result.w_, 0.16245984);
-    ASSERT_FLOAT_EQ(result.x_, 0.16245984);
-    ASSERT_FLOAT_EQ(result.y_, 0.688191);
-    ASSERT_FLOAT_EQ(result.z_, 0.688191);
-}
 
 TEST(QuaternionTest, rodrigues)
 {
