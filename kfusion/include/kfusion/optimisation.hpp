@@ -53,23 +53,8 @@ struct DynamicFusionDataEnergy
             total_translation_float[0] += temp[0] * weights_[i];
             total_translation_float[1] += temp[1] * weights_[i];
             total_translation_float[2] += temp[2] * weights_[i];
-//            T eps_r[3] = {epsilon[ret_index_i],epsilon[ret_index_i + 1],epsilon[ret_index_i + 2]};
-//            T eps_quaternion[4];
-//            ceres::AngleAxisToQuaternion(eps_r, eps_quaternion);
-//            T product[4];
-//            auto r_quat = quat.getRotation();
-//            T r[4] = { T(r_quat.w_), T(r_quat.x_), T(r_quat.y_), T(r_quat.z_)};
-//
-//            ceres::QuaternionProduct(eps_quaternion, r, product);
-//
-//            total_quaternion[0] += product[0];
-//            total_quaternion[1] += product[1];
-//            total_quaternion[2] += product[2];
-//            total_quaternion[3] += product[3];
-
 
         }
-//        std::cout<<"FLOATS:"<<total_translation_float[0]<<" "<<total_translation_float[1]<<" "<<total_translation_float[2]<<std::endl;
 
         residuals[0] = canonical_vertex_[0] - live_vertex_[0] + total_translation[0];
         residuals[1] = canonical_vertex_[1] - live_vertex_[1] + total_translation[1];
@@ -117,7 +102,9 @@ struct DynamicFusionDataEnergy
                                             warpField,
                                             weights,
                                             ret_index));
-        cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
+        for(int i=0; i < KNN_NEIGHBOURS; i++)
+            cost_function->AddParameterBlock(6);
+//            cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
         cost_function->SetNumResiduals(3);
         return cost_function;
     }
@@ -137,19 +124,15 @@ public:
     WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
-        mutable_epsilon_ = new double*[KNN_NEIGHBOURS * 6];
     };
     ~WarpProblem() {
         delete[] parameters_;
-        for(int i = 0; i < KNN_NEIGHBOURS * 6; i++)
-            delete[] mutable_epsilon_[i];
-        delete[] mutable_epsilon_;
     }
-    double **mutable_epsilon(int *index_list)
+    std::vector<double*> mutable_epsilon(const unsigned long *index_list)
     {
+        std::vector<double*> mutable_epsilon_(KNN_NEIGHBOURS);
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
-            for(int j = 0; j < 6; j++)
-                mutable_epsilon_[i * 6 + j] = &(parameters_[index_list[i] + j]);
+            mutable_epsilon_[i] = parameters_ + index_list[i] * 6; // Blocks of 6
         return mutable_epsilon_;
     }
     double *mutable_params()
@@ -159,9 +142,7 @@ public:
 
 
 private:
-    double **mutable_epsilon_;
     double *parameters_;
-
     kfusion::WarpField *warpField_;
 };
 

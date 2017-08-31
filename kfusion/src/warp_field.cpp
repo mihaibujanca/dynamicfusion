@@ -143,6 +143,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     float weights[KNN_NEIGHBOURS];
     unsigned long ret_index[KNN_NEIGHBOURS];
 
+    WarpProblem warpProblem(this);
     for(i = 0; i < live_vertices.size(); i++)
     {
         if(std::isnan(canonical_vertices[i][0]))
@@ -152,6 +153,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
             ret_index[j] = ret_index_[j];
 
+        auto params = warpProblem.mutable_epsilon(ret_index);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
                                                                              canonical_vertices[i],
@@ -159,9 +161,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                                                                              this,
                                                                              weights,
                                                                              ret_index);
-        problem.AddResidualBlock(cost_function,
-                                 NULL /* squared loss */,
-                                 parameters);
+        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
 
     }
     ceres::Solver::Options options;
@@ -182,7 +182,6 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     {
         utils::Quaternion<float> rotation(0,0,0,0);
         Vec3f translation(0,0,0);
-//        KNN(v);
         getWeightsAndUpdateKNN(v, weights);
         for(i = 0; i < KNN_NEIGHBOURS; i++)
         {
@@ -196,19 +195,9 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             translation *= weights[i];
             v += translation;
         }
-//        v = v / cv::norm(v, cv::NORM_L2);
+
         std::cout<<std::endl<<"Value of v:"<<v;
     }
-//    std::cout<<std::endl<<std::endl;
-//
-//
-//    for(auto v : canonical_vertices)
-//    {
-//        auto dq = DQB(v, parameters);
-//        dq.transform(v);
-//        std::cout<<std::endl<<"Value of DQB(v):"<<v;
-//    }
-
 
     exit(0);
     return 0;
