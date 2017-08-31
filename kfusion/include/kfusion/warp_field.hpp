@@ -71,7 +71,7 @@ namespace kfusion
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
         utils::DualQuaternion<float> DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const;
 
-        void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]);
+        void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
         float weighting(float squared_dist, float weight) const;
         void KNN(Vec3f point) const;
@@ -81,15 +81,11 @@ namespace kfusion
         const std::vector<deformation_node>* getNodes() const;
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
-
-
-        std::vector<float> out_dist_sqr_;
-        std::vector<size_t> ret_index_;
+        std::vector<float>* getDistSquared() const;
 
     private:
         std::vector<deformation_node>* nodes_;
         kd_tree_t* index_;
-        nanoflann::KNNResultSet<float> *resultSet_;
         Affine3f warp_to_live_;
         void buildKDTree();
     };

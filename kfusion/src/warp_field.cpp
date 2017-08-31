@@ -11,6 +11,9 @@
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
 utils::PointCloud cloud;
+nanoflann::KNNResultSet<float> *resultSet_;
+std::vector<float> out_dist_sqr_;
+std::vector<size_t> ret_index_;
 
 WarpField::WarpField()
 {
@@ -45,7 +48,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
 
 //    FIXME:: this is a test, remove later
-    voxel_size = 0.2;
+    voxel_size = 1;
     for(int i = 0; i < first_frame.rows; i++)
         for(int j = 0; j < first_frame.cols; j++)
         {
@@ -79,7 +82,7 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
 
 //    FIXME: this is a test, remove
-    voxel_size = 0.2;
+    voxel_size = 1;
     for (int i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];
@@ -131,6 +134,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 )
 {
 
+//    assert(canonical_normals.size() == canonical_vertices.size() == live_normals.size() == live_vertices.size());
     ceres::Problem problem;
     int i = 0;
 
@@ -138,25 +142,27 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     std::vector<cv::Vec3d> double_vertices;
     float weights[KNN_NEIGHBOURS];
     unsigned long ret_index[KNN_NEIGHBOURS];
-    for(auto v : canonical_vertices)
+
+    for(i = 0; i < live_vertices.size(); i++)
     {
-        if(std::isnan(v[0]))
+        if(std::isnan(canonical_vertices[i][0]))
             continue;
-        getWeightsAndUpdateKNN(v, weights);
+        getWeightsAndUpdateKNN(canonical_vertices[i], weights);
+
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
             ret_index[j] = ret_index_[j];
 
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
-                                                                             Vec3f(1,0,0),
-                                                                             v,
-                                                                             Vec3f(1,0,0),
+                                                                             live_normals[i],
+                                                                             canonical_vertices[i],
+                                                                             canonical_normals[i],
                                                                              this,
                                                                              weights,
                                                                              ret_index);
         problem.AddResidualBlock(cost_function,
                                  NULL /* squared loss */,
                                  parameters);
-        i++;
+
     }
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;
@@ -172,45 +178,39 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             std::cout<<std::endl;
     }
 
-
-
-    auto canonical2 = canonical_vertices;
     for(auto v : canonical_vertices)
     {
         utils::Quaternion<float> rotation(0,0,0,0);
         Vec3f translation(0,0,0);
-        KNN(v);
+//        KNN(v);
+        getWeightsAndUpdateKNN(v, weights);
         for(i = 0; i < KNN_NEIGHBOURS; i++)
         {
             auto block_position = ret_index_[i] * 6;
-            utils::Quaternion<float> rotation1(Vec3f(parameters[block_position],
-                                                     parameters[block_position+1],
-                                                     parameters[block_position+2]));
-            rotation = rotation + weights[i] * rotation1 * nodes_->at(ret_index_[i]).transform.getRotation();
-
             Vec3f translation1(parameters[block_position+3],
                                parameters[block_position+4],
                                parameters[block_position+5]);
-            Vec3f t;
-            nodes_->at(ret_index_[i]).transform.getTranslation(t[0],t[1],t[2]);
-            translation += weights[i]*t + translation1;
+            Vec3f dq_translation;
+            nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
+            translation = translation1 + dq_translation;
+            translation *= weights[i];
+            v += translation;
         }
-//        if(rotation.norm() > 0)
-//            rotation.rotate(v);
-        double norm = cv::norm(translation);
-        //translation = translation * (1 / norm);
-        v += translation;
-        std::cout<<std::endl<<"Value of v:"<<v<<std::endl;
-        std::cout<<std::endl<<"Norm:"<<norm<<std::endl;
+//        v = v / cv::norm(v, cv::NORM_L2);
+        std::cout<<std::endl<<"Value of v:"<<v;
     }
+//    std::cout<<std::endl<<std::endl;
+//
+//
 //    for(auto v : canonical_vertices)
 //    {
-//        utils::DualQuaternion<float> final_quat = DQB(v, parameters);
-//        final_quat.transform(v);
-//        std::cout<<"Value of v[ "<<i<<" ]:"<<v<<std::endl;
+//        auto dq = DQB(v, parameters);
+//        dq.transform(v);
+//        std::cout<<std::endl<<"Value of DQB(v):"<<v;
 //    }
 
-//    delete[] parameters;
+
+    exit(0);
     return 0;
 }
 /**
@@ -309,14 +309,18 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[
         std::cerr<<"Invalid pointer in DQB"<<std::endl;
         exit(-1);
     }
+    float weights[KNN_NEIGHBOURS];
+    getWeightsAndUpdateKNN(vertex, weights);
     utils::DualQuaternion<float> quaternion_sum;
     utils::DualQuaternion<float> eps;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
         // epsilon [0:2] is rotation [3:5] is translation
         eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight) *
-                                          nodes_->at(ret_index_[i]).transform * eps;
+//        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight) *
+//                                          nodes_->at(ret_index_[i]).transform * eps;
+        quaternion_sum = quaternion_sum + weights[i] * nodes_->at(ret_index_[i]).transform * eps;
+
     }
 
     auto norm = quaternion_sum.magnitude();
@@ -331,16 +335,19 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[
  * \param weight
  * \return
  */
-void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS])
+void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const
 {
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
-//        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
-//        FIXME: remove, this is just for testing
+        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
+//        weights[i] = 1;
+//        std::cout<<"Weight [" << i << "] = " << weights[i] << " ";
+//        std::cout<<"weights [" << i << "] = " << weights[i] << " ";
+//        std::cout<<"ret_index [" << i << "] = " << ret_index_[i] << " ";
         weights[i] = 1;
-        std::cout<<"Weight [" << i << "] = " << weights[i] << " ";
     }
+//    weights[5] = 2;
     std::cout<<std::endl;
 }
 
@@ -361,6 +368,7 @@ float WarpField::weighting(float squared_dist, float weight) const
  */
 void WarpField::KNN(Vec3f point) const
 {
+    resultSet_->init(&ret_index_[0], &out_dist_sqr_[0]);
     index_->findNeighbors(*resultSet_, point.val, nanoflann::SearchParams(10));
 }
 
@@ -404,4 +412,9 @@ void WarpField::clear()
 void WarpField::setWarpToLive(const Affine3f &pose)
 {
     warp_to_live_ = pose;
+}
+
+std::vector<float>* WarpField::getDistSquared() const
+{
+    return &out_dist_sqr_;
 }
