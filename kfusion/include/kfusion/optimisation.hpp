@@ -46,13 +46,9 @@ struct DynamicFusionDataEnergy
             float temp[3];
             quat.getTranslation(temp[0], temp[1], temp[2]);
 
-            total_translation[0] += (T(temp[0]) +  eps_t[0]) * T(weights_[ret_index_[i]]);
-            total_translation[1] += (T(temp[1]) +  eps_t[1]) * T(weights_[ret_index_[i]]);
-            total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[ret_index_[i]]);
-
-            total_translation_float[0] += temp[0] * weights_[i];
-            total_translation_float[1] += temp[1] * weights_[i];
-            total_translation_float[2] += temp[2] * weights_[i];
+            total_translation[0] += (T(temp[0]) +  eps_t[0]) * T(weights_[i]);
+            total_translation[1] += (T(temp[1]) +  eps_t[1]) * T(weights_[i]);
+            total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
 
         }
 
@@ -102,8 +98,8 @@ struct DynamicFusionDataEnergy
                                             warpField,
                                             weights,
                                             ret_index));
-//        for(int i=0; i < KNN_NEIGHBOURS; i++)
-//            cost_function->AddParameterBlock(6);
+        for(int i=0; i < KNN_NEIGHBOURS; i++)
+            cost_function->AddParameterBlock(6);
         cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
         cost_function->SetNumResiduals(3);
         return cost_function;
@@ -129,7 +125,15 @@ public:
     ~WarpProblem() {
         delete[] parameters_;
     }
-    std::vector<double*> mutable_epsilon(const unsigned long *index_list)
+    std::vector<double*> mutable_epsilon(const unsigned long *index_list) const
+    {
+        std::vector<double*> mutable_epsilon_(KNN_NEIGHBOURS);
+        for(int i = 0; i < KNN_NEIGHBOURS; i++)
+            mutable_epsilon_[i] = &(parameters_[index_list[i] * 6]); // Blocks of 6
+        return mutable_epsilon_;
+    }
+
+    std::vector<double*> mutable_epsilon(const std::vector<size_t>& index_list) const
     {
         std::vector<double*> mutable_epsilon_(KNN_NEIGHBOURS);
         for(int i = 0; i < KNN_NEIGHBOURS; i++)

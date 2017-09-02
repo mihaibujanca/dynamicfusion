@@ -138,7 +138,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Problem problem;
     std::vector<cv::Vec3d> double_vertices;
     float weights[KNN_NEIGHBOURS];
-    unsigned long ret_index[KNN_NEIGHBOURS];
+    unsigned long indices[KNN_NEIGHBOURS];
 
     WarpProblem warpProblem(this);
     std::vector<double*> params;
@@ -149,16 +149,19 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         getWeightsAndUpdateKNN(canonical_vertices[i], weights);
 
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
-            ret_index[j] = ret_index_[j];
-
-        params = warpProblem.mutable_epsilon(ret_index);
+        {
+            indices[j] = ret_index_[j];
+            std::cout<<"Weight["<<j<<"]="<<weights[j]<<" ";
+        }
+        std::cout<<std::endl;
+        params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
                                                                              canonical_vertices[i],
                                                                              canonical_normals[i],
                                                                              this,
                                                                              weights,
-                                                                             ret_index);
+                                                                             indices);
 //        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
         problem.AddResidualBlock(cost_function,  NULL /* squared loss */, warpProblem.mutable_params());
 
@@ -190,16 +193,17 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             Vec3f translation1(all_params[block_position+3],
                                all_params[block_position+4],
                                all_params[block_position+5]);
+
             Vec3f dq_translation;
             nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
+
             translation = translation1 + dq_translation;
-            translation *= weights[ret_index_[i]];
+            translation *= weights[i];
             v += translation;
         }
 
         std::cout<<std::endl<<"Value of v:"<<v;
     }
-
     exit(0);
     return 0;
 }
@@ -329,14 +333,7 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
 {
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-    {
-//        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
-        weights[i] = 1;
-    }
-    weights[5] = 2;
-    weights[1] = 2;
-    weights[3] = 2;
-    weights[4] = 5;
+        weights[i] = weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight);
 }
 
 /**
