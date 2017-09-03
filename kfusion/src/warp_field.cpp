@@ -162,8 +162,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                                                                              this,
                                                                              weights,
                                                                              indices);
-//        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
-        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, warpProblem.mutable_params());
+        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
 
     }
     ceres::Solver::Options options;
@@ -190,6 +189,8 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
 //            params = warpProblem.mutable_epsilon(indices);
+            std::cout<<"Weight["<<i<<"]="<<weights[i]<<" ";
+
             auto block_position = ret_index_[i] * 6;
             Vec3f translation1(all_params[block_position+3],
                                all_params[block_position+4],
@@ -206,7 +207,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             v += translation;
         }
 
-        std::cout<<std::endl<<"Value of v:"<<v;
+        std::cout<<std::endl<<"Value of v:"<<v<<std::endl<<std::endl;
     }
     exit(0);
     return 0;

@@ -20,11 +20,11 @@ struct DynamicFusionDataEnergy
               canonical_normal_(canonical_normal),
               warpField_(warpField),
               weights_(weights),
-              ret_index_(ret_index) {}
+              knn_indices(ret_index) {}
+
     template <typename T>
     bool operator()(T const * const * epsilon_, T* residuals) const
     {
-        T const * epsilon = epsilon_[0];
         auto nodes = warpField_->getNodes();
 
         T total_translation[3] = {T(0), T(0), T(0)};
@@ -33,15 +33,11 @@ struct DynamicFusionDataEnergy
 
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
-            unsigned long ret_index_i = ret_index_[i]; // Index of the node
-            auto quat = nodes->at(ret_index_i).transform;
+            auto quat = nodes->at(knn_indices[i]).transform;
             cv::Vec3f vert;
             quat.getTranslation(vert);
 
-            ret_index_i *= 6;
-            T eps_t[3] = {epsilon[ret_index_i + 3],
-                          epsilon[ret_index_i + 4],
-                          epsilon[ret_index_i + 5]};
+            T eps_t[3] = {epsilon_[i][3], epsilon_[i][4], epsilon_[i][5]};
 
             float temp[3];
             quat.getTranslation(temp[0], temp[1], temp[2]);
@@ -51,10 +47,13 @@ struct DynamicFusionDataEnergy
             total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
 
         }
-
-        residuals[0] = canonical_vertex_[0] - live_vertex_[0] + total_translation[0];
-        residuals[1] = canonical_vertex_[1] - live_vertex_[1] + total_translation[1];
-        residuals[2] = canonical_vertex_[2] - live_vertex_[2] + total_translation[2];
+        T norm = ceres::sqrt(total_translation[0] * total_translation[0] +
+                             total_translation[1] * total_translation[1] +
+                             total_translation[2] * total_translation[2]);
+        norm = T(1);
+        residuals[0] = canonical_vertex_[0] - live_vertex_[0] + total_translation[0] / norm;
+        residuals[1] = canonical_vertex_[1] - live_vertex_[1] + total_translation[1] / norm;
+        residuals[2] = canonical_vertex_[2] - live_vertex_[2] + total_translation[2] / norm;
 
         return true;
     }
@@ -98,9 +97,9 @@ struct DynamicFusionDataEnergy
                                             warpField,
                                             weights,
                                             ret_index));
-//        for(int i=0; i < KNN_NEIGHBOURS; i++)
-//            cost_function->AddParameterBlock(6);
-        cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
+        for(int i=0; i < KNN_NEIGHBOURS; i++)
+            cost_function->AddParameterBlock(6);
+//        cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
         cost_function->SetNumResiduals(3);
         return cost_function;
     }
@@ -110,7 +109,7 @@ struct DynamicFusionDataEnergy
     const cv::Vec3f canonical_normal_;
 
     const float *weights_;
-    const unsigned long *ret_index_;
+    const unsigned long *knn_indices;
 
     kfusion::WarpField *warpField_;
 };
