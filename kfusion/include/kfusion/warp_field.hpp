@@ -69,9 +69,9 @@ namespace kfusion
         void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
-        utils::DualQuaternion<float> DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const;
 
-        void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]);
+        void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
         float weighting(float squared_dist, float weight) const;
         void KNN(Vec3f point) const;
@@ -81,16 +81,12 @@ namespace kfusion
         const std::vector<deformation_node>* getNodes() const;
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
-
-
-        std::vector<float> out_dist_sqr;
-        std::vector<size_t> ret_index;
+        std::vector<float>* getDistSquared() const;
 
     private:
-        std::vector<deformation_node>* nodes;
-        kd_tree_t* index;
-        nanoflann::KNNResultSet<float> *resultSet;
-        Affine3f warp_to_live;
+        std::vector<deformation_node>* nodes_;
+        kd_tree_t* index_;
+        Affine3f warp_to_live_;
         void buildKDTree();
     };
 }

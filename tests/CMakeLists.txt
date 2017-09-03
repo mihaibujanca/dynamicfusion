@@ -13,3 +13,5 @@ target_include_directories(
         ceres_test PUBLIC
         ${CERES_INCLUDE_DIRS}
 )
+
+add_executable(nanoflann_test nanoflann_test.cpp)

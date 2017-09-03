@@ -52,6 +52,8 @@ namespace kfusion{
                 x_ = (matrix.at<float>(2,1) - matrix.at<float>(1,2)) / (w_ * 4);
                 y_ = (matrix.at<float>(0,2) - matrix.at<float>(2,0)) / (w_ * 4);
                 z_ = (matrix.at<float>(1,0) - matrix.at<float>(2,1)) / (w_ * 4);
+                if(norm() > 0)
+                    normalize();
             }
 
             ~Quaternion()
@@ -226,15 +228,12 @@ namespace kfusion{
              * \fn template <typename U> friend std::ostream& operator <<
              *                                  (std::ostream& os, const Quaternion<U>& q);
              * \brief a templated friend function for printing quaternions.
-             * \details T cannot be used as dummy parameter since it would be shared by
-             *          the class, and this function is not a member function.
              */
             template <typename U> friend std::ostream& operator << (std::ostream& os, const Quaternion<U>& q)
             {
                 os << "(" << q.w_ << ", " << q.x_ << ", " <<  q.y_ << ", " << q.z_ << ")";
                 return os;
             }
-            //TODO: shouldn't have Vec3f but rather Vec3<T>. Not sure how to determine this later
 
             T w_;
             T x_;

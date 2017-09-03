@@ -98,9 +98,7 @@ namespace kfusion {
              */
             void getTranslation(T &x, T &y, T &z) const
             {
-                auto rot = rotation_;
-                rot.normalize();
-                Quaternion<T> result = 2 * translation_ * rot.conjugate();
+                Quaternion<T> result = getTranslation();
                 /// note: inverse of a quaternion is the same as the conjugate.
                 x = result.x_;
                 y = result.y_;
@@ -111,19 +109,16 @@ namespace kfusion {
              * \brief a reference-based method for acquiring the latest
              *        translation data.
              */
-//FIXME: need to make sure rotation is normalized in all getTranslation functions.
             void getTranslation(Vec3f& vec3f) const
             {
-
-                auto rot = rotation_;
-                rot.normalize();
-                Quaternion<T> result = 2 * translation_ * rot.conjugate();
-                vec3f = Vec3f(result.x_, result.y_, result.z_);
+                getTranslation(vec3f[0], vec3f[1], vec3f[2]);
             }
 
             Quaternion<T> getTranslation() const
             {
-                return 2 * translation_ * rotation_.conjugate();
+                auto rot = rotation_;
+                rot.normalize();
+                return 2 * translation_ * rot.conjugate();
             }
 
 
@@ -163,7 +158,8 @@ namespace kfusion {
             {
                 DualQuaternion<T> result;
                 result.rotation_ = rotation_ * other.rotation_;
-                result.translation_ = (rotation_ * other.translation_) + (translation_ * other.rotation_);
+//                result.translation_ = (rotation_ * other.translation_) + (translation_ * other.rotation_);
+                result.translation_ = translation_ + other.translation_;
                 return result;
             }
 
@@ -213,7 +209,6 @@ namespace kfusion {
             void from_twist(const float &r0, const float &r1, const float &r2,
                             const float &x, const float &y, const float &z)
             {
-                Vec3f r(r0,r1,r2), t(x,y,z);
                 float norm = sqrt(r0*r0 + r1 * r1 + r2 * r2);
                 Quaternion<T> rotation;
                 if (norm > epsilon())
@@ -227,8 +222,7 @@ namespace kfusion {
                 else
                     rotation = Quaternion<T>();
 
-                translation_ = Quaternion<T>(0, x, y, z);
-                rotation_ = rotation;
+                *this = DualQuaternion<T>(Quaternion<T>(0, x, y, z), rotation);
             }
 
             std::pair<T,T> magnitude()
