@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     live_vertices.emplace_back(cv::Vec3f(0.05,0.05,0.05));
     live_vertices.emplace_back(cv::Vec3f(2.05,2.05,2.05));
     live_vertices.emplace_back(cv::Vec3f(3.05,3.05,3.05));
-    live_vertices.emplace_back(cv::Vec3f(4.05,4.05,4.05));
+    live_vertices.emplace_back(cv::Vec3f(4.5,4.05,6));
 
     std::vector<cv::Vec3f> live_normals;
     live_normals.emplace_back(cv::Vec3f(0,0,1));
