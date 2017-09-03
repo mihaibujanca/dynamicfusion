@@ -189,10 +189,14 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         getWeightsAndUpdateKNN(v, weights);
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
+//            params = warpProblem.mutable_epsilon(indices);
             auto block_position = ret_index_[i] * 6;
             Vec3f translation1(all_params[block_position+3],
                                all_params[block_position+4],
                                all_params[block_position+5]);
+//            Vec3f translation1(params[i][3],
+//                               params[i][4],
+//                               params[i][5]);
 
             Vec3f dq_translation;
             nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
@@ -280,7 +284,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
     utils::DualQuaternion<float> quaternion_sum;
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight) *
+        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight) *
                                           nodes_->at(ret_index_[i]).transform;
 
     auto norm = quaternion_sum.magnitude();
@@ -311,8 +315,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[
     {
         // epsilon [0:2] is rotation [3:5] is translation
         eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
-//        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight) *
-//                                          nodes_->at(ret_index_[i]).transform * eps;
         quaternion_sum = quaternion_sum + weights[i] * nodes_->at(ret_index_[i]).transform * eps;
 
     }
@@ -333,7 +335,7 @@ void WarpField::getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NE
 {
     KNN(vertex);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        weights[i] = weighting(out_dist_sqr_[ret_index_[i]], nodes_->at(ret_index_[i]).weight);
+        weights[i] = weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight);
 }
 
 /**

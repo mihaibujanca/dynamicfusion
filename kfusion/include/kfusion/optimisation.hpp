@@ -98,8 +98,8 @@ struct DynamicFusionDataEnergy
                                             warpField,
                                             weights,
                                             ret_index));
-        for(int i=0; i < KNN_NEIGHBOURS; i++)
-            cost_function->AddParameterBlock(6);
+//        for(int i=0; i < KNN_NEIGHBOURS; i++)
+//            cost_function->AddParameterBlock(6);
         cost_function->AddParameterBlock(warpField->getNodes()->size() * 6);
         cost_function->SetNumResiduals(3);
         return cost_function;
