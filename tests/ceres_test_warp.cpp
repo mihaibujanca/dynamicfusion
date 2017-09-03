@@ -16,10 +16,10 @@ int main(int argc, char** argv) {
         warp_normals.emplace_back(cv::Vec3f(0,0,1));
 
     warp_init.emplace_back(cv::Vec3f(1,1,1));
-    warp_init.emplace_back(cv::Vec3f(1,1,-1));
-    warp_init.emplace_back(cv::Vec3f(1,-1,1));
+    warp_init.emplace_back(cv::Vec3f(1,2,-1));
+    warp_init.emplace_back(cv::Vec3f(1,-2,1));
     warp_init.emplace_back(cv::Vec3f(1,-1,-1));
-    warp_init.emplace_back(cv::Vec3f(-1,1,1));
+    warp_init.emplace_back(cv::Vec3f(-1,1,5));
     warp_init.emplace_back(cv::Vec3f(-1,1,-1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,-1));

@@ -202,6 +202,8 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             translation *= weights[i];
             v += translation;
         }
+
+        std::cout<<std::endl<<"Value of v:"<<v;
     }
     exit(0);
     return 0;
