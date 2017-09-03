@@ -41,7 +41,7 @@ cd opencv
 git checkout 3.2.0
 mkdir build
 cd build
-cmake .. -DWITH_VTK=ON -DBUILD_opencv_calib3d=ON BUILD_opencv_imgproc=ON
+cmake .. -DWITH_VTK=ON -DBUILD_opencv_calib3d=ON -DBUILD_opencv_imgproc=ON
 make -j4
 sudo make install
 ```
