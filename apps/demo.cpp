@@ -3,7 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
-#include <kfusion/cuda/tsdf_volume.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 
@@ -65,7 +64,7 @@ struct DynamicFusionApp
 
     bool execute()
     {
-        KinFu& dfusion = *kinfu_;
+        KinFu& dynamic_fusion = *kinfu_;
         cv::Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
@@ -88,26 +87,26 @@ struct DynamicFusionApp
             {
                 SampledScopeTime fps(time_ms);
                 (void) fps;
-                has_image = dfusion(depth_device_);
+                has_image = dynamic_fusion(depth_device_);
             }
 
             if (has_image)
-                show_raycasted(dfusion);
+                show_raycasted(dynamic_fusion);
 
             show_depth(depth);
             cv::imshow("Image", image);
 
             if (!interactive_mode_) {
-                viz.setViewerPose(dfusion.getCameraPose());
-                viz1.setViewerPose(dfusion.getCameraPose());
+                viz.setViewerPose(dynamic_fusion.getCameraPose());
+                viz1.setViewerPose(dynamic_fusion.getCameraPose());
             }
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-            show_warp(dfusion);
+            show_warp(dynamic_fusion);
             switch (key) {
                 case 't':
                 case 'T' :
-                    show_warp(dfusion);
+                    show_warp(dynamic_fusion);
                     break;
                 case 'i':
                 case 'I' :

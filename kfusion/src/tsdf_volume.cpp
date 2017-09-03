@@ -26,11 +26,11 @@ kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
 
 kfusion::cuda::TsdfVolume::~TsdfVolume()
 {
-    delete cloud_host;
-    delete cloud_buffer;
-    delete cloud;
-    delete normal_host;
-    delete normal_buffer;
+    delete cloud_host_;
+    delete cloud_buffer_;
+    delete cloud_;
+    delete normal_host_;
+    delete normal_buffer_;
 }
 
 /**
@@ -79,10 +79,10 @@ void kfusion::cuda::TsdfVolume::setTruncDist(float distance)
     float max_coeff = std::max<float>(std::max<float>(vsz[0], vsz[1]), vsz[2]);
     trunc_dist_ = std::max (distance, 2.1f * max_coeff);
 }
-cv::Mat kfusion::cuda::TsdfVolume::get_cloud_host() const {return *cloud_host;};
-cv::Mat kfusion::cuda::TsdfVolume::get_normal_host() const {return *normal_host;};
-cv::Mat* kfusion::cuda::TsdfVolume::get_cloud_host_ptr() const {return cloud_host;};
-cv::Mat* kfusion::cuda::TsdfVolume::get_normal_host_ptr() const {return normal_host;};
+cv::Mat kfusion::cuda::TsdfVolume::get_cloud_host() const {return *cloud_host_;};
+cv::Mat kfusion::cuda::TsdfVolume::get_normal_host() const {return *normal_host_;};
+cv::Mat* kfusion::cuda::TsdfVolume::get_cloud_host_ptr() const {return cloud_host_;};
+cv::Mat* kfusion::cuda::TsdfVolume::get_normal_host_ptr() const {return normal_host_;};
 
 int kfusion::cuda::TsdfVolume::getMaxWeight() const { return max_weight_; }
 void kfusion::cuda::TsdfVolume::setMaxWeight(int weight) { max_weight_ = weight; }
@@ -96,11 +96,11 @@ void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
 void kfusion::cuda::TsdfVolume::clear()
 {
-    cloud_buffer = new cuda::DeviceArray<Point>();
-    cloud = new cuda::DeviceArray<Point>();
-    normal_buffer = new cuda::DeviceArray<Normal>();
-    cloud_host = new cv::Mat();
-    normal_host = new cv::Mat();
+    cloud_buffer_ = new cuda::DeviceArray<Point>();
+    cloud_ = new cuda::DeviceArray<Point>();
+    normal_buffer_ = new cuda::DeviceArray<Normal>();
+    cloud_host_ = new cv::Mat();
+    normal_host_ = new cv::Mat();
 
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
@@ -251,7 +251,7 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
         if(ro[i] > -trunc_dist_)
         {
             warp_field.KNN(canonical[i]);
-            float weight = weighting(warp_field.out_dist_sqr_, KNN_NEIGHBOURS);
+            float weight = weighting(*(warp_field.getDistSquared()), KNN_NEIGHBOURS);
             float coeff = std::min(ro[i], trunc_dist_);
 
 //            tsdf_entries[i].tsdf_value = tsdf_entries[i].tsdf_value * tsdf_entries[i].tsdf_weight + coeff * weight;
@@ -320,14 +320,14 @@ float kfusion::cuda::TsdfVolume::weighting(const std::vector<float>& dist_sqr, i
  */
 void kfusion::cuda::TsdfVolume::compute_points()
 {
-    *cloud = fetchCloud(*cloud_buffer);
-    *cloud_host = cv::Mat(1, (int)cloud->size(), CV_32FC4);
-    cloud->download(cloud_host->ptr<Point>());
+    *cloud_ = fetchCloud(*cloud_buffer_);
+    *cloud_host_ = cv::Mat(1, (int)cloud_->size(), CV_32FC4);
+    cloud_->download(cloud_host_->ptr<Point>());
 }
 
 void kfusion::cuda::TsdfVolume::compute_normals()
 {
-    fetchNormals(*cloud, *normal_buffer);
-    *normal_host = cv::Mat(1, (int)cloud->size(), CV_32FC4);
-    normal_buffer->download(normal_host->ptr<Normal>());
+    fetchNormals(*cloud_, *normal_buffer_);
+    *normal_host_ = cv::Mat(1, (int)cloud_->size(), CV_32FC4);
+    normal_buffer_->download(normal_host_->ptr<Normal>());
 }

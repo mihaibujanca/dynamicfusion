@@ -98,9 +98,7 @@ namespace kfusion {
              */
             void getTranslation(T &x, T &y, T &z) const
             {
-                auto rot = rotation_;
-                rot.normalize();
-                Quaternion<T> result = 2 * translation_ * rot.conjugate();
+                Quaternion<T> result = getTranslation();
                 /// note: inverse of a quaternion is the same as the conjugate.
                 x = result.x_;
                 y = result.y_;
@@ -114,16 +112,14 @@ namespace kfusion {
 //FIXME: need to make sure rotation is normalized in all getTranslation functions.
             void getTranslation(Vec3f& vec3f) const
             {
-
-                auto rot = rotation_;
-                rot.normalize();
-                Quaternion<T> result = 2 * translation_ * rot.conjugate();
-                vec3f = Vec3f(result.x_, result.y_, result.z_);
+                getTranslation(vec3f[0], vec3f[1], vec3f[2]);
             }
 
             Quaternion<T> getTranslation() const
             {
-                return 2 * translation_ * rotation_.conjugate();
+                auto rot = rotation_;
+                rot.normalize();
+                return 2 * translation_ * rot.conjugate();
             }
 
 
