@@ -205,6 +205,19 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
         std::cout<<std::endl<<"Value of v:"<<v;
     }
+    std::cout<<std::endl;
+    for(auto v : canonical_vertices)
+    {
+        KNN(v);
+        Vec3f v1 = v, test;
+        params = warpProblem.mutable_epsilon(ret_index_);
+        auto dq = DQB(v, params);
+//        dq.transform(v);
+//        std::cout<<"FROM DQB:"<<v<<std::endl;
+
+        dq.getTranslation(test);
+        std::cout<<"Translation only:"<<test+v1<<std::endl;
+    }
     exit(0);
     return 0;
 }
@@ -297,29 +310,29 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
  * \param weight
  * \return
  */
-utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const
+utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const
 {
-    if(epsilon == NULL)
-    {
-        std::cerr<<"Invalid pointer in DQB"<<std::endl;
-        exit(-1);
-    }
     float weights[KNN_NEIGHBOURS];
     getWeightsAndUpdateKNN(vertex, weights);
     utils::DualQuaternion<float> quaternion_sum;
     utils::DualQuaternion<float> eps;
+    utils::Quaternion<float> translation_sum(0,0,0,0);
+    utils::Quaternion<float> rotation(0,0,0,0);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
         // epsilon [0:2] is rotation [3:5] is translation
-        eps.from_twist(epsilon[i*6],epsilon[i*6 + 1],epsilon[i*6 + 2],epsilon[i*6 + 3],epsilon[i*6 + 4],epsilon[i*6 + 5]);
-        quaternion_sum = quaternion_sum + weights[i] * nodes_->at(ret_index_[i]).transform * eps;
+//        eps.from_twist(epsilon[i][0],epsilon[i][1],epsilon[i][2],epsilon[i][3],epsilon[i][4],epsilon[i][5]);
+        utils::Quaternion<float> translation1(0, epsilon[i][3],epsilon[i][4],epsilon[i][5]);
+        translation_sum = translation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + translation1);
 
     }
 
     auto norm = quaternion_sum.magnitude();
 
-    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-                                        quaternion_sum.getTranslation() / norm.second);
+//    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
+//                                        quaternion_sum.getTranslation() / norm.second);
+    return utils::DualQuaternion<float>(utils::Quaternion<float>(),
+                                        translation_sum);
 }
 
 /**

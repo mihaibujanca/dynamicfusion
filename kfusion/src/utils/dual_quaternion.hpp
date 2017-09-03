@@ -159,7 +159,8 @@ namespace kfusion {
             {
                 DualQuaternion<T> result;
                 result.rotation_ = rotation_ * other.rotation_;
-                result.translation_ = (rotation_ * other.translation_) + (translation_ * other.rotation_);
+//                result.translation_ = (rotation_ * other.translation_) + (translation_ * other.rotation_);
+                result.translation_ = translation_ + other.translation_;
                 return result;
             }
 

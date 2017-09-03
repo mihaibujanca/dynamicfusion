@@ -69,7 +69,7 @@ namespace kfusion
         void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
-        utils::DualQuaternion<float> DQB(const Vec3f& vertex, double epsilon[KNN_NEIGHBOURS * 6]) const;
+        utils::DualQuaternion<float> DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const;
 
         void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
