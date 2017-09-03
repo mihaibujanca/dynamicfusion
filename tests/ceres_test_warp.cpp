@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     kfusion::WarpField warpField;
     std::vector<cv::Vec3f> warp_init;
     std::vector<cv::Vec3f> warp_normals;
-    for(int i=0; i < KNN_NEIGHBOURS; i++)
+    for(int i=0; i < KNN_NEIGHBOURS+1; i++)
         warp_normals.emplace_back(cv::Vec3f(0,0,1));
 
     warp_init.emplace_back(cv::Vec3f(1,1,1));
@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     warp_init.emplace_back(cv::Vec3f(-1,1,-1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,-1));
+    warp_init.emplace_back(cv::Vec3f(2,-3,-1));
 
     warpField.init(warp_init, warp_normals);
 
