@@ -154,6 +154,7 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             std::cout<<"Weight["<<j<<"]="<<weights[j]<<" ";
         }
         std::cout<<std::endl;
+
         params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
@@ -188,16 +189,11 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         getWeightsAndUpdateKNN(v, weights);
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
-//            params = warpProblem.mutable_epsilon(indices);
-            std::cout<<"Weight["<<i<<"]="<<weights[i]<<" ";
 
             auto block_position = ret_index_[i] * 6;
             Vec3f translation1(all_params[block_position+3],
                                all_params[block_position+4],
                                all_params[block_position+5]);
-//            Vec3f translation1(params[i][3],
-//                               params[i][4],
-//                               params[i][5]);
 
             Vec3f dq_translation;
             nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
@@ -206,8 +202,6 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             translation *= weights[i];
             v += translation;
         }
-
-        std::cout<<std::endl<<"Value of v:"<<v<<std::endl<<std::endl;
     }
     exit(0);
     return 0;
