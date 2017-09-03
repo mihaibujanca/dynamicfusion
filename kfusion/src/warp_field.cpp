@@ -187,13 +187,13 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         utils::Quaternion<float> rotation(0,0,0,0);
         Vec3f translation(0,0,0);
         getWeightsAndUpdateKNN(v, weights);
+        params = warpProblem.mutable_epsilon(ret_index_);
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
 
-            auto block_position = ret_index_[i] * 6;
-            Vec3f translation1(all_params[block_position+3],
-                               all_params[block_position+4],
-                               all_params[block_position+5]);
+            Vec3f translation1(params[i][3],
+                               params[i][4],
+                               params[i][5]);
 
             Vec3f dq_translation;
             nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
