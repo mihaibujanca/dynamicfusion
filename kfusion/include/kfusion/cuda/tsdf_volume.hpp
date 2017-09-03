@@ -75,12 +75,12 @@ namespace kfusion
 
         private:
             CudaData data_;
-//            need to make this smart pointers
-            cuda::DeviceArray<Point> *cloud_buffer;
-            cuda::DeviceArray<Point> *cloud;
-            cuda::DeviceArray<Normal> *normal_buffer;
-            cv::Mat *cloud_host;
-            cv::Mat *normal_host;
+//            need to make this cv::Ptr
+            cuda::DeviceArray<Point> *cloud_buffer_;
+            cuda::DeviceArray<Point> *cloud_;
+            cuda::DeviceArray<Normal> *normal_buffer_;
+            cv::Mat *cloud_host_;
+            cv::Mat *normal_host_;
 
             float trunc_dist_;
             float max_weight_;
@@ -96,7 +96,7 @@ namespace kfusion
                 float tsdf_weight;
             };
 
-            std::vector<Entry> tsdf_entries;
+            std::vector<Entry> tsdf_entries_;
         };
     }
 }
