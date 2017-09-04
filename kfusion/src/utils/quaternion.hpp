@@ -142,6 +142,10 @@ namespace kfusion{
                                     (y_ + other.y_),
                                     (z_ + other.z_));
             }
+            void operator+=(const Quaternion& other)
+            {
+                *this = *this + other;
+            }
 
             Quaternion operator-(const Quaternion& other)
             {

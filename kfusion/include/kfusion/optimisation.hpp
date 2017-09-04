@@ -4,13 +4,12 @@
 #include "ceres/rotation.h"
 #include <kfusion/warp_field.hpp>
 
-typedef Eigen::Vector3d Vec3;
 struct DynamicFusionDataEnergy
 {
-    DynamicFusionDataEnergy(cv::Vec3d live_vertex,
-                            cv::Vec3f live_normal,
-                            cv::Vec3f canonical_vertex,
-                            cv::Vec3f canonical_normal,
+    DynamicFusionDataEnergy(const cv::Vec3f& live_vertex,
+                            const cv::Vec3f& live_normal,
+                            const cv::Vec3f& canonical_vertex,
+                            const cv::Vec3f& canonical_normal,
                             kfusion::WarpField *warpField,
                             const float weights[KNN_NEIGHBOURS],
                             const unsigned long knn_indices[KNN_NEIGHBOURS])
@@ -58,9 +57,14 @@ struct DynamicFusionDataEnergy
             total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
 
         }
-        residuals[0] = canonical_vertex_[0] - live_vertex_[0] + total_translation[0];
-        residuals[1] = canonical_vertex_[1] - live_vertex_[1] + total_translation[1];
-        residuals[2] = canonical_vertex_[2] - live_vertex_[2] + total_translation[2];
+
+        T norm = ceres::sqrt(total_translation[0] * total_translation[0] +
+                             total_translation[1] * total_translation[1] +
+                             total_translation[2] * total_translation[2]);
+
+        residuals[0] = T(canonical_vertex_[0] - live_vertex_[0]) + total_translation[0];
+        residuals[1] = T(canonical_vertex_[1] - live_vertex_[1]) + total_translation[1];
+        residuals[2] = T(canonical_vertex_[2] - live_vertex_[2]) + total_translation[2];
 
         return true;
     }
@@ -88,8 +92,8 @@ struct DynamicFusionDataEnergy
     // Factory to hide the construction of the CostFunction object from
     // the client code.
 //      TODO: this will only have one residual at the end, remember to change
-    static ceres::CostFunction* Create(const cv::Vec3d& live_vertex,
-                                       const cv::Vec3d& live_normal,
+    static ceres::CostFunction* Create(const cv::Vec3f& live_vertex,
+                                       const cv::Vec3f& live_normal,
                                        const cv::Vec3f& canonical_vertex,
                                        const cv::Vec3f& canonical_normal,
                                        kfusion::WarpField* warpField,
@@ -109,8 +113,8 @@ struct DynamicFusionDataEnergy
         cost_function->SetNumResiduals(3);
         return cost_function;
     }
-    const cv::Vec3d live_vertex_;
-    const cv::Vec3d live_normal_;
+    const cv::Vec3f live_vertex_;
+    const cv::Vec3f live_normal_;
     const cv::Vec3f canonical_vertex_;
     const cv::Vec3f canonical_normal_;
 
@@ -120,9 +124,43 @@ struct DynamicFusionDataEnergy
     kfusion::WarpField *warpField_;
 };
 
+struct DynamicFusionRegEnergy
+{
+    DynamicFusionRegEnergy(){};
+    ~DynamicFusionRegEnergy(){};
+    template <typename T>
+    bool operator()(T const * const * epsilon_, T* residuals) const
+    {
+        return true;
+    }
+
+/**
+ * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
+ * In the paper, a value of 0.0001 is suggested for delta.
+ * \param a
+ * \param delta
+ * \return
+ */
+    template <typename T>
+    T huberPenalty(T a, T delta = 0.0001) const
+    {
+        return ceres::abs(a) <= delta ? a * a / 2 : delta * ceres::abs(a) - delta * delta / 2;
+    }
+
+    static ceres::CostFunction* Create()
+    {
+        auto cost_function = new ceres::DynamicAutoDiffCostFunction<DynamicFusionRegEnergy, 4>(
+                new DynamicFusionRegEnergy());
+        for(int i=0; i < KNN_NEIGHBOURS; i++)
+            cost_function->AddParameterBlock(6);
+        cost_function->SetNumResiduals(3);
+        return cost_function;
+    }
+};
+
 class WarpProblem {
 public:
-    WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
+    explicit WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
     };

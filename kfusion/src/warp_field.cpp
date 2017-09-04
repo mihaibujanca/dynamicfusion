@@ -24,6 +24,7 @@ WarpField::WarpField()
     resultSet_ = new nanoflann::KNNResultSet<float>(KNN_NEIGHBOURS);
     resultSet_->init(&ret_index_[0], &out_dist_sqr_[0]);
     neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
+    warp_to_live_ = cv::Affine3f();
 
 }
 
@@ -49,8 +50,8 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 
 //    FIXME:: this is a test, remove later
     voxel_size = 1;
-    for(int i = 0; i < first_frame.rows; i++)
-        for(int j = 0; j < first_frame.cols; j++)
+    for(size_t i = 0; i < first_frame.rows; i++)
+        for(size_t j = 0; j < first_frame.cols; j++)
         {
             auto point = first_frame.at<Point>(i,j);
             auto norm = normals.at<Normal>(i,j);
@@ -83,7 +84,7 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
 
 //    FIXME: this is a test, remove
     voxel_size = 1;
-    for (int i = 0; i < first_frame.size(); i++)
+    for (size_t i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];
         auto norm = normals[i];
@@ -127,7 +128,7 @@ void WarpField::energy(const cuda::Cloud &frame,
  * @param live_normals
  * @return
  */
-float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
+void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                              const std::vector<Vec3f> &canonical_normals,
                              const std::vector<Vec3f> &live_vertices,
                              const std::vector<Vec3f> &live_normals
@@ -136,7 +137,6 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
 //    assert((canonical_normals.size() == canonical_vertices.size()) == (live_normals.size() == live_vertices.size()));
     ceres::Problem problem;
-    std::vector<cv::Vec3d> double_vertices;
     float weights[KNN_NEIGHBOURS];
     unsigned long indices[KNN_NEIGHBOURS];
 
@@ -148,12 +148,9 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             continue;
         getWeightsAndUpdateKNN(canonical_vertices[i], weights);
 
+//        FIXME: could just pass ret_index
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
-        {
             indices[j] = ret_index_[j];
-            std::cout<<"Weight["<<j<<"]="<<weights[j]<<" ";
-        }
-        std::cout<<std::endl;
 
         params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
@@ -167,59 +164,14 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = true;
+    options.num_linear_solver_threads = 8;
+    options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-
-
-    auto all_params = warpProblem.params();
-    for(int i = 0; i < nodes_->size() * 6; i++)
-    {
-        std::cout<<all_params[i]<<" ";
-        if((i+1) % 6 == 0)
-            std::cout<<std::endl;
-    }
-
-    for(auto v : canonical_vertices)
-    {
-        utils::Quaternion<float> rotation(0,0,0,0);
-        Vec3f translation(0,0,0);
-        getWeightsAndUpdateKNN(v, weights);
-        params = warpProblem.mutable_epsilon(ret_index_);
-        for(int i = 0; i < KNN_NEIGHBOURS; i++)
-        {
-
-            Vec3f translation1(params[i][3],
-                               params[i][4],
-                               params[i][5]);
-
-            Vec3f dq_translation;
-            nodes_->at(ret_index_[i]).transform.getTranslation(dq_translation);
-
-            translation = translation1 + dq_translation;
-            translation *= weights[i];
-            v += translation;
-        }
-
-        std::cout<<std::endl<<"Value of v:"<<v;
-    }
-    std::cout<<std::endl;
-    for(auto v : canonical_vertices)
-    {
-        KNN(v);
-        Vec3f v1 = v, test;
-        params = warpProblem.mutable_epsilon(ret_index_);
-        auto dq = DQB(v, params);
-//        dq.transform(v);
-//        std::cout<<"FROM DQB:"<<v<<std::endl;
-
-        dq.getTranslation(test);
-        std::cout<<"Translation only:"<<test+v1<<std::endl;
-    }
-    exit(0);
-    return 0;
+    update_nodes(warpProblem.params());
 }
 /**
  * \brief
@@ -231,35 +183,6 @@ void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuate
 
 }
 
-/**
- * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
- * \param x
- * \param c
- * \return
- *
- * \note
- * The value c = 4.685 is usually used for this loss function, and
- * it provides an asymptotic efficiency 95% that of linear
- * regression for the normal distribution
- *
- * In the paper, a value of 0.01 is suggested for c
- */
-float WarpField::tukeyPenalty(float x, float c) const
-{
-    return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0f;
-}
-
-/**
- * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
- * In the paper, a value of 0.0001 is suggested for delta
- * \param a
- * \param delta
- * \return
- */
-float WarpField::huberPenalty(float a, float delta) const
-{
-    return std::abs(a) <= delta ? a * a / 2 : delta * std::abs(a) - delta * delta / 2;
-}
 
 /**
  *
@@ -292,15 +215,17 @@ void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) co
  */
 utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
-    utils::DualQuaternion<float> quaternion_sum;
+    float weights[KNN_NEIGHBOURS];
+    getWeightsAndUpdateKNN(vertex, weights);
+    utils::Quaternion<float> translation_sum(0,0,0,0);
+    utils::Quaternion<float> rotation_sum(0,0,0,0);
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        quaternion_sum = quaternion_sum + weighting(out_dist_sqr_[i], nodes_->at(ret_index_[i]).weight) *
-                                          nodes_->at(ret_index_[i]).transform;
-
-    auto norm = quaternion_sum.magnitude();
-
-    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-                                        quaternion_sum.getTranslation() / norm.second);
+    {
+        translation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getTranslation();
+        rotation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getRotation();
+    }
+    rotation_sum = utils::Quaternion<float>();
+    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
 
 
@@ -314,25 +239,44 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
 {
     float weights[KNN_NEIGHBOURS];
     getWeightsAndUpdateKNN(vertex, weights);
-    utils::DualQuaternion<float> quaternion_sum;
     utils::DualQuaternion<float> eps;
     utils::Quaternion<float> translation_sum(0,0,0,0);
-    utils::Quaternion<float> rotation(0,0,0,0);
+    utils::Quaternion<float> rotation_sum(0,0,0,0);
+
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
         // epsilon [0:2] is rotation [3:5] is translation
-//        eps.from_twist(epsilon[i][0],epsilon[i][1],epsilon[i][2],epsilon[i][3],epsilon[i][4],epsilon[i][5]);
-        utils::Quaternion<float> translation1(0, epsilon[i][3],epsilon[i][4],epsilon[i][5]);
-        translation_sum = translation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + translation1);
+        eps.from_twist(epsilon[i][0], epsilon[i][1], epsilon[i][2],
+                       epsilon[i][3], epsilon[i][4], epsilon[i][5]);
 
+        translation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + eps.getTranslation());
+        rotation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + eps.getRotation());
     }
+    rotation_sum = utils::Quaternion<float>();
+    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
+}
 
-    auto norm = quaternion_sum.magnitude();
 
-//    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-//                                        quaternion_sum.getTranslation() / norm.second);
-    return utils::DualQuaternion<float>(utils::Quaternion<float>(),
-                                        translation_sum);
+/**
+ * \brief
+ * \param vertex
+ * \param weight
+ * \return
+ */
+void WarpField::update_nodes(const double *epsilon)
+{
+    assert(epsilon != NULL);
+    utils::DualQuaternion<float> eps;
+    for (size_t i = 0; i < nodes_->size(); i++)
+    {
+        // epsilon [0:2] is rotation [3:5] is translation
+        eps.from_twist(epsilon[i*6], epsilon[i*6 +1], epsilon[i*6 + 2],
+                       epsilon[i*6 + 3], epsilon[i*6 + 4], epsilon[i*6 + 5]);
+        auto tr = eps.getTranslation() + nodes_->at(i).transform.getTranslation();
+//        auto rot = eps.getRotation() + nodes_->at(i).transform.getRotation();
+        auto rot = utils::Quaternion<float>();
+        nodes_->at(i).transform = utils::DualQuaternion<float>(tr, rot);
+    }
 }
 
 /**
