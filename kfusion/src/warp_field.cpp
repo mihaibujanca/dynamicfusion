@@ -128,7 +128,7 @@ void WarpField::energy(const cuda::Cloud &frame,
  * @param live_normals
  * @return
  */
-float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
+void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                              const std::vector<Vec3f> &canonical_normals,
                              const std::vector<Vec3f> &live_vertices,
                              const std::vector<Vec3f> &live_normals
@@ -171,18 +171,11 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
+    live_vertices[3] = cv::Vec3f(0.5,0.5,0.5);
 
-
-    auto all_params = warpProblem.params();
-    for(int i = 0; i < nodes_->size() * 6; i++)
-    {
-        std::cout<<all_params[i]<<" ";
-        if((i+1) % 6 == 0)
-            std::cout<<std::endl;
-    }
-
-    update_nodes(all_params);
-    return 0;
+    ceres::Solve(options, &problem, &summary);
+    std::cout << summary.FullReport() << std::endl;
+    update_nodes(warpProblem.params());
 }
 /**
  * \brief

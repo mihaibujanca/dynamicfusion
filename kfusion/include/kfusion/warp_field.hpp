@@ -54,7 +54,7 @@ namespace kfusion
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
 
-        float energy_data(const std::vector<Vec3f> &canonical_vertices,
+        void energy_data(const std::vector<Vec3f> &canonical_vertices,
                           const std::vector<Vec3f> &canonical_normals,
                           const std::vector<Vec3f> &live_vertices,
                           const std::vector<Vec3f> &live_normals);
