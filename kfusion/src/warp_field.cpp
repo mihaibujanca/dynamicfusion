@@ -147,12 +147,9 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
             continue;
         getWeightsAndUpdateKNN(canonical_vertices[i], weights);
 
+//        FIXME: could just pass ret_index
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
-        {
             indices[j] = ret_index_[j];
-            std::cout<<"Weight["<<j<<"]="<<weights[j]<<" ";
-        }
-        std::cout<<std::endl;
 
         params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
@@ -166,8 +163,10 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = true;
+    options.num_linear_solver_threads = 8;
+    options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
@@ -200,24 +199,6 @@ void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuate
         kfusion::utils::DualQuaternion<float>>> &edges)
 {
 
-}
-
-/**
- * Tukey loss function as described in http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/12-1.pdf
- * \param x
- * \param c
- * \return
- *
- * \note
- * The value c = 4.685 is usually used for this loss function, and
- * it provides an asymptotic efficiency 95% that of linear
- * regression for the normal distribution
- *
- * In the paper, a value of 0.01 is suggested for c
- */
-float WarpField::tukeyPenalty(float x, float c) const
-{
-    return std::abs(x) <= c ? x * std::pow((1 - (x * x) / (c * c)), 2) : 0.0f;
 }
 
 /**
@@ -291,6 +272,33 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
     utils::DualQuaternion<float> eps;
     utils::Quaternion<float> translation_sum(0,0,0,0);
     utils::Quaternion<float> rotation_sum(0,0,0,0);
+
+    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+    {
+        // epsilon [0:2] is rotation [3:5] is translation
+        eps.from_twist(epsilon[i][0], epsilon[i][1], epsilon[i][2],
+                       epsilon[i][3], epsilon[i][4], epsilon[i][5]);
+
+        translation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + eps.getTranslation());
+        rotation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + eps.getRotation());
+    }
+    rotation_sum = utils::Quaternion<float>();
+    return utils::DualQuaternion<float>(translation_sum,
+                                        rotation_sum);
+}
+
+/**
+ * \brief
+ * \param vertex
+ * \param weight
+ * \return
+ */
+void WarpField::update(const double epsilon[KNN_NEIGHBOURS][6])
+{
+    float weights[KNN_NEIGHBOURS];
+    utils::DualQuaternion<float> eps;
+    utils::Quaternion<float> translation_sum(0,0,0,0);
+    utils::Quaternion<float> rotation_sum(0,0,0,0);
     utils::DualQuaternion<float> quaternion_sum(translation_sum, rotation_sum);
 
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
@@ -302,15 +310,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
         auto rot = eps.getRotation();
         translation_sum = translation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + tr);
         rotation_sum = rotation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + rot);
-        quaternion_sum = quaternion_sum + weights[i] * (nodes_->at(ret_index_[i]).transform + eps);
     }
-
-    auto norm = quaternion_sum.magnitude();
-//
-//    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-//                                        quaternion_sum.getTranslation() / norm.second);
-    return utils::DualQuaternion<float>(translation_sum,
-                                        utils::Quaternion<float>());
 }
 
 /**

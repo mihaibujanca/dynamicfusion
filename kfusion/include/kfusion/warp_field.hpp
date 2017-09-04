@@ -61,7 +61,6 @@ namespace kfusion
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        float tukeyPenalty(float x, float c = 0.01) const;
 
         float huberPenalty(float a, float delta) const;
 
@@ -70,6 +69,7 @@ namespace kfusion
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
         utils::DualQuaternion<float> DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const;
+        void update(const double epsilon[KNN_NEIGHBOURS][6]);
 
         void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
