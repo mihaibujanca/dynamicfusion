@@ -24,6 +24,7 @@ WarpField::WarpField()
     resultSet_ = new nanoflann::KNNResultSet<float>(KNN_NEIGHBOURS);
     resultSet_->init(&ret_index_[0], &out_dist_sqr_[0]);
     neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
+    warp_to_live_ = cv::Affine3f();
 
 }
 
@@ -49,8 +50,8 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 
 //    FIXME:: this is a test, remove later
     voxel_size = 1;
-    for(int i = 0; i < first_frame.rows; i++)
-        for(int j = 0; j < first_frame.cols; j++)
+    for(size_t i = 0; i < first_frame.rows; i++)
+        for(size_t j = 0; j < first_frame.cols; j++)
         {
             auto point = first_frame.at<Point>(i,j);
             auto norm = normals.at<Normal>(i,j);
@@ -83,7 +84,7 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
 
 //    FIXME: this is a test, remove
     voxel_size = 1;
-    for (int i = 0; i < first_frame.size(); i++)
+    for (size_t i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];
         auto norm = normals[i];
@@ -179,16 +180,8 @@ float WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         if((i+1) % 6 == 0)
             std::cout<<std::endl;
     }
-    std::cout<<std::endl;
-    for(auto v : canonical_vertices)
-    {
-        KNN(v);
-        params = warpProblem.mutable_epsilon(ret_index_);
-        auto dq = DQB(v, params);
-        dq.transform(v);
-        std::cout<<"FROM DQB:"<<v<<std::endl;
-    }
-    exit(0);
+
+    update_nodes(all_params);
     return 0;
 }
 /**
@@ -233,18 +226,18 @@ void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) co
  */
 utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
 {
-    utils::DualQuaternion<float> quaternion_sum;
     float weights[KNN_NEIGHBOURS];
     getWeightsAndUpdateKNN(vertex, weights);
+    utils::Quaternion<float> translation_sum(0,0,0,0);
+    utils::Quaternion<float> rotation_sum(0,0,0,0);
+
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-        quaternion_sum = quaternion_sum +  weights[i] * nodes_->at(ret_index_[i]).transform;
-
-    auto norm = quaternion_sum.magnitude();
-
-//    return utils::DualQuaternion<float>(quaternion_sum.getRotation() / norm.first,
-//                                        quaternion_sum.getTranslation() / norm.second);
-    return utils::DualQuaternion<float>(quaternion_sum.getRotation() ,
-                                        quaternion_sum.getTranslation());
+    {
+        translation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getTranslation();
+        rotation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getRotation();
+    }
+    rotation_sum = utils::Quaternion<float>();
+    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
 
 
@@ -272,8 +265,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
         rotation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + eps.getRotation());
     }
     rotation_sum = utils::Quaternion<float>();
-    return utils::DualQuaternion<float>(translation_sum,
-                                        rotation_sum);
+    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
 
 /**
@@ -282,23 +274,19 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
  * \param weight
  * \return
  */
-void WarpField::update(const double epsilon[KNN_NEIGHBOURS][6])
+void WarpField::update_nodes(const double *epsilon)
 {
-    float weights[KNN_NEIGHBOURS];
+    assert(epsilon != NULL);
     utils::DualQuaternion<float> eps;
-    utils::Quaternion<float> translation_sum(0,0,0,0);
-    utils::Quaternion<float> rotation_sum(0,0,0,0);
-    utils::DualQuaternion<float> quaternion_sum(translation_sum, rotation_sum);
-
-    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
+    for (size_t i = 0; i < nodes_->size(); i++)
     {
         // epsilon [0:2] is rotation [3:5] is translation
-        eps.from_twist(epsilon[i][0], epsilon[i][1], epsilon[i][2],
-                       epsilon[i][3], epsilon[i][4], epsilon[i][5]);
-        auto tr = eps.getTranslation();
-        auto rot = eps.getRotation();
-        translation_sum = translation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + tr);
-        rotation_sum = rotation_sum + weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + rot);
+        eps.from_twist(epsilon[i*6], epsilon[i*6 +1], epsilon[i*6 + 2],
+                       epsilon[i*6 + 3], epsilon[i*6 + 4], epsilon[i*6 + 5]);
+        auto tr = eps.getTranslation() + nodes_->at(i).transform.getTranslation();
+//        auto rot = eps.getRotation() + nodes_->at(i).transform.getRotation();
+        auto rot = utils::Quaternion<float>();
+        nodes_->at(i).transform = utils::DualQuaternion<float>(tr, rot);
     }
 }
 

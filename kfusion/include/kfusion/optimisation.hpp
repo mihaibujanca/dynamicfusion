@@ -57,6 +57,11 @@ struct DynamicFusionDataEnergy
             total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
 
         }
+
+        T norm = ceres::sqrt(total_translation[0] * total_translation[0] +
+                             total_translation[1] * total_translation[1] +
+                             total_translation[2] * total_translation[2]);
+
         residuals[0] = T(canonical_vertex_[0] - live_vertex_[0]) + total_translation[0];
         residuals[1] = T(canonical_vertex_[1] - live_vertex_[1]) + total_translation[1];
         residuals[2] = T(canonical_vertex_[2] - live_vertex_[2]) + total_translation[2];

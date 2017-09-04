@@ -60,5 +60,9 @@ int main(int argc, char** argv) {
     live_normals.emplace_back(cv::Vec3f(0,0,1));
 
     warpField.energy_data(canonical_vertices, canonical_normals,live_vertices, live_normals);
-    return 0;
+    warpField.warp(canonical_vertices, canonical_normals);
+
+    for(auto v : canonical_vertices)
+        std::cout<<"Warped:"<<v<<std::endl;
+    exit(0);
 }
