@@ -6,10 +6,10 @@
 
 struct DynamicFusionDataEnergy
 {
-    DynamicFusionDataEnergy(cv::Vec3d live_vertex,
-                            cv::Vec3f live_normal,
-                            cv::Vec3f canonical_vertex,
-                            cv::Vec3f canonical_normal,
+    DynamicFusionDataEnergy(const cv::Vec3f& live_vertex,
+                            const cv::Vec3f& live_normal,
+                            const cv::Vec3f& canonical_vertex,
+                            const cv::Vec3f& canonical_normal,
                             kfusion::WarpField *warpField,
                             const float weights[KNN_NEIGHBOURS],
                             const unsigned long knn_indices[KNN_NEIGHBOURS])
@@ -57,9 +57,9 @@ struct DynamicFusionDataEnergy
             total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
 
         }
-        residuals[0] = canonical_vertex_[0] - live_vertex_[0] + total_translation[0];
-        residuals[1] = canonical_vertex_[1] - live_vertex_[1] + total_translation[1];
-        residuals[2] = canonical_vertex_[2] - live_vertex_[2] + total_translation[2];
+        residuals[0] = T(canonical_vertex_[0] - live_vertex_[0]) + total_translation[0];
+        residuals[1] = T(canonical_vertex_[1] - live_vertex_[1]) + total_translation[1];
+        residuals[2] = T(canonical_vertex_[2] - live_vertex_[2]) + total_translation[2];
 
         return true;
     }
@@ -87,8 +87,8 @@ struct DynamicFusionDataEnergy
     // Factory to hide the construction of the CostFunction object from
     // the client code.
 //      TODO: this will only have one residual at the end, remember to change
-    static ceres::CostFunction* Create(const cv::Vec3d& live_vertex,
-                                       const cv::Vec3d& live_normal,
+    static ceres::CostFunction* Create(const cv::Vec3f& live_vertex,
+                                       const cv::Vec3f& live_normal,
                                        const cv::Vec3f& canonical_vertex,
                                        const cv::Vec3f& canonical_normal,
                                        kfusion::WarpField* warpField,
@@ -108,8 +108,8 @@ struct DynamicFusionDataEnergy
         cost_function->SetNumResiduals(3);
         return cost_function;
     }
-    const cv::Vec3d live_vertex_;
-    const cv::Vec3d live_normal_;
+    const cv::Vec3f live_vertex_;
+    const cv::Vec3f live_normal_;
     const cv::Vec3f canonical_vertex_;
     const cv::Vec3f canonical_normal_;
 
