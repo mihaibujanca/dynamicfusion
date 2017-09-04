@@ -6,6 +6,7 @@ add_executable(ceres_test ceres_test_warp.cpp)
 target_link_libraries(
         ceres_test
         ${CERES_LIBRARIES}
+        ${GTEST_BOTH_LIBRARIES}
         kfusion
 )
 

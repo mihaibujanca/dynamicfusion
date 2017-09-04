@@ -54,22 +54,20 @@ namespace kfusion
                             kfusion::utils::DualQuaternion<float>>> &edges
         );
 
-        float energy_data(const std::vector<Vec3f> &canonical_vertices,
+        void energy_data(const std::vector<Vec3f> &canonical_vertices,
                           const std::vector<Vec3f> &canonical_normals,
                           const std::vector<Vec3f> &live_vertices,
                           const std::vector<Vec3f> &live_normals);
         void energy_reg(const std::vector<std::pair<kfusion::utils::DualQuaternion<float>,
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
-        float tukeyPenalty(float x, float c = 0.01) const;
-
-        float huberPenalty(float a, float delta) const;
 
         void warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const;
         void warp(cuda::Cloud& points) const;
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
         utils::DualQuaternion<float> DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const;
+        void update_nodes(const double *epsilon);
 
         void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
