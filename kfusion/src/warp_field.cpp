@@ -171,7 +171,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-
     update_nodes(warpProblem.params());
 }
 /**
@@ -220,7 +219,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
     getWeightsAndUpdateKNN(vertex, weights);
     utils::Quaternion<float> translation_sum(0,0,0,0);
     utils::Quaternion<float> rotation_sum(0,0,0,0);
-
     for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
     {
         translation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getTranslation();
@@ -257,6 +255,7 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
     rotation_sum = utils::Quaternion<float>();
     return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
+
 
 /**
  * \brief
