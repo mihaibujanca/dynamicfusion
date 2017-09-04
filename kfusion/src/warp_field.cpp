@@ -171,10 +171,7 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-    live_vertices[3] = cv::Vec3f(0.5,0.5,0.5);
 
-    ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << std::endl;
     update_nodes(warpProblem.params());
 }
 /**
