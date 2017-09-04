@@ -155,7 +155,7 @@ struct DynamicFusionRegEnergy
 
 class WarpProblem {
 public:
-    WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
+    explicit WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
     };
