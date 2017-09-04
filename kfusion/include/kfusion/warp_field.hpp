@@ -62,8 +62,6 @@ namespace kfusion
                 kfusion::utils::DualQuaternion<float>>> &edges);
 
 
-        float huberPenalty(float a, float delta) const;
-
         void warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) const;
         void warp(cuda::Cloud& points) const;
 

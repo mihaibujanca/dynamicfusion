@@ -201,17 +201,6 @@ void WarpField::energy_reg(const std::vector<std::pair<kfusion::utils::DualQuate
 
 }
 
-/**
- * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
- * In the paper, a value of 0.0001 is suggested for delta
- * \param a
- * \param delta
- * \return
- */
-float WarpField::huberPenalty(float a, float delta) const
-{
-    return std::abs(a) <= delta ? a * a / 2 : delta * std::abs(a) - delta * delta / 2;
-}
 
 /**
  *

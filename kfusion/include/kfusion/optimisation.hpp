@@ -4,7 +4,6 @@
 #include "ceres/rotation.h"
 #include <kfusion/warp_field.hpp>
 
-typedef Eigen::Vector3d Vec3;
 struct DynamicFusionDataEnergy
 {
     DynamicFusionDataEnergy(cv::Vec3d live_vertex,
@@ -118,6 +117,40 @@ struct DynamicFusionDataEnergy
     unsigned long *knn_indices_;
 
     kfusion::WarpField *warpField_;
+};
+
+struct DynamicFusionRegEnergy
+{
+    DynamicFusionRegEnergy(){};
+    ~DynamicFusionRegEnergy(){};
+    template <typename T>
+    bool operator()(T const * const * epsilon_, T* residuals) const
+    {
+        return true;
+    }
+
+/**
+ * Huber penalty function, implemented as described in https://en.wikipedia.org/wiki/Huber_loss
+ * In the paper, a value of 0.0001 is suggested for delta.
+ * \param a
+ * \param delta
+ * \return
+ */
+    template <typename T>
+    T huberPenalty(T a, T delta = 0.0001) const
+    {
+        return ceres::abs(a) <= delta ? a * a / 2 : delta * ceres::abs(a) - delta * delta / 2;
+    }
+
+    static ceres::CostFunction* Create()
+    {
+        auto cost_function = new ceres::DynamicAutoDiffCostFunction<DynamicFusionRegEnergy, 4>(
+                new DynamicFusionRegEnergy());
+        for(int i=0; i < KNN_NEIGHBOURS; i++)
+            cost_function->AddParameterBlock(6);
+        cost_function->SetNumResiduals(3);
+        return cost_function;
+    }
 };
 
 class WarpProblem {
