@@ -10,6 +10,7 @@ TEST(CERES_WARP_FIELD, EnergyDataTest)
     kfusion::WarpField warpField;
     std::vector<cv::Vec3f> warp_init;
     std::vector<cv::Vec3f> warp_normals;
+
     for(int i=0; i < KNN_NEIGHBOURS+1; i++)
         warp_normals.emplace_back(cv::Vec3f(0,0,1));
 
