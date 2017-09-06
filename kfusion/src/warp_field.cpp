@@ -129,9 +129,9 @@ void WarpField::energy(const cuda::Cloud &frame,
  * @return
  */
 void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
-                             const std::vector<Vec3f> &canonical_normals,
-                             const std::vector<Vec3f> &live_vertices,
-                             const std::vector<Vec3f> &live_normals
+                            const std::vector<Vec3f> &canonical_normals,
+                            const std::vector<Vec3f> &live_vertices,
+                            const std::vector<Vec3f> &live_normals
 )
 {
 
@@ -164,7 +164,7 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
     options.minimizer_progress_to_stdout = true;
     options.num_linear_solver_threads = 8;
     options.num_threads = 8;

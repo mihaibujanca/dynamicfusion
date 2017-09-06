@@ -151,7 +151,7 @@ kfusion::WarpField& kfusion::KinFu::getWarp()
 
 void kfusion::KinFu::allocate_buffers()
 {
-    const int LEVELS = cuda::ProjectiveICP::MAX_PYRAMID_LEVELS;
+    const size_t LEVELS = cuda::ProjectiveICP::MAX_PYRAMID_LEVELS;
 
     int cols = params_.cols;
     int rows = params_.rows;
