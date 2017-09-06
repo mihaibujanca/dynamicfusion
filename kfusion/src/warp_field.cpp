@@ -141,7 +141,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     unsigned long indices[KNN_NEIGHBOURS];
 
     WarpProblem warpProblem(this);
-    std::vector<double*> params;
     for(int i = 0; i < live_vertices.size(); i++)
     {
         if(std::isnan(canonical_vertices[i][0]))
@@ -152,7 +151,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
             indices[j] = ret_index_[j];
 
-        params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
                                                                              canonical_vertices[i],
@@ -160,7 +158,7 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                                                                              this,
                                                                              weights,
                                                                              indices);
-        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
+        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, warpProblem.mutable_epsilon(indices));
 
     }
     ceres::Solver::Options options;
@@ -171,6 +169,14 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
+
+//    auto params = warpProblem.params();
+//    for(int i = 0; i < nodes_->size()*6; i++)
+//    {
+//        std::cout<<params[i]<<" ";
+//        if((i+1) % 6 == 0)
+//            std::cout<<std::endl;
+//    }
     update_nodes(warpProblem.params());
 }
 /**
