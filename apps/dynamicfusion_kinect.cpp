@@ -4,8 +4,6 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <io/capture.hpp>
 using namespace kfusion;
 

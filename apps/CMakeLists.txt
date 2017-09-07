@@ -21,4 +21,3 @@ if(OPENNI_FOUND)
 endif()
 
 install(TARGETS dynamicfusion RUNTIME DESTINATION bin COMPONENT main)
-#install(FILES ${srcs} DESTINATION app COMPONENT main)

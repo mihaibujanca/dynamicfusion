@@ -50,8 +50,9 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 
 //    FIXME:: this is a test, remove later
     voxel_size = 1;
-    for(size_t i = 0; i < first_frame.rows; i++)
-        for(size_t j = 0; j < first_frame.cols; j++)
+    int step = 10;
+    for(size_t i = 0; i < first_frame.rows; i+=step)
+        for(size_t j = 0; j < first_frame.cols; j+=step)
         {
             auto point = first_frame.at<Point>(i,j);
             auto norm = normals.at<Normal>(i,j);
