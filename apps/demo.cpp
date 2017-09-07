@@ -3,8 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/range/iterator_range.hpp>
 
 using namespace kfusion;
 
@@ -68,20 +66,18 @@ struct DynamicFusionApp
         cv::Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
-        std::vector<boost::filesystem::path> depths;             // store paths,
-        std::vector<boost::filesystem::path> images;             // store paths,
+        std::vector<cv::String> depths;             // store paths,
+        std::vector<cv::String> images;             // store paths,
 
-        copy(boost::filesystem::directory_iterator(dir_name + "/depth"), boost::filesystem::directory_iterator(),
-             back_inserter(depths));
-        copy(boost::filesystem::directory_iterator(dir_name + "/color"), boost::filesystem::directory_iterator(),
-             back_inserter(images));
+        cv::glob(dir_name + "/depth", depths);
+        cv::glob(dir_name + "/color", images);
 
         std::sort(depths.begin(), depths.end());
         std::sort(images.begin(), images.end());
 
         for (int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++) {
-            image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
-            depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
+            image = cv::imread(images[i], CV_LOAD_IMAGE_COLOR);
+            depth = cv::imread(depths[i], CV_LOAD_IMAGE_ANYDEPTH);
             depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
 
             {
@@ -154,8 +150,7 @@ int main (int argc, char* argv[])
         return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
 
     DynamicFusionApp *app;
-    if(boost::filesystem::is_directory(argv[1]))
-        app = new DynamicFusionApp(argv[1]);
+    app = new DynamicFusionApp(argv[1]);
 
     // executing
     try { app->execute (); }

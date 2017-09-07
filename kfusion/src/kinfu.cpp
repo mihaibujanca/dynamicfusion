@@ -378,7 +378,7 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
         }
 
     std::vector<Vec3f> canonical_visible(warped);
-    getWarp().energy_data(warped, warped_normals, warped, warped_normals); //crashes, leave out for now
+//    getWarp().energy_data(warped, warped_normals, warped, warped_normals); //crashes, leave out for now
 
     getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");
