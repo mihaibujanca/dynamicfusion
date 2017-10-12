@@ -1,5 +1,6 @@
 project(tests)
 add_subdirectory(utils)
+add_subdirectory(opt)
 include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
 
 add_executable(ceres_test ceres_test_warp.cpp)
