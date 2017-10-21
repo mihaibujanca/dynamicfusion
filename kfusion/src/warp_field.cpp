@@ -40,10 +40,8 @@ WarpField::~WarpField()
  * @param first_frame
  * @param normals
  */
-void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
+void WarpField::init(const cv::Mat& first_frame)
 {
-    assert(first_frame.rows == normals.rows);
-    assert(first_frame.cols == normals.cols);
     nodes_->resize(first_frame.cols * first_frame.rows);
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
@@ -71,7 +69,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
  * @param first_frame
  * @param normals
  */
-void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals)
+void WarpField::init(const std::vector<Vec3f>& first_frame)
 {
     nodes_->resize(first_frame.size());
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
@@ -82,12 +80,10 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
     for (size_t i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];
-        auto norm = normals[i];
         if (!std::isnan(point[0]))
         {
             utils::Quaternion<float> t(0.f, point[0], point[1], point[2]);
-            utils::Quaternion<float> r(norm);
-            nodes_->at(i).transform = utils::DualQuaternion<float>(t,r);
+            nodes_->at(i).transform = utils::DualQuaternion<float>(t,utils::Quaternion<float>());
 
             nodes_->at(i).vertex = point;
             nodes_->at(i).weight = 3 * voxel_size;
