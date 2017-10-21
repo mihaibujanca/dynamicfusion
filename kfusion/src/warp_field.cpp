@@ -55,16 +55,10 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
         for(size_t j = 0; j < first_frame.cols; j+=step)
         {
             auto point = first_frame.at<Point>(i,j);
-            auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                utils::Quaternion<float> r(Vec3f(norm.x,norm.y,norm.z));
-                if(std::isnan(r.w_) || std::isnan(r.x_) ||std::isnan(r.y_) ||std::isnan(r.z_))
-                    continue;
-
-                utils::Quaternion<float> t(0,point.x, point.y, point.z);
-                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, r);
-
+                auto t = utils::Quaternion<float>(0,point.x,point.y,point.z);
+                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, utils::Quaternion<float>());
                 nodes_->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes_->at(i*first_frame.cols+j).weight = 3 * voxel_size;
             }
