@@ -30,7 +30,7 @@ WarpField::WarpField()
 
 WarpField::~WarpField()
 {
-    delete[] nodes_;
+    delete nodes_;
     delete resultSet_;
     delete index_;
 }
@@ -355,4 +355,8 @@ void WarpField::setWarpToLive(const Affine3f &pose)
 std::vector<float>* WarpField::getDistSquared() const
 {
     return &out_dist_sqr_;
+}
+std::vector<size_t>* WarpField::getRetIndex() const
+{
+    return &ret_index_;
 }
