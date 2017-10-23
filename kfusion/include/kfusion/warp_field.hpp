@@ -6,7 +6,7 @@
 #include <nanoflann/nanoflann.hpp>
 #include <knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
-#define KNN_NEIGHBOURS 6
+#define KNN_NEIGHBOURS 8
 
 namespace kfusion
 {
@@ -77,6 +77,7 @@ namespace kfusion
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
+        std::vector<deformation_node>* getNodes();
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
         std::vector<float>* getDistSquared() const;

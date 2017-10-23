@@ -1,13 +1,20 @@
-add_executable(opt_test WarpingSolver.cu CUDAWarpingSolver.cpp LandMark.cpp LandMarkSet.cpp opt_test.cpp mLibSource.cpp)
+project(opt_testing)
+set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+
+include_directories(include ${OPT_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+
+add_executable(opt_test mLibSource.cpp opt_test.cpp include/CombinedSolver.h)
+
 find_package(Threads REQUIRED)
+message("CUDA CUDART:" ${CUDA_CUDART_LIBRARY})
 target_link_libraries(
         opt_test
-        /usr/local/cuda/lib64/libcudart.so # FIXME: hardcoded library path because ${CUDA_LIBRARIES} links statically
+        ${OPENMESH_LIBRARIES}
         ${OPT_LIBRARIES}
         ${TERRA_LIBRARIES}
         ${GTEST_BOTH_LIBRARIES}
         ${CMAKE_DL_LIBS}
-        ${OPENMESH_LIBRARIES}
+        ${CUDA_CUDART_LIBRARY}
         Threads::Threads
         kfusion
 )

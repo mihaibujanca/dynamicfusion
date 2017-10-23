@@ -250,7 +250,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         volume_->compute_points();
         volume_->compute_normals();
 
-        warp_->init(volume_->get_cloud_host(), volume_->get_normal_host());
+        warp_->init(volume_->get_cloud_host());
 
         #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);

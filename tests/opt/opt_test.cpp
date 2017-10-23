@@ -5,102 +5,83 @@
 #include "include/main.h"
 #include "include/CombinedSolver.h"
 #include "include/OpenMesh.h"
-#include "include/LandMarkSet.h"
-#include <OpenMesh/Tools/Subdivider/Uniform/SubdividerT.hh>
-#include <OpenMesh/Tools/Subdivider/Uniform/LongestEdgeT.hh>
-#include <OpenMesh/Tools/Subdivider/Uniform/LoopT.hh>
-#include <OpenMesh/Tools/Subdivider/Uniform/CatmullClarkT.hh>
-#include <OpenMesh/Tools/Subdivider/Uniform/Sqrt3T.hh>
+#include <kfusion/warp_field.hpp>
+
 
 TEST(OPT_WARP_FIELD, EnergyDataTest)
 {
+    const float max_error = 1e-4;
 
+    kfusion::WarpField warpField;
+    std::vector<cv::Vec3f> warp_init;
 
-    std::string filename = "/home/mihai/Projects/Opt/examples/data/small_armadillo.ply";
+    warp_init.emplace_back(cv::Vec3f(1,1,1));
+    warp_init.emplace_back(cv::Vec3f(1,2,-1));
+    warp_init.emplace_back(cv::Vec3f(1,-2,1));
+    warp_init.emplace_back(cv::Vec3f(1,-1,-1));
+    warp_init.emplace_back(cv::Vec3f(-1,1,5));
+    warp_init.emplace_back(cv::Vec3f(-1,1,-1));
+    warp_init.emplace_back(cv::Vec3f(-1,-1,1));
+    warp_init.emplace_back(cv::Vec3f(-1,-1,-1));
+    warp_init.emplace_back(cv::Vec3f(2,-3,-1));
 
-    // For now, any model must be accompanied with a identically
-    // named (besides the extension, which must be 3 characters) mrk file
-    std::string markerFilename = filename.substr(0, filename.size() - 3) + "mrk";
-    bool performanceRun = false;
+    warpField.init(warp_init);
 
-    int subdivisionFactor = 0;
-    bool lmOnlyFullSolve = false;
+    std::vector<cv::Vec3f> canonical_vertices;
+    canonical_vertices.emplace_back(cv::Vec3f(-3,-3,-3));
+    canonical_vertices.emplace_back(cv::Vec3f(-2,-2,-2));
+    canonical_vertices.emplace_back(cv::Vec3f(0,0,0));
+    canonical_vertices.emplace_back(cv::Vec3f(2,2,2));
+    canonical_vertices.emplace_back(cv::Vec3f(3,3,3));
+    canonical_vertices.emplace_back(cv::Vec3f(4,4,4));
 
-    // Load Constraints
-    LandMarkSet markersMesh;
-    markersMesh.loadFromFile(markerFilename.c_str());
+    std::vector<cv::Vec3f> canonical_normals;
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
+    canonical_normals.emplace_back(cv::Vec3f(0,0,1));
 
-    std::vector<int>				constraintsIdx;
-    std::vector<std::vector<float>> constraintsTarget;
+    std::vector<cv::Vec3f> live_vertices;
+    live_vertices.emplace_back(cv::Vec3f(-2.95f,-2.95f,-2.95f));
+    live_vertices.emplace_back(cv::Vec3f(-1.95f,-1.95f,-1.95f));
+    live_vertices.emplace_back(cv::Vec3f(0.05,0.05,0.05));
+    live_vertices.emplace_back(cv::Vec3f(2.05,2.05,2.05));
+    live_vertices.emplace_back(cv::Vec3f(3.05,3.05,3.05));
+    live_vertices.emplace_back(cv::Vec3f(4.5,4.05,6));
 
-    for (unsigned int i = 0; i < markersMesh.size(); i++)
-    {
-        constraintsIdx.push_back(markersMesh[i].getVertexIndex());
-        constraintsTarget.push_back(markersMesh[i].getPosition());
-    }
-
-    SimpleMesh* mesh = new SimpleMesh();
-    if (!OpenMesh::IO::read_mesh(*mesh, filename))
-    {
-        std::cerr << "Error -> File: " << __FILE__ << " Line: " << __LINE__ << " Function: " << __FUNCTION__ << std::endl;
-        std::cout << filename << std::endl;
-        exit(1);
-    }
-
-    OpenMesh::Subdivider::Uniform::Sqrt3T<SimpleMesh> subdivider;
-    // Initialize subdivider
-    if (lmOnlyFullSolve) {
-        if (subdivisionFactor > 0) {
-            subdivider.attach(*mesh);
-            subdivider(subdivisionFactor);
-            subdivider.detach();
-        }
-    } else {
-        //OpenMesh::Subdivider::Uniform::CatmullClarkT<SimpleMesh> catmull;
-        // Execute 1 subdivision steps
-        subdivider.attach(*mesh);
-        subdivider(1);
-        subdivider.detach();
-    }
-    printf("Faces: %d\nVertices: %d\n", (int)mesh->n_faces(), (int)mesh->n_vertices());
+    std::vector<cv::Vec3f> live_normals;
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    live_normals.emplace_back(cv::Vec3f(0,0,1));
 
     CombinedSolverParameters params;
+    params.numIter = 15;
+    params.nonLinearIter = 10;
+    params.linearIter = 250;
+    params.useOpt = false;
+    params.useOptLM = true;
 
-    params.numIter = 10;
-    params.nonLinearIter = 20;
-    params.linearIter = 100;
-    params.useOpt = true;
-    if (performanceRun) {
-        params.useCUDA = false;
-        params.useOpt = true;
-        params.useOptLM = true;
-        params.useCeres = true;
-        params.earlyOut = true;
-        params.nonLinearIter = 20;
-        params.linearIter = 1000;
-    }
-    if (lmOnlyFullSolve) {
-        params.useCUDA = false;
-        params.useOpt = false;
-        params.useOptLM = true;
-        params.earlyOut = true;
-        params.linearIter = 1000;// m_image.getWidth()*m_image.getHeight();
-        if (mesh->n_vertices() > 100000) {
-            params.nonLinearIter = (unsigned int)mesh->n_vertices() / 5000;
-        }
-    }
-
-    params.optDoublePrecision = false;
-
-    float weightFit = 4.0f;
-    float weightReg = 1.0f;
-    CombinedSolver solver(mesh, constraintsIdx, constraintsTarget, params, weightFit, weightReg); // input pointcloud
+    CombinedSolver solver(&warpField,
+                          canonical_vertices,
+                          canonical_normals,
+                          live_vertices,
+                          live_normals,
+                          params);
     solver.solveAll();
-    SimpleMesh* res = solver.result();
-    if (!OpenMesh::IO::write_mesh(*res, "out.ply"))
-    {
-        std::cerr << "Error -> File: " << __FILE__ << " Line: " << __LINE__ << " Function: " << __FUNCTION__ << std::endl;
-        std::cout << "out.off" << std::endl;
-        exit(1);
-    }
+
+    auto res = solver.result();
+
+
+//    for(size_t i = 0; i < canonical_vertices.size(); i++)
+//    {
+//        ASSERT_NEAR(res[i][0], live_vertices[i][0], max_error);
+//        ASSERT_NEAR(res[i][1], live_vertices[i][1], max_error);
+//        ASSERT_NEAR(res[i][2], live_vertices[i][2], max_error);
+//    }
 }
+

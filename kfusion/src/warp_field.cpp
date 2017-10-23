@@ -323,6 +323,15 @@ const std::vector<deformation_node>* WarpField::getNodes() const
  * \brief
  * \return
  */
+std::vector<deformation_node>* WarpField::getNodes()
+{
+    return nodes_;
+}
+
+/**
+ * \brief
+ * \return
+ */
 void WarpField::buildKDTree()
 {
     //    Build kd-tree with current warp nodes.

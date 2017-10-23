@@ -1,19 +1,32 @@
-local K = Dim("K",0)
-local WARP_SIZE = Dim("WARP_SIZE",1)
+local D,N,K = Dim("D",0), Dim("N",1),Dim("K",2)
 
-local live_vertex = Param("live_vertex", float3, 0)
-local live_normal = Param("live_normal", float3, 1)
-local canonical_vertex = Param("canonical_vertex", float3, 2)
-local canonical_normal = Param("canonical_normal", float3, 3)
+local RotationDeform = Unknown("RotationDeform", opt_float3,{D},0)
+local TranslationDeform = Unknown("TranslationDeform", opt_float3,{D},1)
 
-UsePreconditioner(true)
+local CanonicalVertices = Array("CanonicalVertices", opt_float3,{N},2)
+local LiveVertices = Array("LiveVertices", opt_float3,{N},3)
 
-function tukey(x, c) -- use 0.1 for c
-    if lesseq(abs(x),c) then
-        return x * pow(1.0 - (x * x) / (c * c), 2)
-    else
-        return 0.0
-    end
+local CanonicalNormals = Array("CanonicalNormals", opt_float3,{N},4)
+local LiveNormals = Array("LiveNormals", opt_float3,{N},5)
+
+local Weights = Array("Weights", opt_float8, {N}, 6)
+
+local G = Graph("DataG", 7,
+                    "v", {N}, 8, -- for Source and Dest. Weigths are v + 0..KNN_NEIGHBOURS
+                    "n0", {D}, 9, -- starting from here, the indices of the 8 nodes in the deform array
+                    "n1", {D}, 10,
+                    "n2", {D}, 11,
+                    "n3", {D}, 12,
+                    "n4", {D}, 13,
+                    "n5", {D}, 14,
+                    "n6", {D}, 15,
+                    "n7", {D}, 16)
+local weightedTranslation = 0
+
+nodes = {0,1,2,3,4,5,6,7}
+
+for _,i in ipairs(nodes) do
+    weightedTranslation = weightedTranslation + Weights(G.v)(i) * TranslationDeform(G["n"..i]) + RotationDeform(G["n"..i])
 end
-total_translation = 0
-Energy(tukey(total_translation, 0.1))
+
+Energy(LiveVertices(G.v) - CanonicalVertices(G.v) + weightedTranslation)
