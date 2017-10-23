@@ -1,4 +1,4 @@
-local D,N,K = Dim("D",0), Dim("N",1),Dim("K",2)
+local D,N = Dim("D",0), Dim("N",1)
 
 local RotationDeform = Unknown("RotationDeform", opt_float3,{D},0)
 local TranslationDeform = Unknown("TranslationDeform", opt_float3,{D},1)
