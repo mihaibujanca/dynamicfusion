@@ -12,8 +12,8 @@ local LiveNormals = Array("LiveNormals", opt_float3,{N},5)
 local Weights = Array("Weights", opt_float8, {N}, 6)
 
 local G = Graph("DataG", 7,
-                    "v", {N}, 8, -- for Source and Dest. Weigths are v + 0..KNN_NEIGHBOURS
-                    "n0", {D}, 9, -- starting from here, the indices of the 8 nodes in the deform array
+                    "v", {N}, 8,
+                    "n0", {D}, 9,
                     "n1", {D}, 10,
                     "n2", {D}, 11,
                     "n3", {D}, 12,
@@ -21,6 +21,7 @@ local G = Graph("DataG", 7,
                     "n5", {D}, 14,
                     "n6", {D}, 15,
                     "n7", {D}, 16)
+
 local weightedTranslation = 0
 
 nodes = {0,1,2,3,4,5,6,7}
