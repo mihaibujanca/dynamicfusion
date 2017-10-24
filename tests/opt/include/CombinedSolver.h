@@ -24,9 +24,15 @@ public:
                    CombinedSolverParameters params)
     {
         m_combinedSolverParameters = params;
-        warp = warpField;
+        m_warp = warpField;
 
-        unsigned int D = warp->getNodes()->size();
+        m_canonicalVerticesOpenCV = canonical_vertices;
+        m_canonicalNormalsOpenCV = canonical_normals;
+        m_liveVerticesOpenCV = live_vertices;
+        m_liveNormalsOpenCV = live_normals;
+
+
+        unsigned int D = m_warp->getNodes()->size();
         unsigned int N = canonical_vertices.size();
 
         m_dims = { D, N };
@@ -34,11 +40,11 @@ public:
         m_rotationDeform    = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
         m_translationDeform = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
-        m_canonicalVertices = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
-        m_liveVertices      = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
+        m_canonicalVerticesOpt = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
+        m_liveVerticesOpt      = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
-        m_canonicalNormals  = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
-        m_liveNormals       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
+        m_canonicalNormalsOpt  = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
+        m_liveNormalsOpt       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         m_weights           = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
 
@@ -60,9 +66,9 @@ public:
         for(auto vertex : canonical_vertices)
         {
             graph_vector[0].push_back(count);
-            warp->getWeightsAndUpdateKNN(vertex, &weights[count * KNN_NEIGHBOURS]);
+            m_warp->getWeightsAndUpdateKNN(vertex, &weights[count * KNN_NEIGHBOURS]);
             for(int i = 1; i < graph_vector.size(); i++)
-                graph_vector[i].push_back((int)warp->getRetIndex()->at(i-1));
+                graph_vector[i].push_back((int)m_warp->getRetIndex()->at(i-1));
             count++;
         }
         m_weights->update(weights);
@@ -77,11 +83,11 @@ public:
         m_problemParams.set("RotationDeform", m_rotationDeform);
         m_problemParams.set("TranslationDeform", m_translationDeform);
 
-        m_problemParams.set("CanonicalVertices", m_canonicalVertices);
-        m_problemParams.set("LiveVertices", m_liveVertices);
+        m_problemParams.set("CanonicalVertices", m_canonicalVerticesOpt);
+        m_problemParams.set("LiveVertices", m_liveVerticesOpt);
 
-        m_problemParams.set("CanonicalNormals", m_canonicalNormals);
-        m_problemParams.set("LiveNormals", m_liveNormals);
+        m_problemParams.set("CanonicalNormals", m_canonicalNormalsOpt);
+        m_problemParams.set("LiveNormals", m_liveNormalsOpt);
 
         m_problemParams.set("Weights", m_weights);
 
@@ -92,6 +98,7 @@ public:
         m_solverParams.set("lIterations", &m_combinedSolverParameters.linearIter);
         m_solverParams.set("function_tolerance", &m_functionTolerance);
     }
+
     virtual void preSingleSolve() override {
         resetGPUMemory();
     }
@@ -109,22 +116,48 @@ public:
 
     void resetGPUMemory()
     {
-        uint N = (uint)warp->getNodes()->size();
-        std::vector<float3> h_translation(N);
-        std::vector<float3> h_rotation(N);
+        uint N = (uint)m_canonicalVerticesOpenCV.size();
+        std::vector<float3> h_vertices(N);
+        std::vector<float3> h_normals(N);
 
         for(int i = 0; i < N; i++)
         {
             float x,y,z;
-            warp->getNodes()->at(i).transform.getTranslation(x,y,z);
+            h_vertices[i] = make_float3(m_canonicalVerticesOpenCV[i][0], m_canonicalVerticesOpenCV[i][1], m_canonicalVerticesOpenCV[i][2]);
+
+            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
+            h_normals[i] = make_float3(m_canonicalNormalsOpenCV[i][0], m_canonicalNormalsOpenCV[i][1], m_canonicalNormalsOpenCV[i][2]);
+        }
+        m_canonicalVerticesOpt->update(h_vertices);
+        m_canonicalNormalsOpt->update(h_normals);
+
+        for(int i = 0; i < N; i++)
+        {
+            float x,y,z;
+            h_vertices[i] = make_float3(m_liveVerticesOpenCV[i][0], m_liveVerticesOpenCV[i][1], m_liveVerticesOpenCV[i][2]);
+
+            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
+            h_normals[i] = make_float3(m_liveNormalsOpenCV[i][0], m_liveNormalsOpenCV[i][1], m_liveNormalsOpenCV[i][2]);
+        }
+        m_liveVerticesOpt->update(h_vertices);
+        m_liveNormalsOpt->update(h_normals);
+
+        uint D = (uint)m_warp->getNodes()->size();
+        std::vector<float3> h_translation(D);
+        std::vector<float3> h_rotation(D);
+
+        for(int i = 0; i < D; i++)
+        {
+            float x,y,z;
+            m_warp->getNodes()->at(i).transform.getTranslation(x,y,z);
             h_translation[i] = make_float3(x,y,z);
 
-            warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
+            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
             h_rotation[i] = make_float3(x,y,z);
         }
 
         m_rotationDeform->update(h_rotation);
-        m_translationDeform->update(h_translation);//TODO: use the node transformations themselves instead.
+        m_translationDeform->update(h_translation);
     }
 
     std::vector<cv::Vec3f> result()
@@ -134,17 +167,17 @@ public:
 
     void copyResultToCPUFromFloat3()
     {
-        unsigned int N = (unsigned int)warp->getNodes()->size();
+        unsigned int N = (unsigned int)m_warp->getNodes()->size();
         std::vector<float3> h_translation(N);
         m_translationDeform->copyTo(h_translation);
 
         for (unsigned int i = 0; i < N; i++)
-            warp->getNodes()->at(i).transform.encodeTranslation(h_translation[i].x, h_translation[i].y, h_translation[i].z);
+            m_warp->getNodes()->at(i).transform.encodeTranslation(h_translation[i].x, h_translation[i].y, h_translation[i].z);
     }
 
 private:
 
-    kfusion::WarpField *warp;
+    kfusion::WarpField *m_warp;
 
     ml::Timer m_timer;
 
@@ -154,13 +187,19 @@ private:
     std::shared_ptr<OptImage> m_rotationDeform;
     std::shared_ptr<OptImage> m_translationDeform;
 
-    std::shared_ptr<OptImage> m_canonicalVertices;
-    std::shared_ptr<OptImage> m_liveVertices;
-    std::shared_ptr<OptImage> m_canonicalNormals;
-    std::shared_ptr<OptImage> m_liveNormals;
+    std::shared_ptr<OptImage> m_canonicalVerticesOpt;
+    std::shared_ptr<OptImage> m_liveVerticesOpt;
+    std::shared_ptr<OptImage> m_canonicalNormalsOpt;
+    std::shared_ptr<OptImage> m_liveNormalsOpt;
     std::shared_ptr<OptImage> m_weights;
     std::shared_ptr<OptGraph> m_reg_graph;
     std::shared_ptr<OptGraph> m_data_graph;
+
+    std::vector<cv::Vec3f> m_canonicalVerticesOpenCV;
+    std::vector<cv::Vec3f> m_canonicalNormalsOpenCV;
+    std::vector<cv::Vec3f> m_liveVerticesOpenCV;
+    std::vector<cv::Vec3f> m_liveNormalsOpenCV;
+
     float m_functionTolerance;
 };
 
