@@ -80,11 +80,11 @@ struct DynamicFusionApp
             depth = cv::imread(depths[i], CV_LOAD_IMAGE_ANYDEPTH);
             depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
 
-            {
-                SampledScopeTime fps(time_ms);
-                (void) fps;
-                has_image = dynamic_fusion(depth_device_);
-            }
+//            {
+//                SampledScopeTime fps(time_ms);
+//                (void) fps;
+            has_image = dynamic_fusion(depth_device_);
+//            }
 
             if (has_image)
                 show_raycasted(dynamic_fusion);
@@ -142,13 +142,13 @@ struct DynamicFusionApp
 
 int main (int argc, char* argv[])
 {
-    int device = 0;
-    cuda::setDevice (device);
-    cuda::printShortCudaDeviceInfo (device);
-
-    if(cuda::checkIfPreFermiGPU(device))
-        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
-
+//    int device = 0;
+//    cuda::setDevice (device);
+//    cuda::printShortCudaDeviceInfo (device);
+//
+//    if(cuda::checkIfPreFermiGPU(device))
+//        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
+//
     DynamicFusionApp *app;
     app = new DynamicFusionApp(argv[1]);
 

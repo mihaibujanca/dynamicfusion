@@ -57,17 +57,16 @@ if(USE_PROJECT_FOLDERS)
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
   set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTargets")
 endif()
-set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 
 # ---[ cuda settings
 set(HAVE_CUDA 1)
 list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_61,code=sm_61")
-#
-#if(UNIX OR APPLE)
-#  list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC;")
-#endif()
 
-warnings_disable(CMAKE_CXX_FLAGS /wd4985)
+if(UNIX OR APPLE)
+  list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC;")
+endif()
+
+#warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 set(OPT_INCLUDE_DIRS /home/mihai/Projects/Opt/examples/external/mLib/include /home/mihai/Projects/Opt/examples/shared/ /home/mihai/Projects/Opt/API/release/include)
 set(OPT_LIBRARIES /home/mihai/Projects/Opt/API/release/lib/libOptDev.a)
 set(TERRA_LIBRARIES /home/mihai/Projects/terra/lib/libterra.a)
@@ -75,7 +74,7 @@ set(OPENMESH_LIBRARIES /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpe
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)
-set(BUILD_TESTS ON)
+
 if(BUILD_TESTS)
   find_package(GTest REQUIRED)
   if( GTEST_FOUND )

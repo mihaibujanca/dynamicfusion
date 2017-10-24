@@ -51,7 +51,7 @@ public:
         initializeConnectivity(canonical_vertices);
         resetGPUMemory();
 
-        addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/tests/opt/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
+        addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
     }
 
 

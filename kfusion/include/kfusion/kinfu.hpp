@@ -11,16 +11,6 @@
 
 namespace kfusion
 {
-    namespace cuda
-    {
-        KF_EXPORTS int getCudaEnabledDeviceCount();
-        KF_EXPORTS void setDevice(int device);
-        KF_EXPORTS std::string getDeviceName(int device);
-        KF_EXPORTS bool checkIfPreFermiGPU(int device);
-        KF_EXPORTS void printCudaDeviceInfo(int device);
-        KF_EXPORTS void printShortCudaDeviceInfo(int device);
-    }
-
     struct KF_EXPORTS KinFuParams
     {
         static KinFuParams default_params();
