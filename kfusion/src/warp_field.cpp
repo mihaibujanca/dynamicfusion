@@ -7,6 +7,8 @@
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
 #include <kfusion/optimisation.hpp>
+#include <opt/CombinedSolver.h>
+#include <opt/main.h>
 
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
@@ -125,8 +127,7 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                             const std::vector<Vec3f> &live_normals
 )
 {
-
-//    assert((canonical_normals.size() == canonical_vertices.size()) == (live_normals.size() == live_vertices.size()));
+#if USE_CERES
     ceres::Problem problem;
     float weights[KNN_NEIGHBOURS];
     unsigned long indices[KNN_NEIGHBOURS];
@@ -169,6 +170,22 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 //            std::cout<<std::endl;
 //    }
     update_nodes(warpProblem.params());
+#else
+    CombinedSolverParameters params;
+    params.numIter = 20;
+    params.nonLinearIter = 15;
+    params.linearIter = 250;
+    params.useOpt = false;
+    params.useOptLM = true;
+    CombinedSolver solver(this,
+                          canonical_vertices,
+                          canonical_normals,
+                          live_vertices,
+                          live_normals,
+                          params);
+    solver.solveAll();
+
+#endif
 }
 /**
  * \brief

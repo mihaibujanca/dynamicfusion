@@ -68,14 +68,14 @@ list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=c
 #endif()
 
 warnings_disable(CMAKE_CXX_FLAGS /wd4985)
-
-add_subdirectory(kfusion)
-add_subdirectory(apps)
-set(BUILD_TESTS ON)
 set(OPT_INCLUDE_DIRS /home/mihai/Projects/Opt/examples/external/mLib/include /home/mihai/Projects/Opt/examples/shared/ /home/mihai/Projects/Opt/API/release/include)
 set(OPT_LIBRARIES /home/mihai/Projects/Opt/API/release/lib/libOptDev.a)
 set(TERRA_LIBRARIES /home/mihai/Projects/terra/lib/libterra.a)
 set(OPENMESH_LIBRARIES /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshCore.a /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshTools.a)
+
+add_subdirectory(kfusion)
+add_subdirectory(apps)
+set(BUILD_TESTS ON)
 if(BUILD_TESTS)
   find_package(GTest REQUIRED)
   if( GTEST_FOUND )

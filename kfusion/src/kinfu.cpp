@@ -342,7 +342,7 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
  * \param image
  * \param flag
  */
-void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame, cuda::Normals current_normals)
+void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud live_frame, cuda::Normals current_normals)
 {
     cuda::Cloud cloud;
     cuda::Normals normals;
@@ -350,7 +350,6 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
     normals.create(depth.rows(), depth.cols());
     auto camera_pose = poses_.back();
     tsdf().raycast(camera_pose, params_.intr, cloud, normals);
-
 
     cv::Mat cloud_host(depth.rows(), depth.cols(), CV_32FC4);
     cloud.download(cloud_host.ptr<Point>(), cloud_host.step);
@@ -363,6 +362,17 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
             warped[i * cloud_host.cols + j][1] = point.y;
             warped[i * cloud_host.cols + j][2] = point.z;
             warped[i * cloud_host.cols + j] = inverse_pose * warped[i * cloud_host.cols + j];
+        }
+
+
+    live_frame.download(cloud_host.ptr<Point>(), cloud_host.step);
+    std::vector<Vec3f> live(cloud_host.rows * cloud_host.cols);
+    for (int i = 0; i < cloud_host.rows; i++)
+        for (int j = 0; j < cloud_host.cols; j++) {
+            Point point = cloud_host.at<Point>(i, j);
+            live[i * cloud_host.cols + j][0] = point.x;
+            live[i * cloud_host.cols + j][1] = point.y;
+            live[i * cloud_host.cols + j][2] = point.z;
         }
 
     cv::Mat normal_host(cloud_host.rows, cloud_host.cols, CV_32FC4);
@@ -378,7 +388,7 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
         }
 
     std::vector<Vec3f> canonical_visible(warped);
-//    getWarp().energy_data(warped, warped_normals, warped, warped_normals); //crashes, leave out for now
+    getWarp().energy_data(warped, warped_normals, live, warped_normals);
 
     getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");

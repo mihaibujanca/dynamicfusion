@@ -124,10 +124,7 @@ public:
 
         for(int i = 0; i < N; i++)
         {
-            float x,y,z;
             h_vertices[i] = make_float3(m_canonicalVerticesOpenCV[i][0], m_canonicalVerticesOpenCV[i][1], m_canonicalVerticesOpenCV[i][2]);
-
-            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
             h_normals[i] = make_float3(m_canonicalNormalsOpenCV[i][0], m_canonicalNormalsOpenCV[i][1], m_canonicalNormalsOpenCV[i][2]);
         }
         m_canonicalVerticesOpt->update(h_vertices);
@@ -135,10 +132,7 @@ public:
 
         for(int i = 0; i < N; i++)
         {
-            float x,y,z;
             h_vertices[i] = make_float3(m_liveVerticesOpenCV[i][0], m_liveVerticesOpenCV[i][1], m_liveVerticesOpenCV[i][2]);
-
-            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
             h_normals[i] = make_float3(m_liveNormalsOpenCV[i][0], m_liveNormalsOpenCV[i][1], m_liveNormalsOpenCV[i][2]);
         }
         m_liveVerticesOpt->update(h_vertices);

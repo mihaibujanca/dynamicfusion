@@ -1,10 +1,15 @@
+#include "opt/mLibInclude.h"
+
+#include "mLibCore.cpp"
+#include "mLibLodePNG.cpp"
+
 #include <gtest/gtest.h>
 #include <kfusion/warp_field.hpp>
 #include <string>
 #include <vector>
-#include "include/main.h"
-#include "include/CombinedSolver.h"
-#include "include/OpenMesh.h"
+#include "opt/main.h"
+#include "opt/CombinedSolver.h"
+#include "opt/OpenMesh.h"
 #include <kfusion/warp_field.hpp>
 
 
@@ -59,22 +64,21 @@ TEST(OPT_WARP_FIELD, EnergyDataTest)
     live_normals.emplace_back(cv::Vec3f(0,0,1));
     live_normals.emplace_back(cv::Vec3f(0,0,1));
 
-    CombinedSolverParameters params;
-    params.numIter = 20;
-    params.nonLinearIter = 15;
-    params.linearIter = 250;
-    params.useOpt = false;
-    params.useOptLM = true;
-
-    CombinedSolver solver(&warpField,
-                          canonical_vertices,
-                          canonical_normals,
-                          live_vertices,
-                          live_normals,
-                          params);
-    solver.solveAll();
-
-    auto res = solver.result();
+//    CombinedSolverParameters params;
+//    params.numIter = 20;
+//    params.nonLinearIter = 15;
+//    params.linearIter = 250;
+//    params.useOpt = false;
+//    params.useOptLM = true;
+//
+//    CombinedSolver solver(&warpField,
+//                          canonical_vertices,
+//                          canonical_normals,
+//                          live_vertices,
+//                          live_normals,
+//                          params);
+//    solver.solveAll();
+    warpField.energy_data(canonical_vertices, canonical_normals, live_vertices, live_normals);
     warpField.warp(canonical_vertices, canonical_normals);
 
     for(size_t i = 0; i < canonical_vertices.size(); i++)

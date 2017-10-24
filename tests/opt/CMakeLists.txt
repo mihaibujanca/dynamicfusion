@@ -3,10 +3,10 @@ set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 
 include_directories(include ${OPT_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
 
-add_executable(opt_test mLibSource.cpp opt_test.cpp include/CombinedSolver.h)
+add_executable(opt_test opt_test.cpp)
 
 find_package(Threads REQUIRED)
-message("CUDA CUDART:" ${CUDA_CUDART_LIBRARY})
+
 target_link_libraries(
         opt_test
         ${OPENMESH_LIBRARIES}
@@ -24,5 +24,6 @@ target_include_directories(
         ${OPT_INCLUDE_DIRS}
         ${CUDA_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/kfusion/include/
+        ${CMAKE_SOURCE_DIR}/kfusion/include/opt
         include
 )
