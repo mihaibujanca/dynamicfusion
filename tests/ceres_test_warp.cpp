@@ -24,7 +24,7 @@ TEST(CERES_WARP_FIELD, EnergyDataTest)
     warp_init.emplace_back(cv::Vec3f(-1,-1,-1));
     warp_init.emplace_back(cv::Vec3f(2,-3,-1));
 
-    warpField.init(warp_init, warp_normals);
+    warpField.init(warp_init);
 
     std::vector<cv::Vec3f> canonical_vertices;
     canonical_vertices.emplace_back(cv::Vec3f(-3,-3,-3));
