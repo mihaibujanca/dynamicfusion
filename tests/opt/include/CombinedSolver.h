@@ -12,12 +12,6 @@
 #include <OptGraph.h>
 #include <cuda_profiler_api.h>
 
-#define MAX_K 20
-
-static float clamp(float v, float mn, float mx) {
-    return std::max(mn,std::min(v, mx));
-}
-
 class CombinedSolver : public CombinedSolverBase
 {
 
@@ -29,6 +23,7 @@ public:
                    const std::vector<cv::Vec3f> &live_normals,
                    CombinedSolverParameters params)
     {
+        m_combinedSolverParameters = params;
         warp = warpField;
 
         unsigned int D = warp->getNodes()->size();
