@@ -3,6 +3,12 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
+#include "opt/mLibInclude.h"
+
+#include "mLibCore.cpp"
+#include "mLibLodePNG.cpp"
+#include "opt/main.h"
+#include "opt/CombinedSolver.h"
 
 using namespace kfusion;
 
@@ -156,6 +162,9 @@ int main (int argc, char* argv[])
     try { app->execute (); }
     catch (const std::bad_alloc& /*e*/) { std::cout << "Bad alloc" << std::endl; }
     catch (const std::exception& /*e*/) { std::cout << "Exception" << std::endl; }
+
+    delete app;
+
 
     delete app;
     return 0;

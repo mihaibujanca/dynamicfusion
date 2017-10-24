@@ -177,13 +177,13 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     params.linearIter = 250;
     params.useOpt = false;
     params.useOptLM = true;
-//    CombinedSolver solver(this,
-//                          canonical_vertices,
-//                          canonical_normals,
-//                          live_vertices,
-//                          live_normals,
-//                          params);
-//    solver.solveAll();
+    CombinedSolver solver(this,
+                          canonical_vertices,
+                          canonical_normals,
+                          live_vertices,
+                          live_normals,
+                          params);
+    solver.solveAll();
 
 #endif
 }

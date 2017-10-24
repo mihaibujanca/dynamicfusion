@@ -1,7 +1,12 @@
 include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
 
 add_executable(dynamicfusion demo.cpp)
-target_link_libraries(dynamicfusion ${OpenCV_LIBS} kfusion)
+target_link_libraries(dynamicfusion ${OpenCV_LIBS}
+        ${OPT_LIBRARIES}
+        ${TERRA_LIBRARIES}
+        ${CUDA_CUDART_LIBRARY}
+        kfusion
+        )
 
 set_target_properties(dynamicfusion PROPERTIES
     DEBUG_POSTFIX "d"
