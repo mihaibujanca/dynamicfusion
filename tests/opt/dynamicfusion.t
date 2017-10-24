@@ -31,4 +31,4 @@ for _,i in ipairs(nodes) do
 end
 
 Energy(RotationDeform(0))
-Energy(LiveVertices(G.v) - CanonicalVertices(G.v) + weightedTranslation)
+Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)

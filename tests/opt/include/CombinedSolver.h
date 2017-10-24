@@ -46,7 +46,7 @@ public:
         m_canonicalNormalsOpt  = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
         m_liveNormalsOpt       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
-        m_weights           = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
+        m_weights              = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
 
         initializeConnectivity(canonical_vertices);
         resetGPUMemory();
@@ -57,7 +57,7 @@ public:
 
     void initializeConnectivity(const std::vector<cv::Vec3f> canonical_vertices)
     {
-        unsigned int N = canonical_vertices.size();
+        unsigned int N = (unsigned int) canonical_vertices.size();
         int count = 0;
 
         std::vector<std::vector<int> > graph_vector(KNN_NEIGHBOURS + 1, vector<int>(N));
@@ -78,7 +78,8 @@ public:
 
     virtual void combinedSolveInit() override
     {
-        m_functionTolerance = 0.0000001f;
+        m_functionTolerance = 1e-12f;
+        m_paramTolerance = 1e-7f;
 
         m_problemParams.set("RotationDeform", m_rotationDeform);
         m_problemParams.set("TranslationDeform", m_translationDeform);
@@ -97,6 +98,7 @@ public:
         m_solverParams.set("nIterations", &m_combinedSolverParameters.nonLinearIter);
         m_solverParams.set("lIterations", &m_combinedSolverParameters.linearIter);
         m_solverParams.set("function_tolerance", &m_functionTolerance);
+        m_solverParams.set("q_tolerance", &m_paramTolerance);
     }
 
     virtual void preSingleSolve() override {
@@ -203,5 +205,7 @@ private:
 
 
     float m_functionTolerance;
+    float m_paramTolerance;
+    float m_trustRegion;
 };
 

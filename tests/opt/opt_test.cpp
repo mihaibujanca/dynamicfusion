@@ -10,7 +10,7 @@
 
 TEST(OPT_WARP_FIELD, EnergyDataTest)
 {
-    const float max_error = 1e-4;
+    const float max_error = 1e-3;
 
     kfusion::WarpField warpField;
     std::vector<cv::Vec3f> warp_init;
@@ -60,8 +60,8 @@ TEST(OPT_WARP_FIELD, EnergyDataTest)
     live_normals.emplace_back(cv::Vec3f(0,0,1));
 
     CombinedSolverParameters params;
-    params.numIter = 15;
-    params.nonLinearIter = 10;
+    params.numIter = 20;
+    params.nonLinearIter = 15;
     params.linearIter = 250;
     params.useOpt = false;
     params.useOptLM = true;
