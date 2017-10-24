@@ -100,7 +100,7 @@ public:
     }
 
     virtual void preSingleSolve() override {
-        resetGPUMemory();
+//        resetGPUMemory();
     }
     virtual void postSingleSolve() override {
         copyResultToCPUFromFloat3();
@@ -162,7 +162,7 @@ public:
 
     std::vector<cv::Vec3f> result()
     {
-        return std::vector<cv::Vec3f>();
+        return m_resultVertices;
     }
 
     void copyResultToCPUFromFloat3()
@@ -199,6 +199,8 @@ private:
     std::vector<cv::Vec3f> m_canonicalNormalsOpenCV;
     std::vector<cv::Vec3f> m_liveVerticesOpenCV;
     std::vector<cv::Vec3f> m_liveNormalsOpenCV;
+    std::vector<cv::Vec3f> m_resultVertices;
+
 
     float m_functionTolerance;
 };

@@ -75,13 +75,13 @@ TEST(OPT_WARP_FIELD, EnergyDataTest)
     solver.solveAll();
 
     auto res = solver.result();
+    warpField.warp(canonical_vertices, canonical_normals);
 
-
-//    for(size_t i = 0; i < canonical_vertices.size(); i++)
-//    {
-//        ASSERT_NEAR(res[i][0], live_vertices[i][0], max_error);
-//        ASSERT_NEAR(res[i][1], live_vertices[i][1], max_error);
-//        ASSERT_NEAR(res[i][2], live_vertices[i][2], max_error);
-//    }
+    for(size_t i = 0; i < canonical_vertices.size(); i++)
+    {
+        ASSERT_NEAR(canonical_vertices[i][0], live_vertices[i][0], max_error);
+        ASSERT_NEAR(canonical_vertices[i][1], live_vertices[i][1], max_error);
+        ASSERT_NEAR(canonical_vertices[i][2], live_vertices[i][2], max_error);
+    }
 }
 

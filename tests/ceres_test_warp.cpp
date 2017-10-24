@@ -67,5 +67,4 @@ TEST(CERES_WARP_FIELD, EnergyDataTest)
         ASSERT_NEAR(canonical_vertices[i][1], live_vertices[i][1], max_error);
         ASSERT_NEAR(canonical_vertices[i][2], live_vertices[i][2], max_error);
     }
-    exit(0);
 }
