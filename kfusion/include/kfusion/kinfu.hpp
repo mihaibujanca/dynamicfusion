@@ -8,19 +8,10 @@
 #include <kfusion/cuda/projective_icp.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <kfusion/warp_field.hpp>
+#include "warp_field_optimiser.hpp"
 
 namespace kfusion
 {
-    namespace cuda
-    {
-        KF_EXPORTS int getCudaEnabledDeviceCount();
-        KF_EXPORTS void setDevice(int device);
-        KF_EXPORTS std::string getDeviceName(int device);
-        KF_EXPORTS bool checkIfPreFermiGPU(int device);
-        KF_EXPORTS void printCudaDeviceInfo(int device);
-        KF_EXPORTS void printShortCudaDeviceInfo(int device);
-    }
-
     struct KF_EXPORTS KinFuParams
     {
         static KinFuParams default_params();
@@ -79,7 +70,7 @@ namespace kfusion
         bool operator()(const cuda::Depth& depth, const cuda::Image& image = cuda::Image());
 
         void renderImage(cuda::Image& image, int flags = 0);
-        void dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame, cuda::Normals current_normals);
+        void dynamicfusion(cuda::Depth& depth, cuda::Cloud live_frame, cuda::Normals current_normals);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
 
         Affine3f getCameraPose (int time = -1) const;
@@ -102,5 +93,6 @@ namespace kfusion
         cv::Ptr<cuda::ProjectiveICP> icp_;
         cv::Ptr<WarpField> warp_;
         std::vector<std::pair<utils::DualQuaternion<float>, utils::DualQuaternion<float>>> edges_;
+        cv::Ptr<WarpFieldOptimiser> optimiser_;
     };
 }

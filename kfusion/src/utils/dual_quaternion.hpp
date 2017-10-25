@@ -23,6 +23,7 @@ namespace kfusion {
              * \brief default constructor.
              */
             DualQuaternion(){};
+            ~DualQuaternion(){};
 
             /**
              * \brief constructor that takes cartesian coordinates and Euler angles as
@@ -56,8 +57,6 @@ namespace kfusion {
                 rotation_ = rotation;
                 translation_ = 0.5 * translation * rotation;
             }
-
-            ~DualQuaternion(){};
 
             /**
              * \brief store a rotation

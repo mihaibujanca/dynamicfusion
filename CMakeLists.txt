@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5.0)
 
 # ---[ Configurations types
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Possible configurations" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DFORCE_INLINERS -D_MWAITXINTRIN_H_INCLUDED")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOM_STATIC_BUILD -std=c++11 -DFORCE_INLINERS -D_MWAITXINTRIN_H_INCLUDED -Wno-write-strings")
+set(CMAKE_CXX_STANDARD 11)
 if (DEFINED CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif()
@@ -59,13 +60,17 @@ endif()
 
 # ---[ cuda settings
 set(HAVE_CUDA 1)
-list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_61,code=sm_61")
+list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_61,code=sm_61")
 
 if(UNIX OR APPLE)
   list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC;")
 endif()
 
-warnings_disable(CMAKE_CXX_FLAGS /wd4985)
+#warnings_disable(CMAKE_CXX_FLAGS /wd4985)
+set(OPT_INCLUDE_DIRS /home/mihai/Projects/Opt/examples/external/mLib/include /home/mihai/Projects/Opt/examples/shared/ /home/mihai/Projects/Opt/API/release/include)
+set(OPT_LIBRARIES /home/mihai/Projects/Opt/API/release/lib/libOptDev.a)
+set(TERRA_LIBRARIES /home/mihai/Projects/terra/lib/libterra.a)
+set(OPENMESH_LIBRARIES /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshCore.a /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshTools.a)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)

@@ -7,6 +7,7 @@
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
 #include <kfusion/optimisation.hpp>
+#include <opt/main.h>
 
 using namespace kfusion;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
@@ -14,7 +15,7 @@ utils::PointCloud cloud;
 nanoflann::KNNResultSet<float> *resultSet_;
 std::vector<float> out_dist_sqr_;
 std::vector<size_t> ret_index_;
-
+//TODO: CombinedSolver should follow the pattern of a "WarpFieldModifier" and should call the solver to modify the warp field from outside.
 WarpField::WarpField()
 {
     nodes_ = new std::vector<deformation_node>();
@@ -26,11 +27,12 @@ WarpField::WarpField()
     neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
     warp_to_live_ = cv::Affine3f();
 
+
 }
 
 WarpField::~WarpField()
 {
-    delete[] nodes_;
+    delete nodes_;
     delete resultSet_;
     delete index_;
 }
@@ -40,30 +42,23 @@ WarpField::~WarpField()
  * @param first_frame
  * @param normals
  */
-void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
+void WarpField::init(const cv::Mat& first_frame)
 {
-    assert(first_frame.rows == normals.rows);
-    assert(first_frame.cols == normals.cols);
     nodes_->resize(first_frame.cols * first_frame.rows);
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
 
 //    FIXME:: this is a test, remove later
     voxel_size = 1;
-    for(size_t i = 0; i < first_frame.rows; i++)
-        for(size_t j = 0; j < first_frame.cols; j++)
+    int step = 10;
+    for(size_t i = 0; i < first_frame.rows; i+=step)
+        for(size_t j = 0; j < first_frame.cols; j+=step)
         {
             auto point = first_frame.at<Point>(i,j);
-            auto norm = normals.at<Normal>(i,j);
             if(!std::isnan(point.x))
             {
-                utils::Quaternion<float> r(Vec3f(norm.x,norm.y,norm.z));
-                if(std::isnan(r.w_) || std::isnan(r.x_) ||std::isnan(r.y_) ||std::isnan(r.z_))
-                    continue;
-
-                utils::Quaternion<float> t(0,point.x, point.y, point.z);
-                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, r);
-
+                auto t = utils::Quaternion<float>(0,point.x,point.y,point.z);
+                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, utils::Quaternion<float>());
                 nodes_->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes_->at(i*first_frame.cols+j).weight = 3 * voxel_size;
             }
@@ -76,7 +71,7 @@ void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
  * @param first_frame
  * @param normals
  */
-void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals)
+void WarpField::init(const std::vector<Vec3f>& first_frame)
 {
     nodes_->resize(first_frame.size());
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
@@ -87,12 +82,10 @@ void WarpField::init(const std::vector<Vec3f>& first_frame, const std::vector<Ve
     for (size_t i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];
-        auto norm = normals[i];
         if (!std::isnan(point[0]))
         {
             utils::Quaternion<float> t(0.f, point[0], point[1], point[2]);
-            utils::Quaternion<float> r(norm);
-            nodes_->at(i).transform = utils::DualQuaternion<float>(t,r);
+            nodes_->at(i).transform = utils::DualQuaternion<float>(t,utils::Quaternion<float>());
 
             nodes_->at(i).vertex = point;
             nodes_->at(i).weight = 3 * voxel_size;
@@ -129,22 +122,24 @@ void WarpField::energy(const cuda::Cloud &frame,
  * @return
  */
 void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
-                             const std::vector<Vec3f> &canonical_normals,
-                             const std::vector<Vec3f> &live_vertices,
-                             const std::vector<Vec3f> &live_normals
+                            const std::vector<Vec3f> &canonical_normals,
+                            const std::vector<Vec3f> &live_vertices,
+                            const std::vector<Vec3f> &live_normals
 )
 {
-
-//    assert((canonical_normals.size() == canonical_vertices.size()) == (live_normals.size() == live_vertices.size()));
     ceres::Problem problem;
     float weights[KNN_NEIGHBOURS];
     unsigned long indices[KNN_NEIGHBOURS];
 
     WarpProblem warpProblem(this);
-    std::vector<double*> params;
     for(int i = 0; i < live_vertices.size(); i++)
     {
-        if(std::isnan(canonical_vertices[i][0]))
+        if(std::isnan(canonical_vertices[i][0]) ||
+           std::isnan(canonical_vertices[i][1]) ||
+           std::isnan(canonical_vertices[i][2]) ||
+           std::isnan(live_vertices[i][0]) ||
+           std::isnan(live_vertices[i][1]) ||
+           std::isnan(live_vertices[i][2]))
             continue;
         getWeightsAndUpdateKNN(canonical_vertices[i], weights);
 
@@ -152,7 +147,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
         for(int j = 0; j < KNN_NEIGHBOURS; j++)
             indices[j] = ret_index_[j];
 
-        params = warpProblem.mutable_epsilon(indices);
         ceres::CostFunction* cost_function = DynamicFusionDataEnergy::Create(live_vertices[i],
                                                                              live_normals[i],
                                                                              canonical_vertices[i],
@@ -160,17 +154,25 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                                                                              this,
                                                                              weights,
                                                                              indices);
-        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, params);
+        problem.AddResidualBlock(cost_function,  NULL /* squared loss */, warpProblem.mutable_epsilon(indices));
 
     }
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.minimizer_type = ceres::TRUST_REGION;
     options.minimizer_progress_to_stdout = true;
     options.num_linear_solver_threads = 8;
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
+    exit(0);
+//    auto params = warpProblem.params();
+//    for(int i = 0; i < nodes_->size()*6; i++)
+//    {
+//        std::cout<<params[i]<<" ";
+//        if((i+1) % 6 == 0)
+//            std::cout<<std::endl;
+//    }
     update_nodes(warpProblem.params());
 }
 /**
@@ -326,6 +328,15 @@ const std::vector<deformation_node>* WarpField::getNodes() const
  * \brief
  * \return
  */
+std::vector<deformation_node>* WarpField::getNodes()
+{
+    return nodes_;
+}
+
+/**
+ * \brief
+ * \return
+ */
 void WarpField::buildKDTree()
 {
     //    Build kd-tree with current warp nodes.
@@ -358,4 +369,8 @@ void WarpField::setWarpToLive(const Affine3f &pose)
 std::vector<float>* WarpField::getDistSquared() const
 {
     return &out_dist_sqr_;
+}
+std::vector<size_t>* WarpField::getRetIndex() const
+{
+    return &ret_index_;
 }

@@ -39,7 +39,6 @@ struct DynamicFusionDataEnergy
 
         T total_translation[3] = {T(0), T(0), T(0)};
         float total_translation_float[3] = {0, 0, 0};
-        T total_quaternion[4] = {T(0), T(0), T(0), T(0)};
 
         for(int i = 0; i < KNN_NEIGHBOURS; i++)
         {
@@ -58,13 +57,9 @@ struct DynamicFusionDataEnergy
 
         }
 
-        T norm = ceres::sqrt(total_translation[0] * total_translation[0] +
-                             total_translation[1] * total_translation[1] +
-                             total_translation[2] * total_translation[2]);
-
-        residuals[0] = T(canonical_vertex_[0] - live_vertex_[0]) + total_translation[0];
-        residuals[1] = T(canonical_vertex_[1] - live_vertex_[1]) + total_translation[1];
-        residuals[2] = T(canonical_vertex_[2] - live_vertex_[2]) + total_translation[2];
+        residuals[0] = T(live_vertex_[0] - canonical_vertex_[0]) - total_translation[0];
+        residuals[1] = T(live_vertex_[1] - canonical_vertex_[1]) - total_translation[1];
+        residuals[2] = T(live_vertex_[2] - canonical_vertex_[2]) - total_translation[2];
 
         return true;
     }

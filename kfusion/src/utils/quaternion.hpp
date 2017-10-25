@@ -56,8 +56,7 @@ namespace kfusion{
                     normalize();
             }
 
-            ~Quaternion()
-            {}
+            ~Quaternion(){}
 
 
             /**

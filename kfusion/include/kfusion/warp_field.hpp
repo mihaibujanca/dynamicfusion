@@ -6,8 +6,8 @@
 #include <nanoflann/nanoflann.hpp>
 #include <knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
-#define KNN_NEIGHBOURS 8
 
+#define KNN_NEIGHBOURS 8
 namespace kfusion
 {
     typedef nanoflann::KDTreeSingleIndexAdaptor<
@@ -44,8 +44,8 @@ namespace kfusion
         WarpField();
         ~WarpField();
 
-        void init(const cv::Mat& first_frame, const cv::Mat& normals);
-        void init(const std::vector<Vec3f>& first_frame, const std::vector<Vec3f>& normals);
+        void init(const cv::Mat& first_frame);
+        void init(const std::vector<Vec3f>& first_frame);
         void energy(const cuda::Cloud &frame,
                     const cuda::Normals &normals,
                     const Affine3f &pose,
@@ -77,9 +77,11 @@ namespace kfusion
         void clear();
 
         const std::vector<deformation_node>* getNodes() const;
+        std::vector<deformation_node>* getNodes();
         const cv::Mat getNodesAsMat() const;
         void setWarpToLive(const Affine3f &pose);
         std::vector<float>* getDistSquared() const;
+        std::vector<size_t>* getRetIndex() const;
 
     private:
         std::vector<deformation_node>* nodes_;
