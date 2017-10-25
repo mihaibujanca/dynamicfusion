@@ -398,7 +398,7 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud live_frame, c
 
     std::vector<Vec3f> canonical_visible(warped);
 //    getWarp().energy_data(warped, warped_normals, live, warped_normals);
-    optimiser_->optimiseWarpData(warped, warped_normals, live, warped_normals);
+    optimiser_->optimiseWarpData(warped, warped_normals, live, warped_normals); // Normals are not used yet so just send in same data
 
     getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");
