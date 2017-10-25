@@ -121,6 +121,15 @@ kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(pa
     icp_->setAngleThreshold(params_.icp_angle_thres);
     icp_->setIterationsNum(params_.icp_iter_num);
 
+    CombinedSolverParameters solverParameters;
+    solverParameters.numIter = 5;
+    solverParameters.nonLinearIter = 5;
+    solverParameters.linearIter = 100;
+    solverParameters.useOpt = false;
+    solverParameters.useOptLM = true;
+    solverParameters.earlyOut = true;
+
+    optimiser_ = new WarpFieldOptimiser(warp_, solverParameters);
     allocate_buffers();
     reset();
 }
@@ -388,7 +397,8 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud live_frame, c
         }
 
     std::vector<Vec3f> canonical_visible(warped);
-    getWarp().energy_data(warped, warped_normals, live, warped_normals);
+//    getWarp().energy_data(warped, warped_normals, live, warped_normals);
+    optimiser_->optimiseWarpData(warped, warped_normals, live, warped_normals);
 
     getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");

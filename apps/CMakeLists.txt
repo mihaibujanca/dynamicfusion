@@ -1,6 +1,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
 
-add_executable(dynamicfusion demo.cpp)
+#Adding CombinedSolver because the IDE provides code insight. Not actually needed.
+add_executable(dynamicfusion demo.cpp ../kfusion/include/opt/CombinedSolver.h)
 target_link_libraries(dynamicfusion ${OpenCV_LIBS}
         ${OPT_LIBRARIES}
         ${TERRA_LIBRARIES}

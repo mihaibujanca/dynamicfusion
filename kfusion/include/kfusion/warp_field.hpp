@@ -6,8 +6,8 @@
 #include <nanoflann/nanoflann.hpp>
 #include <knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
-#define KNN_NEIGHBOURS 8
 
+#define KNN_NEIGHBOURS 8
 namespace kfusion
 {
     typedef nanoflann::KDTreeSingleIndexAdaptor<

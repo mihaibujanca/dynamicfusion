@@ -8,6 +8,7 @@
 #include <kfusion/cuda/projective_icp.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <kfusion/warp_field.hpp>
+#include "warp_field_optimiser.hpp"
 
 namespace kfusion
 {
@@ -92,5 +93,6 @@ namespace kfusion
         cv::Ptr<cuda::ProjectiveICP> icp_;
         cv::Ptr<WarpField> warp_;
         std::vector<std::pair<utils::DualQuaternion<float>, utils::DualQuaternion<float>>> edges_;
+        cv::Ptr<WarpFieldOptimiser> optimiser_;
     };
 }

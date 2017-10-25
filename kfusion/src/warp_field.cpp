@@ -7,7 +7,6 @@
 #include "precomp.hpp"
 #include <opencv2/core/affine.hpp>
 #include <kfusion/optimisation.hpp>
-#include <opt/CombinedSolver.h>
 #include <opt/main.h>
 
 using namespace kfusion;
@@ -16,7 +15,7 @@ utils::PointCloud cloud;
 nanoflann::KNNResultSet<float> *resultSet_;
 std::vector<float> out_dist_sqr_;
 std::vector<size_t> ret_index_;
-
+//TODO: CombinedSolver should follow the pattern of a "WarpFieldModifier" and should call the solver to modify the warp field from outside.
 WarpField::WarpField()
 {
     nodes_ = new std::vector<deformation_node>();
@@ -27,6 +26,7 @@ WarpField::WarpField()
     resultSet_->init(&ret_index_[0], &out_dist_sqr_[0]);
     neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
     warp_to_live_ = cv::Affine3f();
+
 
 }
 
@@ -135,7 +135,12 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
     WarpProblem warpProblem(this);
     for(int i = 0; i < live_vertices.size(); i++)
     {
-        if(std::isnan(canonical_vertices[i][0]))
+        if(std::isnan(canonical_vertices[i][0]) ||
+           std::isnan(canonical_vertices[i][1]) ||
+           std::isnan(canonical_vertices[i][2]) ||
+           std::isnan(live_vertices[i][0]) ||
+           std::isnan(live_vertices[i][1]) ||
+           std::isnan(live_vertices[i][2]))
             continue;
         getWeightsAndUpdateKNN(canonical_vertices[i], weights);
 
@@ -154,14 +159,14 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::SPARSE_SCHUR;
+    options.minimizer_type = ceres::TRUST_REGION;
     options.minimizer_progress_to_stdout = true;
     options.num_linear_solver_threads = 8;
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-
+    exit(0);
 //    auto params = warpProblem.params();
 //    for(int i = 0; i < nodes_->size()*6; i++)
 //    {
@@ -171,19 +176,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 //    }
     update_nodes(warpProblem.params());
 #else
-    CombinedSolverParameters params;
-    params.numIter = 20;
-    params.nonLinearIter = 15;
-    params.linearIter = 250;
-    params.useOpt = false;
-    params.useOptLM = true;
-    CombinedSolver solver(this,
-                          canonical_vertices,
-                          canonical_normals,
-                          live_vertices,
-                          live_normals,
-                          params);
-    solver.solveAll();
 
 #endif
 }

@@ -45,6 +45,7 @@ struct DynamicFusionApp
         cv::Mat display;
         depth.convertTo(display, CV_8U, 255.0/4000);
         cv::imshow("Depth", display);
+        cvWaitKey(10);
     }
 
     void show_raycasted(KinFu& kinfu)
@@ -57,7 +58,10 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
+        cvWaitKey(10);
         cv::imshow("Scene", view_host_);
+        cvWaitKey(10);
+
     }
 
     void show_warp(KinFu &kinfu)

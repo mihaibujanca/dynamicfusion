@@ -5,27 +5,27 @@
 #include <cuda_runtime.h>
 #include <cuda_profiler_api.h>
 #include <cudaUtil.h>
-#include "OpenMesh.h"
 #include <SolverIteration.h>
 #include <CombinedSolverParameters.h>
 #include <CombinedSolverBase.h>
 #include <OptGraph.h>
 #include <cuda_profiler_api.h>
-
+#include <kfusion/warp_field.hpp>
 class CombinedSolver : public CombinedSolverBase
 {
 
 public:
-    CombinedSolver(kfusion::WarpField *warpField,
-                   const std::vector<cv::Vec3f> &canonical_vertices,
-                   const std::vector<cv::Vec3f> &canonical_normals,
-                   const std::vector<cv::Vec3f> &live_vertices,
-                   const std::vector<cv::Vec3f> &live_normals,
-                   CombinedSolverParameters params)
+    CombinedSolver(kfusion::WarpField *warpField, CombinedSolverParameters params)
     {
         m_combinedSolverParameters = params;
         m_warp = warpField;
+    }
 
+    void initializeProblemInstance(const std::vector<cv::Vec3f> &canonical_vertices,
+                                   const std::vector<cv::Vec3f> &canonical_normals,
+                                   const std::vector<cv::Vec3f> &live_vertices,
+                                   const std::vector<cv::Vec3f> &live_normals)
+    {
         m_canonicalVerticesOpenCV = canonical_vertices;
         m_canonicalNormalsOpenCV = canonical_normals;
         m_liveVerticesOpenCV = live_vertices;
@@ -47,14 +47,13 @@ public:
         m_liveNormalsOpt       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         m_weights              = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
+        m_zero       = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         initializeConnectivity(canonical_vertices);
         resetGPUMemory();
-
-        addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
+        if(m_solverInfo.size() == 0)
+            addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
     }
-
-
     void initializeConnectivity(const std::vector<cv::Vec3f> canonical_vertices)
     {
         unsigned int N = (unsigned int) canonical_vertices.size();
@@ -62,7 +61,7 @@ public:
 
         std::vector<std::vector<int> > graph_vector(KNN_NEIGHBOURS + 1, vector<int>(N));
         std::vector<float> weights(N * KNN_NEIGHBOURS);
-
+//FIXME: KNN doesn't need to be recomputed every time.
         for(auto vertex : canonical_vertices)
         {
             graph_vector[0].push_back(count);
@@ -78,8 +77,8 @@ public:
 
     virtual void combinedSolveInit() override
     {
-        m_functionTolerance = 1e-12f;
-        m_paramTolerance = 1e-7f;
+        m_functionTolerance = 1e-6f;
+        m_paramTolerance = 1e-5f;
 
         m_problemParams.set("RotationDeform", m_rotationDeform);
         m_problemParams.set("TranslationDeform", m_translationDeform);
@@ -91,6 +90,7 @@ public:
         m_problemParams.set("LiveNormals", m_liveNormalsOpt);
 
         m_problemParams.set("Weights", m_weights);
+        m_problemParams.set("zero", m_zero);
 
         m_problemParams.set("DataG", m_data_graph);
 //        m_problemParams.set("RegG", m_reg_graph);
@@ -98,7 +98,8 @@ public:
         m_solverParams.set("nIterations", &m_combinedSolverParameters.nonLinearIter);
         m_solverParams.set("lIterations", &m_combinedSolverParameters.linearIter);
         m_solverParams.set("function_tolerance", &m_functionTolerance);
-        m_solverParams.set("q_tolerance", &m_paramTolerance);
+//        m_solverParams.set("max_trust_region_radius", &m_trust_region_radius);
+//        m_solverParams.set("q_tolerance", &m_paramTolerance);
     }
 
     virtual void preSingleSolve() override {
@@ -119,24 +120,40 @@ public:
     void resetGPUMemory()
     {
         uint N = (uint)m_canonicalVerticesOpenCV.size();
-        std::vector<float3> h_vertices(N);
-        std::vector<float3> h_normals(N);
+        std::vector<float3> h_canonical_vertices(N);
+        std::vector<float3> h_canonical_normals(N);
+        std::vector<float3> h_live_vertices(N);
+        std::vector<float3> h_live_normals(N);
 
         for(int i = 0; i < N; i++)
         {
-            h_vertices[i] = make_float3(m_canonicalVerticesOpenCV[i][0], m_canonicalVerticesOpenCV[i][1], m_canonicalVerticesOpenCV[i][2]);
-            h_normals[i] = make_float3(m_canonicalNormalsOpenCV[i][0], m_canonicalNormalsOpenCV[i][1], m_canonicalNormalsOpenCV[i][2]);
-        }
-        m_canonicalVerticesOpt->update(h_vertices);
-        m_canonicalNormalsOpt->update(h_normals);
+//            FIXME: this code could look better
+            if(std::isnan(m_canonicalVerticesOpenCV[i][0]) ||
+               std::isnan(m_canonicalVerticesOpenCV[i][1]) ||
+               std::isnan(m_canonicalVerticesOpenCV[i][2])) continue;
 
-        for(int i = 0; i < N; i++)
-        {
-            h_vertices[i] = make_float3(m_liveVerticesOpenCV[i][0], m_liveVerticesOpenCV[i][1], m_liveVerticesOpenCV[i][2]);
-            h_normals[i] = make_float3(m_liveNormalsOpenCV[i][0], m_liveNormalsOpenCV[i][1], m_liveNormalsOpenCV[i][2]);
+            if(std::isnan(m_canonicalNormalsOpenCV[i][0]) ||
+               std::isnan(m_canonicalNormalsOpenCV[i][1]) ||
+               std::isnan(m_canonicalNormalsOpenCV[i][2])) continue;
+
+            if(std::isnan(m_liveVerticesOpenCV[i][0]) ||
+               std::isnan(m_liveVerticesOpenCV[i][1]) ||
+               std::isnan(m_liveVerticesOpenCV[i][2])) continue;
+
+            if(std::isnan(m_liveNormalsOpenCV[i][0]) ||
+               std::isnan(m_liveNormalsOpenCV[i][1]) ||
+               std::isnan(m_liveNormalsOpenCV[i][2])) continue;
+
+
+            h_canonical_vertices[i] = make_float3(m_canonicalVerticesOpenCV[i][0], m_canonicalVerticesOpenCV[i][1], m_canonicalVerticesOpenCV[i][2]);
+            h_canonical_normals[i] = make_float3(m_canonicalNormalsOpenCV[i][0], m_canonicalNormalsOpenCV[i][1], m_canonicalNormalsOpenCV[i][2]);
+            h_live_vertices[i] = make_float3(m_liveVerticesOpenCV[i][0], m_liveVerticesOpenCV[i][1], m_liveVerticesOpenCV[i][2]);
+            h_live_normals[i] = make_float3(m_liveNormalsOpenCV[i][0], m_liveNormalsOpenCV[i][1], m_liveNormalsOpenCV[i][2]);
         }
-        m_liveVerticesOpt->update(h_vertices);
-        m_liveNormalsOpt->update(h_normals);
+        m_canonicalVerticesOpt->update(h_canonical_vertices);
+        m_canonicalNormalsOpt->update(h_canonical_normals);
+        m_liveVerticesOpt->update(h_live_vertices);
+        m_liveNormalsOpt->update(h_live_normals);
 
         uint D = (uint)m_warp->getNodes()->size();
         std::vector<float3> h_translation(D);
@@ -154,6 +171,9 @@ public:
 
         m_rotationDeform->update(h_rotation);
         m_translationDeform->update(h_translation);
+
+        std::vector<float3> zero(D,make_float3(0,0,0));
+        m_zero->update(zero);
     }
 
     std::vector<cv::Vec3f> result()
@@ -188,6 +208,7 @@ private:
     std::shared_ptr<OptImage> m_canonicalNormalsOpt;
     std::shared_ptr<OptImage> m_liveNormalsOpt;
     std::shared_ptr<OptImage> m_weights;
+    std::shared_ptr<OptImage> m_zero;
     std::shared_ptr<OptGraph> m_reg_graph;
     std::shared_ptr<OptGraph> m_data_graph;
 
@@ -200,6 +221,6 @@ private:
 
     float m_functionTolerance;
     float m_paramTolerance;
-    float m_trustRegion;
+    float m_trust_region_radius;
 };
 
