@@ -53,7 +53,7 @@ TEST(OPT_WARP_FIELD, EnergyDataTest)
     live_vertices.emplace_back(cv::Vec3f(-2.95f,-2.95f,-2.95f));
     live_vertices.emplace_back(cv::Vec3f(-1.95f,-1.95f,-1.95f));
     live_vertices.emplace_back(cv::Vec3f(0.05,0.05,0.05));
-    live_vertices.emplace_back(cv::Vec3f(2.05,2.05,2.05));
+    live_vertices.emplace_back(cv::Vec3f(2.05,4.05,2.05));
     live_vertices.emplace_back(cv::Vec3f(3.05,3.05,3.05));
     live_vertices.emplace_back(cv::Vec3f(4.5,4.05,6));
 
