@@ -127,7 +127,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
                             const std::vector<Vec3f> &live_normals
 )
 {
-#if WITH_CERES
     ceres::Problem problem;
     float weights[KNN_NEIGHBOURS];
     unsigned long indices[KNN_NEIGHBOURS];
@@ -175,9 +174,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 //            std::cout<<std::endl;
 //    }
     update_nodes(warpProblem.params());
-#else
-
-#endif
 }
 /**
  * \brief

@@ -4,12 +4,11 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include "opt/mLibInclude.h"
-
 #include "mLibCore.cpp"
 #include "mLibLodePNG.cpp"
 #include "opt/main.h"
 #include "opt/CombinedSolver.h"
-
+#include <string>
 using namespace kfusion;
 
 struct DynamicFusionApp
@@ -48,7 +47,7 @@ struct DynamicFusionApp
         cvWaitKey(10);
     }
 
-    void show_raycasted(KinFu& kinfu)
+    void show_raycasted(KinFu& kinfu, int i)
     {
         const int mode = 3;
         if (interactive_mode_)
@@ -58,9 +57,10 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
-        cvWaitKey(10);
+        std::string path = "/home/mihai/Projects/dynamicfusion/output/" + std::to_string(i) + ".png";
         cv::imshow("Scene", view_host_);
-        cvWaitKey(10);
+        cv::imwrite(path, view_host_);
+        cvWaitKey(100);
 
     }
 
@@ -97,7 +97,7 @@ struct DynamicFusionApp
 //            }
 
             if (has_image)
-                show_raycasted(dynamic_fusion);
+                show_raycasted(dynamic_fusion, i);
 
             show_depth(depth);
             cv::imshow("Image", image);

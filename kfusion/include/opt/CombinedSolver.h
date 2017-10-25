@@ -49,8 +49,8 @@ public:
         m_weights              = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
         m_zero       = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
-        initializeConnectivity(canonical_vertices);
         resetGPUMemory();
+        initializeConnectivity(m_canonicalVerticesOpenCV);
         if(m_solverInfo.size() == 0)
             addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
     }
