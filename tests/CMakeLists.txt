@@ -19,10 +19,3 @@ target_include_directories(ceres_test PUBLIC ${CERES_INCLUDE_DIRS})
 
 
 add_test(nanoflann_test nanoflann_test.cpp)
-
-add_test(warp_field_test warp_field_test.cpp)
-target_link_libraries(
-        warp_field_test
-        ${GTEST_BOTH_LIBRARIES}
-        kfusion
-)
