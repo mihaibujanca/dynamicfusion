@@ -11,18 +11,16 @@ local LiveNormals = Array("LiveNormals", opt_float3,{N},5)
 
 local Weights = Array("Weights", opt_float8, {N}, 6)
 
-local zero = Unknown("zero", opt_float3,{D},7)
-
-local G = Graph("DataG", 8,
-                    "v", {N}, 9,
-                    "n0", {D}, 10,
-                    "n1", {D}, 11,
-                    "n2", {D}, 12,
-                    "n3", {D}, 13,
-                    "n4", {D}, 14,
-                    "n5", {D}, 15,
-                    "n6", {D}, 16,
-                    "n7", {D}, 17)
+local G = Graph("DataG", 7,
+                    "v", {N}, 8,
+                    "n0", {D}, 9,
+                    "n1", {D}, 10,
+                    "n2", {D}, 11,
+                    "n3", {D}, 12,
+                    "n4", {D}, 13,
+                    "n5", {D}, 14,
+                    "n6", {D}, 15,
+                    "n7", {D}, 16)
 
 
 weightedTranslation = 0
@@ -33,5 +31,4 @@ for _,i in ipairs(nodes) do
     weightedTranslation = weightedTranslation + Weights(G.v)(i) * TranslationDeform(G["n"..i])
 end
 
-Energy(zero(0))
 Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)

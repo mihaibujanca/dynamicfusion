@@ -8,7 +8,7 @@
 #include "mLibLodePNG.cpp"
 #include "opt/main.h"
 #include "opt/CombinedSolver.h"
-#include <string>
+
 using namespace kfusion;
 
 struct DynamicFusionApp
@@ -57,7 +57,7 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
-        std::string path = "/home/mihai/Projects/dynamicfusion/output/" + std::to_string(i) + ".png";
+        std::string path = "/home/mihai/Projects/dynamicfusion/output/" + std::to_string(i) + ".jpg";
         cv::imshow("Scene", view_host_);
         cv::imwrite(path, view_host_);
         cvWaitKey(100);
@@ -67,7 +67,7 @@ struct DynamicFusionApp
     void show_warp(KinFu &kinfu)
     {
         cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
-        viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
+        viz.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
     bool execute()
@@ -104,7 +104,6 @@ struct DynamicFusionApp
 
             if (!interactive_mode_) {
                 viz.setViewerPose(dynamic_fusion.getCameraPose());
-                viz1.setViewerPose(dynamic_fusion.getCameraPose());
             }
 
             int key = cv::waitKey(pause_ ? 0 : 3);
@@ -125,10 +124,8 @@ struct DynamicFusionApp
                     pause_ = !pause_;
                     break;
             }
-
-            //exit_ = exit_ || i > 100;
             viz.spinOnce(3, true);
-            viz1.spinOnce(3, true);
+            //exit_ = exit_ || i > 100;
         }
         return true;
     }
@@ -138,7 +135,6 @@ struct DynamicFusionApp
     std::string dir_name;
     KinFu::Ptr kinfu_;
     cv::viz::Viz3d viz;
-    cv::viz::Viz3d viz1;
 
     cv::Mat view_host_;
     cuda::Image view_device_;
@@ -166,9 +162,6 @@ int main (int argc, char* argv[])
     try { app->execute (); }
     catch (const std::bad_alloc& /*e*/) { std::cout << "Bad alloc" << std::endl; }
     catch (const std::exception& /*e*/) { std::cout << "Exception" << std::endl; }
-
-    delete app;
-
 
     delete app;
     return 0;

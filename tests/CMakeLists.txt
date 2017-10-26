@@ -1,6 +1,11 @@
+project(ceres_tests)
 add_subdirectory(utils)
 add_subdirectory(opt)
-project(ceres_tests)
+
+include_directories(
+        ceres_test PUBLIC
+        ${CMAKE_SOURCE_DIR}/kfusion/include
+)
 
 add_test(ceres_test ceres_test_warp.cpp)
 target_link_libraries(
@@ -10,10 +15,14 @@ target_link_libraries(
         ${CUDA_CUDART_LIBRARY}
         kfusion
 )
+target_include_directories(ceres_test PUBLIC ${CERES_INCLUDE_DIRS})
 
-target_include_directories(
-        ceres_test PUBLIC
-        ${CERES_INCLUDE_DIRS}
-        ${CMAKE_SOURCE_DIR}/kfusion/include
+
+add_test(nanoflann_test nanoflann_test.cpp)
+
+add_test(warp_field_test warp_field_test.cpp)
+target_link_libraries(
+        warp_field_test
+        ${GTEST_BOTH_LIBRARIES}
+        kfusion
 )
-#add_test(nanoflann_test nanoflann_test.cpp)

@@ -57,8 +57,7 @@ void WarpField::init(const cv::Mat& first_frame)
             auto point = first_frame.at<Point>(i,j);
             if(!std::isnan(point.x))
             {
-                auto t = utils::Quaternion<float>(0,point.x,point.y,point.z);
-                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>(t, utils::Quaternion<float>());
+                nodes_->at(i*first_frame.cols+j).transform = utils::DualQuaternion<float>();
                 nodes_->at(i*first_frame.cols+j).vertex = Vec3f(point.x,point.y,point.z);
                 nodes_->at(i*first_frame.cols+j).weight = 3 * voxel_size;
             }
@@ -84,9 +83,7 @@ void WarpField::init(const std::vector<Vec3f>& first_frame)
         auto point = first_frame[i];
         if (!std::isnan(point[0]))
         {
-            utils::Quaternion<float> t(0.f, point[0], point[1], point[2]);
-            nodes_->at(i).transform = utils::DualQuaternion<float>(t,utils::Quaternion<float>());
-
+            nodes_->at(i).transform = utils::DualQuaternion<float>();
             nodes_->at(i).vertex = point;
             nodes_->at(i).weight = 3 * voxel_size;
         }
@@ -350,7 +347,7 @@ const cv::Mat WarpField::getNodesAsMat() const
 {
     cv::Mat matrix(1, nodes_->size(), CV_32FC3);
     for(int i = 0; i < nodes_->size(); i++)
-        matrix.at<cv::Vec3f>(i) = nodes_->at(i).vertex;
+         nodes_->at(i).transform.getTranslation(matrix.at<cv::Vec3f>(i));
     return matrix;
 }
 

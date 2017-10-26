@@ -47,7 +47,6 @@ public:
         m_liveNormalsOpt       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         m_weights              = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
-        m_zero       = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         resetGPUMemory();
         initializeConnectivity(m_canonicalVerticesOpenCV);
@@ -90,7 +89,6 @@ public:
         m_problemParams.set("LiveNormals", m_liveNormalsOpt);
 
         m_problemParams.set("Weights", m_weights);
-        m_problemParams.set("zero", m_zero);
 
         m_problemParams.set("DataG", m_data_graph);
 //        m_problemParams.set("RegG", m_reg_graph);
@@ -171,9 +169,6 @@ public:
 
         m_rotationDeform->update(h_rotation);
         m_translationDeform->update(h_translation);
-
-        std::vector<float3> zero(D,make_float3(0,0,0));
-        m_zero->update(zero);
     }
 
     std::vector<cv::Vec3f> result()
@@ -208,7 +203,6 @@ private:
     std::shared_ptr<OptImage> m_canonicalNormalsOpt;
     std::shared_ptr<OptImage> m_liveNormalsOpt;
     std::shared_ptr<OptImage> m_weights;
-    std::shared_ptr<OptImage> m_zero;
     std::shared_ptr<OptGraph> m_reg_graph;
     std::shared_ptr<OptGraph> m_data_graph;
 

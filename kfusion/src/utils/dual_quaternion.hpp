@@ -22,7 +22,11 @@ namespace kfusion {
             /**
              * \brief default constructor.
              */
-            DualQuaternion(){};
+            DualQuaternion()
+            {
+                rotation_ = Quaternion<float>();
+                translation_ = Quaternion<float>();
+            };
             ~DualQuaternion(){};
 
             /**
