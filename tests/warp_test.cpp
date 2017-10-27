@@ -66,13 +66,13 @@ TEST(WARP_FIELD_TEST, EnergyDataTest)
 
     warpField.init(warp_init);
 
-    std::vector<cv::Vec3f> canonical_vertices;
-    canonical_vertices.emplace_back(cv::Vec3f(-3,-3,-3));
-    canonical_vertices.emplace_back(cv::Vec3f(-2,-2,-2));
-    canonical_vertices.emplace_back(cv::Vec3f(0,0,0));
-    canonical_vertices.emplace_back(cv::Vec3f(2,2,2));
-    canonical_vertices.emplace_back(cv::Vec3f(3,3,3));
-    canonical_vertices.emplace_back(cv::Vec3f(4,4,4));
+    std::vector<cv::Vec3f> source_vertices;
+    source_vertices.emplace_back(cv::Vec3f(-3,-3,-3));
+    source_vertices.emplace_back(cv::Vec3f(-2,-2,-2));
+    source_vertices.emplace_back(cv::Vec3f(0,0,0));
+    source_vertices.emplace_back(cv::Vec3f(2,2,2));
+    source_vertices.emplace_back(cv::Vec3f(3,3,3));
+    source_vertices.emplace_back(cv::Vec3f(4,4,4));
 
     std::vector<cv::Vec3f> canonical_normals;
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
@@ -82,22 +82,25 @@ TEST(WARP_FIELD_TEST, EnergyDataTest)
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
     canonical_normals.emplace_back(cv::Vec3f(0,0,1));
 
-    std::vector<cv::Vec3f> live_vertices;
-    live_vertices.emplace_back(cv::Vec3f(-2.95f,-2.95f,-2.95f));
-    live_vertices.emplace_back(cv::Vec3f(-1.95f,-1.95f,-1.95f));
-    live_vertices.emplace_back(cv::Vec3f(0.05,0.05,0.05));
-    live_vertices.emplace_back(cv::Vec3f(2.05,4.05,2.05));
-    live_vertices.emplace_back(cv::Vec3f(3.05,3.05,3.05));
-    live_vertices.emplace_back(cv::Vec3f(4.5,4.05,6));
+    std::vector<cv::Vec3f> target_vertices;
+    target_vertices.emplace_back(cv::Vec3f(-2.95f,-2.95f,-2.95f));
+    target_vertices.emplace_back(cv::Vec3f(-1.95f,-1.95f,-1.95f));
+    target_vertices.emplace_back(cv::Vec3f(0.05,0.05,0.05));
+    target_vertices.emplace_back(cv::Vec3f(2.05,4.05,2.05));
+    target_vertices.emplace_back(cv::Vec3f(3.05,3.05,3.05));
+    target_vertices.emplace_back(cv::Vec3f(4.5,4.05,6));
 
-    std::vector<cv::Vec3f> live_normals;
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
-    live_normals.emplace_back(cv::Vec3f(0,0,1));
+    std::vector<cv::Vec3f> target_normals;
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
+    target_normals.emplace_back(cv::Vec3f(0,0,1));
 
+
+    std::vector<cv::Vec3f> initial_source_vertices(source_vertices);
+    std::vector<cv::Vec3f> initial_source_normals(canonical_normals);
     CombinedSolverParameters params;
     params.numIter = 20;
     params.nonLinearIter = 15;
@@ -107,14 +110,25 @@ TEST(WARP_FIELD_TEST, EnergyDataTest)
 
     kfusion::WarpFieldOptimiser optimiser(&warpField, params);
 
-    optimiser.optimiseWarpData(canonical_vertices, canonical_normals, live_vertices, live_normals);
-    warpField.warp(canonical_vertices, canonical_normals);
+    optimiser.optimiseWarpData(source_vertices, canonical_normals, target_vertices, target_normals);
+    warpField.warp(source_vertices, canonical_normals);
 
-    for(size_t i = 0; i < canonical_vertices.size(); i++)
+    for(size_t i = 0; i < source_vertices.size(); i++)
     {
-        ASSERT_NEAR(canonical_vertices[i][0], live_vertices[i][0], max_error);
-        ASSERT_NEAR(canonical_vertices[i][1], live_vertices[i][1], max_error);
-        ASSERT_NEAR(canonical_vertices[i][2], live_vertices[i][2], max_error);
+        ASSERT_NEAR(source_vertices[i][0], target_vertices[i][0], max_error);
+        ASSERT_NEAR(source_vertices[i][1], target_vertices[i][1], max_error);
+        ASSERT_NEAR(source_vertices[i][2], target_vertices[i][2], max_error);
+        std::cout<<source_vertices[i]<<" "<<target_vertices[i]<<std::endl;
+    }
+
+    optimiser.optimiseWarpData(target_vertices, target_normals, initial_source_vertices, initial_source_normals);
+    warpField.warp(target_vertices, target_normals);
+
+    for(size_t i = 0; i < source_vertices.size(); i++)
+    {
+        ASSERT_NEAR(initial_source_vertices[i][0], target_vertices[i][0], max_error);
+        ASSERT_NEAR(initial_source_vertices[i][1], target_vertices[i][1], max_error);
+        ASSERT_NEAR(initial_source_vertices[i][2], target_vertices[i][2], max_error);
     }
 }
 
