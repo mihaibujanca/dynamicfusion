@@ -158,6 +158,22 @@ public:
     explicit WarpProblem(kfusion::WarpField *warp) : warpField_(warp)
     {
         parameters_ = new double[warpField_->getNodes()->size() * 6];
+        for(int i = 0; i < warp->getNodes()->size() * 6; i+=6)
+        {
+            auto transform = warp->getNodes()->at(i).transform;
+
+            float x,y,z;
+
+            transform.getTranslation(x,y,z);
+            parameters_[i] = x;
+            parameters_[i+1] = y;
+            parameters_[i+2] = z;
+
+            transform.getRotation().getRodrigues(x,y,z);
+            parameters_[i+3] = x;
+            parameters_[i+4] = y;
+            parameters_[i+5] = z;
+        }
     };
 
     ~WarpProblem() {

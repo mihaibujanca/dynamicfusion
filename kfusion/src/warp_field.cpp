@@ -15,7 +15,7 @@ utils::PointCloud cloud;
 nanoflann::KNNResultSet<float> *resultSet_;
 std::vector<float> out_dist_sqr_;
 std::vector<size_t> ret_index_;
-//TODO: CombinedSolver should follow the pattern of a "WarpFieldModifier" and should call the solver to modify the warp field from outside.
+
 WarpField::WarpField()
 {
     nodes_ = new std::vector<deformation_node>();
@@ -26,8 +26,6 @@ WarpField::WarpField()
     resultSet_->init(&ret_index_[0], &out_dist_sqr_[0]);
     neighbours = std::vector<utils::DualQuaternion<float>>(KNN_NEIGHBOURS);
     warp_to_live_ = cv::Affine3f();
-
-
 }
 
 WarpField::~WarpField()
@@ -50,7 +48,7 @@ void WarpField::init(const cv::Mat& first_frame)
 
 //    FIXME:: this is a test, remove later
     voxel_size = 1;
-    int step = 10;
+    int step = 50;
     for(size_t i = 0; i < first_frame.rows; i+=step)
         for(size_t j = 0; j < first_frame.cols; j+=step)
         {
@@ -170,7 +168,6 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 //        if((i+1) % 6 == 0)
 //            std::cout<<std::endl;
 //    }
-    update_nodes(warpProblem.params());
 }
 /**
  * \brief
@@ -195,7 +192,6 @@ void WarpField::warp(std::vector<Vec3f>& points, std::vector<Vec3f>& normals) co
     {
         if(std::isnan(point[0]) || std::isnan(normals[i][0]))
             continue;
-        KNN(point);
         utils::DualQuaternion<float> dqb = DQB(point);
         dqb.transform(point);
         point = warp_to_live_ * point;
@@ -255,28 +251,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vect
     return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
 
-
-/**
- * \brief
- * \param vertex
- * \param weight
- * \return
- */
-void WarpField::update_nodes(const double *epsilon)
-{
-    assert(epsilon != NULL);
-    utils::DualQuaternion<float> eps;
-    for (size_t i = 0; i < nodes_->size(); i++)
-    {
-        // epsilon [0:2] is rotation [3:5] is translation
-        eps.from_twist(epsilon[i*6], epsilon[i*6 +1], epsilon[i*6 + 2],
-                       epsilon[i*6 + 3], epsilon[i*6 + 4], epsilon[i*6 + 5]);
-        auto tr = eps.getTranslation() + nodes_->at(i).transform.getTranslation();
-//        auto rot = eps.getRotation() + nodes_->at(i).transform.getRotation();
-        auto rot = utils::Quaternion<float>();
-        nodes_->at(i).transform = utils::DualQuaternion<float>(tr, rot);
-    }
-}
 
 /**
  * \brief
@@ -347,7 +321,10 @@ const cv::Mat WarpField::getNodesAsMat() const
 {
     cv::Mat matrix(1, nodes_->size(), CV_32FC3);
     for(int i = 0; i < nodes_->size(); i++)
-         nodes_->at(i).transform.getTranslation(matrix.at<cv::Vec3f>(i));
+    {
+        nodes_->at(i).transform.getTranslation(matrix.at<cv::Vec3f>(i));
+        matrix.at<cv::Vec3f>(i) += nodes_->at(i).vertex;
+    }
     return matrix;
 }
 
