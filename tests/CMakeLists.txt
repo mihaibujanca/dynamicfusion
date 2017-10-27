@@ -1,5 +1,6 @@
 project(ceres_tests)
-add_subdirectory(utory(opt)
+add_subdirectory(utils)
+add_subdirectory(opt)
 
 include_directories(
         ceres_test PUBLIC
