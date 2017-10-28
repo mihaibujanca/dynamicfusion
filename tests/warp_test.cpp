@@ -24,7 +24,7 @@ TEST(WARP_FIELD_TEST, EnergyDataTest)
     std::vector<cv::Vec3f> warp_init;
 
     warp_init.emplace_back(cv::Vec3f(1,1,1));
-    warp_init.emplace_back(cv::Vec3f(1,2,-1));
+    warp_init.emplace_back(cv::Vec3f(1,1,-1));
     warp_init.emplace_back(cv::Vec3f(1,-1,1));
     warp_init.emplace_back(cv::Vec3f(1,-1,-1));
     warp_init.emplace_back(cv::Vec3f(-1,1,1));
