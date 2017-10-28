@@ -1,0 +1,7 @@
+#ifndef KFUSION_MACRO_UTILS_HPP
+#define KFUSION_MACRO_UTILS_HPP
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#endif //KFUSION_MACRO_UTILS_H

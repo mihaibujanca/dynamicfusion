@@ -10,6 +10,7 @@
 #include <CombinedSolverBase.h>
 #include <OptGraph.h>
 #include <cuda_profiler_api.h>
+#include <macro_utils.hpp>
 #include <kfusion/warp_field.hpp>
 class CombinedSolver : public CombinedSolverBase
 {
@@ -50,8 +51,17 @@ public:
 
         resetGPUMemory();
         initializeConnectivity(m_canonicalVerticesOpenCV);
+
+#ifdef SOLVERPATH
         if(m_solverInfo.size() == 0)
-            addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
+        {
+            std::string solver_file = std::string(TOSTRING(SOLVERPATH)) + "dynamicfusion.t";
+            addOptSolvers(m_dims, solver_file);
+        }
+#else
+        std::cerr<<"Please define a path for your solvers."<<std::endl;
+        exit(-1);
+#endif
     }
     void initializeConnectivity(const std::vector<cv::Vec3f> canonical_vertices)
     {

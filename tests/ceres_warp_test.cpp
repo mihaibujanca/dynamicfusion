@@ -1,18 +1,9 @@
 #include <gtest/gtest.h>
-#include <kfusion/warp_field_optimiser.hpp>
 #include <kfusion/warp_field.hpp>
 #include <vector>
-#include <string>
+#include "ceres/ceres.h"
 
-#include "opt/main.h"
-#include "opt/CombinedSolver.h"
-#include "opt/OpenMesh.h"
-#include "opt/mLibInclude.h"
-#include "mLibCore.cpp"
-#include "mLibLodePNG.cpp"
-
-
-TEST(WARP_FIELD_TEST, EnergyDataSingleVertexTest)
+TEST(CERES_WARP_TEST, EnergyDataSingleVertexTest)
 {
     const float max_error = 1e-3;
 
@@ -41,16 +32,7 @@ TEST(WARP_FIELD_TEST, EnergyDataSingleVertexTest)
     std::vector<cv::Vec3f> target_normals;
     target_normals.emplace_back(cv::Vec3f(0,0,1));
 
-    CombinedSolverParameters params;
-    params.numIter = 20;
-    params.nonLinearIter = 15;
-    params.linearIter = 250;
-    params.useOpt = false;
-    params.useOptLM = true;
-
-    kfusion::WarpFieldOptimiser optimiser(&warp_field, params);
-
-    optimiser.optimiseWarpData(source_vertices, canonical_normals, target_vertices, target_normals);
+    warp_field.energy_data(source_vertices, canonical_normals, target_vertices, target_normals);
     warp_field.warp(source_vertices, canonical_normals);
 
     for(size_t i = 0; i < source_vertices.size(); i++)
@@ -68,7 +50,7 @@ TEST(WARP_FIELD_TEST, EnergyDataSingleVertexTest)
 }
 
 
-TEST(WARP_FIELD_TEST, EnergyDataRigidTest)
+TEST(CERES_WARP_TEST, EnergyDataRigidTest)
 {
     const float max_error = 1e-3;
 
@@ -113,16 +95,7 @@ TEST(WARP_FIELD_TEST, EnergyDataRigidTest)
     target_normals.emplace_back(cv::Vec3f(0,0,1));
     target_normals.emplace_back(cv::Vec3f(0,0,1));
 
-    CombinedSolverParameters params;
-    params.numIter = 20;
-    params.nonLinearIter = 15;
-    params.linearIter = 250;
-    params.useOpt = false;
-    params.useOptLM = true;
-
-    kfusion::WarpFieldOptimiser optimiser(&warp_field, params);
-
-    optimiser.optimiseWarpData(source_vertices, canonical_normals, target_vertices, target_normals);
+    warp_field.energy_data(source_vertices, canonical_normals, target_vertices, target_normals);
     warp_field.warp(source_vertices, canonical_normals);
 
     for(size_t i = 0; i < source_vertices.size(); i++)
@@ -140,7 +113,7 @@ TEST(WARP_FIELD_TEST, EnergyDataRigidTest)
 }
 
 
-TEST(WARP_FIELD_TEST, WarpAndReverseTest)
+TEST(CERES_WARP_TEST, WarpAndReverseTest)
 {
     const float max_error = 1e-3;
 
@@ -188,18 +161,8 @@ TEST(WARP_FIELD_TEST, WarpAndReverseTest)
 
     std::vector<cv::Vec3f> initial_source_vertices(source_vertices);
     std::vector<cv::Vec3f> initial_source_normals(canonical_normals);
-    CombinedSolverParameters params;
-    params.numIter = 20;
-    params.nonLinearIter = 15;
-    params.linearIter = 250;
-    params.useOpt = false;
-    params.useOptLM = true;
 
-    kfusion::WarpFieldOptimiser optimiser(&warp_field, params);
-
-    float weights[KNN_NEIGHBOURS];
-//    warp_field.getWeightsAndUpdateKNN()
-    optimiser.optimiseWarpData(source_vertices, canonical_normals, target_vertices, target_normals);
+    warp_field.energy_data(source_vertices, canonical_normals, target_vertices, target_normals);
     warp_field.warp(source_vertices, canonical_normals);
 
     for(size_t i = 0; i < source_vertices.size(); i++)
@@ -216,7 +179,7 @@ TEST(WARP_FIELD_TEST, WarpAndReverseTest)
         sum = sum + t;
         std::cout<< t <<std::endl;
     }
-    optimiser.optimiseWarpData(target_vertices, target_normals, initial_source_vertices, initial_source_normals);
+    warp_field.energy_data(target_vertices, target_normals, initial_source_vertices, initial_source_normals);
     warp_field.warp(target_vertices, target_normals);
 
     for(size_t i = 0; i < source_vertices.size(); i++)

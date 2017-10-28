@@ -6,7 +6,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/kfusion/include
 )
 
-add_test(ceres_test ceres_test_warp.cpp)
+add_test(ceres_test ceres_warp_test.cpp)
 target_link_libraries(
         ceres_test
         ${CERES_LIBRARIES}
