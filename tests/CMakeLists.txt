@@ -27,5 +27,4 @@ target_link_libraries(
         ${CUDA_CUDART_LIBRARY}
         ${GTEST_BOTH_LIBRARIES}
         kfusion
-        kfusion
 )

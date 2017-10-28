@@ -31,4 +31,12 @@ for _,i in ipairs(nodes) do
     weightedTranslation = weightedTranslation + Weights(G.v)(i) * TranslationDeform(G["n"..i])
 end
 
+function huberPenalty(a, delta) -- delta should be 0.00001
+    if lesseq(abs(a),delta) then
+        return a * a / 2
+    else
+        return delta * abs(a) - delta *  delta / 2
+    end
+end
+
 Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)
