@@ -15,15 +15,15 @@ set_target_properties(dynamicfusion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 
-#if(OPENNI_FOUND)
-#    add_executable(dynamicfusion_kinect dynamicfusion_kinect.cpp)
-#    target_link_libraries(dynamicfusion_kinect ${OPENNI_LIBRARY} ${OpenCV_LIBS} kfusion)
-#
-#    set_target_properties(dynamicfusion_kinect PROPERTIES
-#        DEBUG_POSTFIX "d"
-#        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-#        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-#    install(TARGETS dynamicfusion_kinect RUNTIME DESTINATION bin COMPONENT main)
-#endif()
+if(OPENNI_FOUND)
+    add_executable(dynamicfusion_kinect dynamicfusion_kinect.cpp)
+    target_link_libraries(dynamicfusion_kinect ${OPENNI_LIBRARY} ${OpenCV_LIBS} kfusion)
+
+    set_target_properties(dynamicfusion_kinect PROPERTIES
+        DEBUG_POSTFIX "d"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    install(TARGETS dynamicfusion_kinect RUNTIME DESTINATION bin COMPONENT main)
+endif()
 
 install(TARGETS dynamicfusion RUNTIME DESTINATION bin COMPONENT main)
