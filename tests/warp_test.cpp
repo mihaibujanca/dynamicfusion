@@ -31,7 +31,6 @@ TEST(WARP_FIELD_TEST, EnergyDataTest)
     warp_init.emplace_back(cv::Vec3f(-1,1,-1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,1));
     warp_init.emplace_back(cv::Vec3f(-1,-1,-1));
-    warp_init.emplace_back(cv::Vec3f(2,-3,-1));
     warp_field.init(warp_init);
 
     std::vector<cv::Vec3f> source_vertices;
