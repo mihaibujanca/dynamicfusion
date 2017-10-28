@@ -10,6 +10,7 @@
 #include <CombinedSolverBase.h>
 #include <OptGraph.h>
 #include <cuda_profiler_api.h>
+#include <macro_utils.hpp>
 #include <kfusion/warp_field.hpp>
 class CombinedSolver : public CombinedSolverBase
 {
@@ -47,12 +48,20 @@ public:
         m_liveNormalsOpt       = createEmptyOptImage({N}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         m_weights              = createEmptyOptImage({N}, OptImage::Type::FLOAT, KNN_NEIGHBOURS, OptImage::GPU, true);
-        m_zero       = createEmptyOptImage({D}, OptImage::Type::FLOAT, 3, OptImage::GPU, true);
 
         resetGPUMemory();
         initializeConnectivity(m_canonicalVerticesOpenCV);
+
+#ifdef SOLVERPATH
         if(m_solverInfo.size() == 0)
-            addOptSolvers(m_dims, "/home/mihai/Projects/dynamicfusion/kfusion/solvers/dynamicfusion.t", m_combinedSolverParameters.optDoublePrecision); //FIXME: remove hardcoded path
+        {
+            std::string solver_file = std::string(TOSTRING(SOLVERPATH)) + "dynamicfusion.t";
+            addOptSolvers(m_dims, solver_file);
+        }
+#else
+        std::cerr<<"Please define a path for your solvers."<<std::endl;
+        exit(-1);
+#endif
     }
     void initializeConnectivity(const std::vector<cv::Vec3f> canonical_vertices)
     {
@@ -90,7 +99,6 @@ public:
         m_problemParams.set("LiveNormals", m_liveNormalsOpt);
 
         m_problemParams.set("Weights", m_weights);
-        m_problemParams.set("zero", m_zero);
 
         m_problemParams.set("DataG", m_data_graph);
 //        m_problemParams.set("RegG", m_reg_graph);
@@ -171,9 +179,6 @@ public:
 
         m_rotationDeform->update(h_rotation);
         m_translationDeform->update(h_translation);
-
-        std::vector<float3> zero(D,make_float3(0,0,0));
-        m_zero->update(zero);
     }
 
     std::vector<cv::Vec3f> result()
@@ -208,7 +213,6 @@ private:
     std::shared_ptr<OptImage> m_canonicalNormalsOpt;
     std::shared_ptr<OptImage> m_liveNormalsOpt;
     std::shared_ptr<OptImage> m_weights;
-    std::shared_ptr<OptImage> m_zero;
     std::shared_ptr<OptGraph> m_reg_graph;
     std::shared_ptr<OptGraph> m_data_graph;
 

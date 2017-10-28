@@ -19,3 +19,4 @@ target_link_libraries(kfusion
         ${CERES_LIBRARIES})
 
 target_include_directories(kfusion PUBLIC ${OPT_INCLUDE_DIRS})
+target_compile_definitions(kfusion PUBLIC SOLVERPATH=${CMAKE_SOURCE_DIR}/kfusion/solvers/)

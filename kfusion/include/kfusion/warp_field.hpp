@@ -67,7 +67,6 @@ namespace kfusion
 
         utils::DualQuaternion<float> DQB(const Vec3f& vertex) const;
         utils::DualQuaternion<float> DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const;
-        void update_nodes(const double *epsilon);
 
         void getWeightsAndUpdateKNN(const Vec3f& vertex, float weights[KNN_NEIGHBOURS]) const;
 
@@ -82,12 +81,12 @@ namespace kfusion
         void setWarpToLive(const Affine3f &pose);
         std::vector<float>* getDistSquared() const;
         std::vector<size_t>* getRetIndex() const;
+        void buildKDTree();
 
     private:
         std::vector<deformation_node>* nodes_;
         kd_tree_t* index_;
         Affine3f warp_to_live_;
-        void buildKDTree();
     };
 }
 #endif //KFUSION_WARP_FIELD_HPP
