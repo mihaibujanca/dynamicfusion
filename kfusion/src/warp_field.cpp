@@ -223,35 +223,6 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
     return utils::DualQuaternion<float>(translation_sum, rotation_sum);
 }
 
-
-/**
- * \brief
- * \param vertex
- * \param weight
- * \return
- */
-utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const
-{
-    float weights[KNN_NEIGHBOURS];
-    getWeightsAndUpdateKNN(vertex, weights);
-    utils::DualQuaternion<float> eps;
-    utils::Quaternion<float> translation_sum(0,0,0,0);
-    utils::Quaternion<float> rotation_sum(0,0,0,0);
-
-    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-    {
-        // epsilon [0:2] is rotation [3:5] is translation
-        eps.from_twist(epsilon[i][0], epsilon[i][1], epsilon[i][2],
-                       epsilon[i][3], epsilon[i][4], epsilon[i][5]);
-
-        translation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + eps.getTranslation());
-        rotation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + eps.getRotation());
-    }
-    rotation_sum = utils::Quaternion<float>();
-    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
-}
-
-
 /**
  * \brief
  * \param vertex

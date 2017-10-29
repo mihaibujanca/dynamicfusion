@@ -167,13 +167,14 @@ public:
         std::vector<float3> h_translation(D);
         std::vector<float3> h_rotation(D);
 
-        for(int i = 0; i < D; i++)
+        for(int i = 0; i < m_warp->getNodes()->size(); i++)
         {
             float x,y,z;
-            m_warp->getNodes()->at(i).transform.getTranslation(x,y,z);
+            auto t = m_warp->getNodes()->at(i).transform;
+            t.getTranslation(x,y,z);
             h_translation[i] = make_float3(x,y,z);
 
-            m_warp->getNodes()->at(i).transform.getRotation().getRodrigues(x,y,z);
+            t.getRotation().getRodrigues(x,y,z);
             h_rotation[i] = make_float3(x,y,z);
         }
 

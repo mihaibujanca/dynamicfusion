@@ -2,6 +2,7 @@
 #include <kfusion/warp_field_optimiser.hpp>
 #include <kfusion/warp_field.hpp>
 #include <vector>
+#include <gtest/gtest.h>
 #include <string>
 
 #include "opt/main.h"
