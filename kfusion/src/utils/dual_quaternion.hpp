@@ -44,7 +44,7 @@ namespace kfusion {
                 rotation_.y_ = cos(roll / 2) * sin(pitch / 2) * cos(yaw / 2) +
                                sin(roll / 2) * cos(pitch / 2) * sin(yaw / 2);
                 rotation_.z_ = cos(roll / 2) * cos(pitch / 2) * sin(yaw / 2) -
-                               sin(roll / 2) * cos(pitch / 2) * cos(yaw / 2);
+                               sin(roll / 2) * sin(pitch / 2) * cos(yaw / 2);
 
                 translation_ = 0.5 * Quaternion<T>(0, x, y, z) * rotation_;
             }
