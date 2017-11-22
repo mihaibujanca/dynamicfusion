@@ -2,7 +2,7 @@ DynamicFusion
 ============
 Implementation of [Newcombe et al. 2015 DynamicFusion paper](http://grail.cs.washington.edu/projects/dynamicfusion/papers/DynamicFusion.pdf).
 
-#### This project is still in active development and does not yet reproduce the results of the paper.
+#### This project is still in active development and does not yet reproduce the results of the paper accurately.
 
 The code is based on this [KinectFusion implemenation](https://github.com/Nerei/kinfu_remake)
 
