@@ -153,21 +153,15 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.minimizer_type = ceres::TRUST_REGION;
+//    options.minimizer_type = ceres::TRUST_REGION;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
     options.minimizer_progress_to_stdout = true;
     options.num_linear_solver_threads = 8;
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-    exit(0);
-//    auto params = warpProblem.params();
-//    for(int i = 0; i < nodes_->size()*6; i++)
-//    {
-//        std::cout<<params[i]<<" ";
-//        if((i+1) % 6 == 0)
-//            std::cout<<std::endl;
-//    }
+    warpProblem.updateWarp();
 }
 /**
  * \brief
@@ -219,8 +213,9 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
         translation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getTranslation();
         rotation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getRotation();
     }
-    rotation_sum = utils::Quaternion<float>();
-    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
+    rotation_sum.normalize();
+    auto res = utils::DualQuaternion<float>(translation_sum, rotation_sum);
+    return res;
 }
 
 /**

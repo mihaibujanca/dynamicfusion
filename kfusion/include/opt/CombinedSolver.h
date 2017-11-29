@@ -52,10 +52,10 @@ public:
         resetGPUMemory();
         initializeConnectivity(m_canonicalVerticesOpenCV);
 
-#ifdef SOLVERPATH
+#ifdef SOLVER_PATH
         if(m_solverInfo.size() == 0)
         {
-            std::string solver_file = std::string(TOSTRING(SOLVERPATH)) + "dynamicfusion.t";
+            std::string solver_file = std::string(TOSTRING(SOLVER_PATH)) + "dynamicfusion.t";
             addOptSolvers(m_dims, solver_file);
         }
 #else
@@ -66,18 +66,17 @@ public:
     void initializeConnectivity(const std::vector<cv::Vec3f> canonical_vertices)
     {
         unsigned int N = (unsigned int) canonical_vertices.size();
-        int count = 0;
 
         std::vector<std::vector<int> > graph_vector(KNN_NEIGHBOURS + 1, vector<int>(N));
-        std::vector<float> weights(N * KNN_NEIGHBOURS);
+//        std::vector<float> weights(N * KNN_NEIGHBOURS);
+        std::vector<float[KNN_NEIGHBOURS]> weights(N);
 //FIXME: KNN doesn't need to be recomputed every time.
-        for(auto vertex : canonical_vertices)
+        for(int count = 0; count < canonical_vertices.size(); count++)
         {
             graph_vector[0].push_back(count);
-            m_warp->getWeightsAndUpdateKNN(vertex, &weights[count * KNN_NEIGHBOURS]);
+            m_warp->getWeightsAndUpdateKNN(canonical_vertices[count], weights[count]);
             for(int i = 1; i < graph_vector.size(); i++)
                 graph_vector[i].push_back((int)m_warp->getRetIndex()->at(i-1));
-            count++;
         }
         m_weights->update(weights);
         m_data_graph = std::make_shared<OptGraph>(graph_vector);
