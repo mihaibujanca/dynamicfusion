@@ -23,7 +23,7 @@ local G = Graph("DataG", 7,
                     "n7", {D}, 16)
 
 
-weightedTranslation = 0
+local weightedTranslation = 0
 
 nodes = {0,1,2,3,4,5,6,7}
 
@@ -39,4 +39,14 @@ function huberPenalty(a, delta) -- delta should be 0.00001
     end
 end
 
+
+function tukeyPenalty(x, c) -- c = 0.01
+    if lesseq(abs(x), c) then
+        return x * pow(1.0 - (x * x) / (c * c), 2)
+    else
+        return 0
+    end
+end
+
+--Energy(tukeyPenalty(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation[G.v], 0.01))
 Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)

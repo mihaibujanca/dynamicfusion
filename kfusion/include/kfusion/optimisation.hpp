@@ -51,6 +51,10 @@ struct DynamicFusionDataEnergy
             float temp[3];
             quat.getTranslation(temp[0], temp[1], temp[2]);
 
+//            total_translation[0] += (T(temp[0]) +  eps_t[0]);
+//            total_translation[1] += (T(temp[1]) +  eps_t[1]);
+//            total_translation[2] += (T(temp[2]) +  eps_t[2]);
+//
             total_translation[0] += (T(temp[0]) +  eps_t[0]) * T(weights_[i]);
             total_translation[1] += (T(temp[1]) +  eps_t[1]) * T(weights_[i]);
             total_translation[2] += (T(temp[2]) +  eps_t[2]) * T(weights_[i]);
@@ -80,7 +84,6 @@ struct DynamicFusionDataEnergy
     template <typename T>
     T tukeyPenalty(T x, T c = T(0.01)) const
     {
-        //TODO: this seems to mean that 0.01 is the acceptable threshold for x (otherwise return 0 and as such, it converges). Need to check if this is correct
         return ceres::abs(x) <= c ? x * ceres::pow((T(1.0) - (x * x) / (c * c)), 2) : T(0.0);
     }
 
@@ -160,7 +163,7 @@ public:
         parameters_ = new double[warpField_->getNodes()->size() * 6];
         for(int i = 0; i < warp->getNodes()->size() * 6; i+=6)
         {
-            auto transform = warp->getNodes()->at(i).transform;
+            auto transform = warp->getNodes()->at(i / 6).transform;
 
             float x,y,z;
 
@@ -177,7 +180,7 @@ public:
     };
 
     ~WarpProblem() {
-        delete[] parameters_;
+        delete parameters_;
     }
     std::vector<double*> mutable_epsilon(const unsigned long *index_list) const
     {
@@ -202,6 +205,16 @@ public:
     const double *params() const
     {
         return parameters_;
+    }
+
+
+    void updateWarp()
+    {
+        for(int i = 0; i < warpField_->getNodes()->size() * 6; i+=6)
+        {
+            warpField_->getNodes()->at(i / 6).transform.encodeRotation(parameters_[i],parameters_[i+1],parameters_[i+2]);
+            warpField_->getNodes()->at(i / 6).transform.encodeTranslation(parameters_[i+3],parameters_[i+4],parameters_[i+5]);
+        }
     }
 
 

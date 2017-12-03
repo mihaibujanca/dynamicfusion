@@ -153,21 +153,15 @@ void WarpField::energy_data(const std::vector<Vec3f> &canonical_vertices,
 
     }
     ceres::Solver::Options options;
-    options.minimizer_type = ceres::TRUST_REGION;
+//    options.minimizer_type = ceres::TRUST_REGION;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
     options.minimizer_progress_to_stdout = true;
     options.num_linear_solver_threads = 8;
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
-    exit(0);
-//    auto params = warpProblem.params();
-//    for(int i = 0; i < nodes_->size()*6; i++)
-//    {
-//        std::cout<<params[i]<<" ";
-//        if((i+1) % 6 == 0)
-//            std::cout<<std::endl;
-//    }
+    warpProblem.updateWarp();
 }
 /**
  * \brief
@@ -219,38 +213,10 @@ utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex) const
         translation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getTranslation();
         rotation_sum += weights[i] * nodes_->at(ret_index_[i]).transform.getRotation();
     }
-    rotation_sum = utils::Quaternion<float>();
-    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
+    rotation_sum.normalize();
+    auto res = utils::DualQuaternion<float>(translation_sum, rotation_sum);
+    return res;
 }
-
-
-/**
- * \brief
- * \param vertex
- * \param weight
- * \return
- */
-utils::DualQuaternion<float> WarpField::DQB(const Vec3f& vertex, const std::vector<double*> epsilon) const
-{
-    float weights[KNN_NEIGHBOURS];
-    getWeightsAndUpdateKNN(vertex, weights);
-    utils::DualQuaternion<float> eps;
-    utils::Quaternion<float> translation_sum(0,0,0,0);
-    utils::Quaternion<float> rotation_sum(0,0,0,0);
-
-    for (size_t i = 0; i < KNN_NEIGHBOURS; i++)
-    {
-        // epsilon [0:2] is rotation [3:5] is translation
-        eps.from_twist(epsilon[i][0], epsilon[i][1], epsilon[i][2],
-                       epsilon[i][3], epsilon[i][4], epsilon[i][5]);
-
-        translation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getTranslation() + eps.getTranslation());
-        rotation_sum += weights[i] * (nodes_->at(ret_index_[i]).transform.getRotation() + eps.getRotation());
-    }
-    rotation_sum = utils::Quaternion<float>();
-    return utils::DualQuaternion<float>(translation_sum, rotation_sum);
-}
-
 
 /**
  * \brief

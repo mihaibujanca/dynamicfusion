@@ -8,7 +8,7 @@
 #include "mLibLodePNG.cpp"
 #include "opt/main.h"
 #include "opt/CombinedSolver.h"
-
+#include <macro_utils.hpp>
 using namespace kfusion;
 
 struct DynamicFusionApp
@@ -57,9 +57,13 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
-        std::string path = "/home/mihai/Projects/dynamicfusion/output/" + std::to_string(i) + ".jpg";
-        cv::imshow("Scene", view_host_);
+
+#ifdef OUTPUT_PATH
+        std::string path = TOSTRING(OUTPUT_PATH) + std::to_string(i) + ".jpg";
         cv::imwrite(path, view_host_);
+#endif
+
+        cv::imshow("Scene", view_host_);
         cvWaitKey(100);
 
     }
