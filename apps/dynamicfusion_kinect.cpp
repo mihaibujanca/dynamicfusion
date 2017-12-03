@@ -59,12 +59,9 @@ struct KinFuApp
 
     void take_cloud(KinFu& kinfu)
     {
-//        cv::Mat cloud_host = kinfu.tsdf().get_cloud_host();
         cv::Mat normal_host =  kinfu.tsdf().get_normal_host();
         cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
 
-//        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-//        viz.showWidget("cloud_normals", cv::viz::WCloudNormals(cloud_host, normal_host, 64, 0.05, cv::viz::Color::blue()));
         viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
     }
 
@@ -81,10 +78,7 @@ struct KinFuApp
                     return std::cout << "Can't grab" << std::endl, false;
                 depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
 
-                {
-                    SampledScopeTime fps(time_ms); (void)fps;
-                    has_image = kinfu(depth_device_);
-                }
+                has_image = kinfu(depth_device_);
 
                 if (has_image)
                     show_raycasted(kinfu);
@@ -133,13 +127,6 @@ struct KinFuApp
 
 int main (int argc, char* argv[])
 {
-    int device = 0;
-    cuda::setDevice (device);
-    cuda::printShortCudaDeviceInfo (device);
-
-    if(cuda::checkIfPreFermiGPU(device))
-        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
-
     KinFuApp *app;
 
     OpenNISource capture;
