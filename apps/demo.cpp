@@ -3,12 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
-#include "opt/mLibInclude.h"
-#include "mLibCore.cpp"
-#include "mLibLodePNG.cpp"
-#include "opt/main.h"
-#include "opt/CombinedSolver.h"
-#include <macro_utils.hpp>
 using namespace kfusion;
 
 struct DynamicFusionApp
@@ -152,13 +146,7 @@ struct DynamicFusionApp
 
 int main (int argc, char* argv[])
 {
-//    int device = 0;
-//    cuda::setDevice (device);
-//    cuda::printShortCudaDeviceInfo (device);
-//
-//    if(cuda::checkIfPreFermiGPU(device))
-//        return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
-//
+
     DynamicFusionApp *app;
     app = new DynamicFusionApp(argv[1]);
 
