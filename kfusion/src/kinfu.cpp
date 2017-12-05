@@ -1,15 +1,5 @@
 #include "precomp.hpp"
-#include "internal.hpp"
-#include <tgmath.h>
-#include <dual_quaternion.hpp>
-#include <nanoflann.hpp>
-#include <quaternion.hpp>
-#include <knn_point_cloud.hpp>
-#include <kfusion/warp_field.hpp>
-#include <kfusion/cuda/tsdf_volume.hpp>
-#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/viz/vizcore.hpp>
 
 using namespace std;
 using namespace kfusion;

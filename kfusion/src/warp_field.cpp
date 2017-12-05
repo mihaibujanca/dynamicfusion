@@ -1,11 +1,9 @@
 #include <dual_quaternion.hpp>
 #include <knn_point_cloud.hpp>
-#include <kfusion/types.hpp>
 #include <nanoflann.hpp>
 #include "kfusion/warp_field.hpp"
 #include "internal.hpp"
 #include "precomp.hpp"
-#include <opencv2/core/affine.hpp>
 #include <kfusion/optimisation.hpp>
 #include <opt/main.h>
 
