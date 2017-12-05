@@ -68,7 +68,6 @@ public:
         unsigned int N = (unsigned int) canonical_vertices.size();
 
         std::vector<std::vector<int> > graph_vector(KNN_NEIGHBOURS + 1, vector<int>(N));
-//        std::vector<float> weights(N * KNN_NEIGHBOURS);
         std::vector<float[KNN_NEIGHBOURS]> weights(N);
 //FIXME: KNN doesn't need to be recomputed every time.
         for(int count = 0; count < canonical_vertices.size(); count++)

@@ -24,11 +24,13 @@ local G = Graph("DataG", 7,
 
 
 local weightedTranslation = 0
+local weightedRotation = 0
 
 nodes = {0,1,2,3,4,5,6,7}
 
 for _,i in ipairs(nodes) do
     weightedTranslation = weightedTranslation + Weights(G.v)(i) * TranslationDeform(G["n"..i])
+    weightedRotation = weightedRotation + Weights(G.v)(i) * RotationDeform(G["n"..i])
 end
 
 function huberPenalty(a, delta) -- delta should be 0.00001
@@ -49,4 +51,4 @@ function tukeyPenalty(x, c) -- c = 0.01
 end
 
 --Energy(tukeyPenalty(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation[G.v], 0.01))
-Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)
+Energy(weightedRotation:dot(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation))
