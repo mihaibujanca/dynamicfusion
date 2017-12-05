@@ -44,8 +44,7 @@ void WarpField::init(const cv::Mat& first_frame)
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
 
-//    FIXME:: this is a test, remove later
-    voxel_size = 1;
+    voxel_size = 1;//    FIXME:: this is a test, remove later
     int step = 50;
     for(size_t i = 0; i < first_frame.rows; i+=step)
         for(size_t j = 0; j < first_frame.cols; j+=step)
@@ -72,8 +71,8 @@ void WarpField::init(const std::vector<Vec3f>& first_frame)
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
 
-//    FIXME: this is a test, remove
-    voxel_size = 1;
+    voxel_size = 1;//    FIXME: this is a test, remove
+
     for (size_t i = 0; i < first_frame.size(); i++)
     {
         auto point = first_frame[i];

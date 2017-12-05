@@ -25,7 +25,7 @@ namespace kfusion {
             DualQuaternion()
             {
                 rotation_ = Quaternion<float>();
-                translation_ = Quaternion<float>();
+                translation_ = Quaternion<float>(0,0,0,0); // TODO: could derive a "TranslationQuaternion" class
             };
             ~DualQuaternion(){};
 

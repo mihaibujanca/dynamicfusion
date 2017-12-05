@@ -189,10 +189,15 @@ public:
     {
         unsigned int N = (unsigned int)m_warp->getNodes()->size();
         std::vector<float3> h_translation(N);
+        std::vector<float3> h_rotation(N);
         m_translationDeform->copyTo(h_translation);
+        m_rotationDeform->copyTo(h_rotation);
 
-        for (unsigned int i = 0; i < N; i++)
+        for(unsigned int i = 0; i < N; i++)
+        {
             m_warp->getNodes()->at(i).transform.encodeTranslation(h_translation[i].x, h_translation[i].y, h_translation[i].z);
+            m_warp->getNodes()->at(i).transform.encodeRotation(h_rotation[i].x, h_rotation[i].y, h_rotation[i].z);
+        }
     }
 
 private:
