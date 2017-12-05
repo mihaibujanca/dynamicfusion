@@ -1,5 +1,4 @@
 #include "precomp.hpp"
-#include <kfusion/types.hpp>
 /**
  *
  * \param in
