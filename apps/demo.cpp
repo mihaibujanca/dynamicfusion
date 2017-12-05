@@ -3,12 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
-#include "opt/mLibInclude.h"
-#include "mLibCore.cpp"
-#include "mLibLodePNG.cpp"
-#include "opt/main.h"
-#include "opt/CombinedSolver.h"
-#include <macro_utils.hpp>
 using namespace kfusion;
 
 struct DynamicFusionApp
