@@ -70,7 +70,6 @@ warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 set(OPT_INCLUDE_DIRS /home/mihai/Projects/Opt/examples/external/mLib/include /home/mihai/Projects/Opt/examples/shared/ /home/mihai/Projects/Opt/API/release/include)
 set(OPT_LIBRARIES /home/mihai/Projects/Opt/API/release/lib/libOptDev.a)
 set(TERRA_LIBRARIES /home/mihai/Projects/terra/lib/libterra.a)
-set(OPENMESH_LIBRARIES /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshCore.a /home/mihai/Downloads/OpenMesh-6.3/build/Build/lib/libOpenMeshTools.a)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)

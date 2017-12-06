@@ -52,5 +52,5 @@ end
 
 --Energy(tukeyPenalty(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation[G.v], 0.01))
 --Energy(weightedRotation:dot(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation))
-Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)
---Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedRotation)
+--Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedTranslation)
+Energy(LiveVertices(G.v) - CanonicalVertices(G.v) - weightedRotation)

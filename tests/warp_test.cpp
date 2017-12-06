@@ -6,7 +6,6 @@
 
 #include "opt/main.h"
 #include "opt/CombinedSolver.h"
-#include "opt/OpenMesh.h"
 #include "opt/mLibInclude.h"
 #include "mLibCore.cpp"
 #include "mLibLodePNG.cpp"
@@ -55,7 +54,7 @@ TEST(WARP_FIELD_TEST, EnergyDataSingleVertexTest)
 
     for(int i = 0; i < warp_field.getNodes()->size(); i++)
     {
-        auto t = warp_field.getNodes()->at(i).transform.getTranslation();
+        auto t = warp_field.getNodes()->at(i).transform;
         std::cout<< t <<std::endl;
     }
 

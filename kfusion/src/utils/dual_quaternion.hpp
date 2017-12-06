@@ -24,8 +24,8 @@ namespace kfusion {
              */
             DualQuaternion()
             {
-                rotation_ = Quaternion<float>();
-                translation_ = Quaternion<float>(0,0,0,0); // TODO: could derive a "TranslationQuaternion" class
+                rotation_ = Quaternion<T>();
+                translation_ = Quaternion<T>(0,0,0,0); // TODO: could derive a "TranslationQuaternion" class
             };
             ~DualQuaternion(){};
 
@@ -209,17 +209,17 @@ namespace kfusion {
                 point += translation;
             }
 
-            void from_twist(const float &r0, const float &r1, const float &r2,
-                            const float &x, const float &y, const float &z)
+            void from_twist(const T &r0, const T &r1, const T &r2,
+                            const T &x, const T &y, const T &z)
             {
-                float norm = sqrt(r0*r0 + r1 * r1 + r2 * r2);
+                T norm = sqrt(r0*r0 + r1 * r1 + r2 * r2);
                 Quaternion<T> rotation;
                 if (norm > epsilon())
                 {
-                    float cosNorm = cos(norm);
-                    float sign = (cosNorm > 0.f) - (cosNorm < 0.f);
+                    T cosNorm = cos(norm);
+                    T sign = (cosNorm > 0.f) - (cosNorm < 0.f);
                     cosNorm *= sign;
-                    float sinNorm_norm = sign * sin(norm) / norm;
+                    T sinNorm_norm = sign * sin(norm) / norm;
                     rotation = Quaternion<T>(cosNorm, r0 * sinNorm_norm, r1 * sinNorm_norm, r2 * sinNorm_norm);
                 }
                 else
