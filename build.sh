@@ -61,37 +61,28 @@ sudo ./bootstrap.sh
 ./b2
 cd ..
 
-# Download terra
-wget https://github.com/zdevito/terra/releases/download/release-2016-03-25/terra-Linux-x86_64-332a506.zip
-unzip terra-Linux-x86_64-332a506.zip
-mv terra-Linux-x86_64-332a506 terra
-
-
 # Build DynamicFusion
 
 git clone https://github.com/mihaibujanca/dynamicfusion.git --recursive
+cd deps/terra
+git checkout release-2016-03-25/
+cd ..
 
 # Build Opt
-#Open Opt/examples/shared/make_template.inc and:
-#Change line
-#NVCC = /usr/local/cuda/bin/nvcc
-#with
-#NVCC = /usr/bin/nvcc
 #	Change line
 #		FLAGS += -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
 #	with
 #		FLAGS += -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES -D__STRICT_ANSI__ -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
 cd Opt/API/
-make
+make -j4
+cd ../../../
 
-
-cd dynamicfusion
 mkdir build
 cd build
-cmake -DOpenCV_DIR=~/opencv-2.4.13.3/build -DBOOST_ROOT=~/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
+cmake -DOpenCV_DIR=~/Projects/opencv-2.4.13.3/build -DBOOST_ROOT=~/Projects/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
 make -j4
-
+cd ..
 ./download_data.sh
 
 # Run Demo
-~/dynamicfusion/build/bin/dynamicfusion ~/dynamicfusion/data/umbrella
+echo "Run using ./build/bin/dynamicfusion ~/dynamicfusion/data/umbrella"
