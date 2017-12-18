@@ -1,0 +1,18 @@
+Code authors:
+Michael Mara (mmara@cs.stanford.edu)
+Zach DeVito (zdevito@gmail.com)
+Michael Zollhoefer (mzollhoef@mpi-inf.mpg.de) 
+Matthew Fisher (mdfisher@cs.stanford.edu)
+Matthias Niessner (niessner@cs.stanford.edu)
+
+
+Paper Authors: "Opt: A Domain Specific Language for Non-linear Least Squares Optimization in Graphics and Imaging"
+Zach DeVito (zdevito@gmail.com)
+Michael Mara (mmara@cs.stanford.edu)
+Michael Zollhoefer (mzollhoef@mpi-inf.mpg.de)
+Gilbert Bernstein (gilbazoid@gmail.com)
+Jonathan Ragan-Kelley (jrk@cs.stanford.edu)
+Pat Hanrahan (hanrahan@cs.stanford.edu)
+Christian Theobalt (theobalt@mpi-inf.mpg.de)
+Matthew Fisher (mdfisher@cs.stanford.edu)
+Matthias Niessner (niessner@cs.stanford.edu)

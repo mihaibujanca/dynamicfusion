@@ -23,9 +23,15 @@ Optional dependencies:
 
 ## Building instructions:
 
-### Linux
-Install NVIDIA drivers.A good tutorial with some common issues covered can be found [here](
-https://askubuntu.com/a/61433/167689).
+### Ubuntu 16.04
+Install NVIDIA drivers.
+- Enable NVidia drivers (Search / Additional Drivers) selecting:
+	"Using NVIDIA binary driver - version 375.66 from nvidia-375 (proprietary, tested)"
+	"Using processor microcode firmware for Intel CPUs from intel-microcode (proprietary)"
+- Restart pc to complete installation
+
+Alternatively A good tutorial with some common issues covered can be found [here](
+              https://askubuntu.com/a/61433/167689).
 
 Download and install CUDA from the [NVIDIA website](https://developer.nvidia.com/cuda-downloads).
 

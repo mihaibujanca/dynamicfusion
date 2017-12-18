@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="src\SFSSolver.cu">
+      <Filter>CUDASolver</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\mLibSource.cpp">
+      <Filter>mLib</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimpleBuffer.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CUDAImageSolver.cpp">
+      <Filter>CUDASolver</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CeresImageSolver.cpp" />
+    <ClCompile Include="..\shared\CeresSolverBase.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\main.h" />
+    <ClInclude Include="src\mLibInclude.h">
+      <Filter>mLib</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SolverUtil.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CUDATimer.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Opt.h">
+      <Filter>Opt</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimpleBuffer.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TerraSolverParameters.h" />
+    <ClInclude Include="src\cuda_SimpleMatrixUtil.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverInput.h" />
+    <ClInclude Include="src\CUDAImageSolver.h">
+      <Filter>CUDASolver</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CameraParams.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverState.h">
+      <Filter>CUDASolver</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverEquations.h">
+      <Filter>CUDASolver</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverUtil.h">
+      <Filter>CUDASolver</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverParameters.h">
+      <Filter>CUDASolver</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SFSSolverTerms.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ConvergenceAnalysis.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CeresImageSolver.h" />
+    <ClInclude Include="src\SolverIteration.h" />
+    <ClInclude Include="..\shared\CudaArray.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\cudaUtil.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\OptUtils.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SolverIteration.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CombinedSolver.h" />
+    <ClInclude Include="..\shared\CeresSolverBase.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\CombinedSolverParameters.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\CombinedSolverBase.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\OptSolver.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\NamedParameters.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\OptGraph.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\OptImage.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SolverBase.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CUDASolver">
+      <UniqueIdentifier>{7ce91af9-fdb3-4d66-9754-37fab70e588c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mLib">
+      <UniqueIdentifier>{4bf5f7ac-f7d2-487e-a769-38f129690a9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Terra">
+      <UniqueIdentifier>{39ac182f-acf2-476f-813b-e04429bc36c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{4dd7fbe3-483c-40a8-974e-02ec8352ad30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Opt">
+      <UniqueIdentifier>{64b2cd64-34cf-40f6-a5b6-aacba7241a37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{f519daf8-80dd-4a8c-a618-13407e632a79}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shape_from_shading.t">
+      <Filter>Terra</Filter>
+    </None>
+  </ItemGroup>
+</Project>

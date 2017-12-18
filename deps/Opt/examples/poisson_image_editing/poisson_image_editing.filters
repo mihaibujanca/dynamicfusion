@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\CUDAWarpingSolver.cpp">
+      <Filter>CUDA</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mLibSource.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CUDAPatchSolverWarping.cpp">
+      <Filter>CUDAPATCH</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ImageWarping.h" />
+    <ClInclude Include="src\main.h" />
+    <ClInclude Include="src\CUDAWarpingSolver.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpingSolverEquations.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SolverUtil.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpingSolverParameters.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpingSolverState.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpingSolverUtil.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CUDATimer.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mLibInclude.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CUDAPatchSolverWarping.h">
+      <Filter>CUDAPATCH</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PatchSolverWarpingEquations.h">
+      <Filter>CUDAPATCH</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PatchSolverWarpingState.h">
+      <Filter>CUDAPATCH</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PatchSolverWarpingUtil.h">
+      <Filter>CUDAPATCH</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PatchSolverWarpingParameters.h">
+      <Filter>CUDAPATCH</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CUDA">
+      <UniqueIdentifier>{a0f39fd3-ee3d-48f5-82f2-95c3d0d90136}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{1b5de835-1872-4325-84fc-715722411b45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CUDAPATCH">
+      <UniqueIdentifier>{f937c683-5532-4449-a44e-15b32c285f06}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\WarpingSolver.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\PatchSolverWarping.cu">
+      <Filter>CUDAPATCH</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

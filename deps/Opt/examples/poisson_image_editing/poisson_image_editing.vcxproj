@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4F3DB6D2-8D2D-43B9-9FBB-B3EA87F43017}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>poisson_image_editing</RootNamespace>
+    <ProjectName>poisson_image_editing</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+    <IncludePath>$(CUDA_INC_PATH);$(IncludePath);..\external\mLib\include;..\external\</IncludePath>
+    <LibraryPath>$(CUDA_LIB_PATH);$(LibraryPath);</LibraryPath>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <OpenMPSupport>false</OpenMPSupport>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ExceptionHandling>Sync</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <CudaCompile>
+      <Include>$(ProjectDir)</Include>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35</CodeGeneration>
+      <MaxRegCount>62</MaxRegCount>
+    </CudaCompile>
+    <PreBuildEvent>
+      <Command>call "..\..\API\common\optMake.bat" "$(ProjectDir)\..\..\..\terra" "..\..\API" "false"
+xcopy /Y /D "..\..\API\release\bin\*.dll" "."
+xcopy /Y /D "..\..\API\release\lib\*.lib" "."
+xcopy /Y /D "..\..\API\release\include\*.h" "..\shared\"</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_DEBUG;DEBUG;PROFILE;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Opt.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <PtxAsOptionV>false</PtxAsOptionV>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Opt.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Manifest>
+      <EnableDPIAwareness>true</EnableDPIAwareness>
+    </Manifest>
+    <CudaCompile>
+      <FastMath>true</FastMath>
+      <Optimization>O3</Optimization>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared\CeresSolverBase.cpp" />
+    <ClCompile Include="src\CeresSolverPoissonImageEditing.cpp" />
+    <ClCompile Include="src\CUDAPatchSolverWarping.cpp" />
+    <ClCompile Include="src\CUDAWarpingSolver.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\mLibSource.cpp" />
+    <ClCompile Include="src\EigenSolverPoissonImageEditing.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\shared\CeresSolverBase.h" />
+    <ClInclude Include="..\shared\CombinedSolverBase.h" />
+    <ClInclude Include="..\shared\CombinedSolverParameters.h" />
+    <ClInclude Include="..\shared\NamedParameters.h" />
+    <ClInclude Include="..\shared\OptGraph.h" />
+    <ClInclude Include="..\shared\OptImage.h" />
+    <ClInclude Include="..\shared\OptSolver.h" />
+    <ClInclude Include="..\shared\OptUtils.h" />
+    <ClInclude Include="..\shared\SolverBase.h" />
+    <ClInclude Include="..\shared\SolverIteration.h" />
+    <ClInclude Include="src\CeresSolverPoissonImageEditing.h" />
+    <ClInclude Include="src\CombinedSolver.h" />
+    <ClInclude Include="src\CUDAPatchSolverWarping.h" />
+    <ClInclude Include="src\CUDATimer.h" />
+    <ClInclude Include="src\CUDAWarpingSolver.h" />
+    <ClInclude Include="src\EigenSolverPoissonImageEditing.h" />
+    <ClInclude Include="src\PatchSolverWarpingParameters.h" />
+    <ClInclude Include="src\PatchSolverWarpingEquations.h" />
+    <ClInclude Include="src\PatchSolverWarpingState.h" />
+    <ClInclude Include="src\PatchSolverWarpingUtil.h" />
+    <ClInclude Include="src\WarpingSolverEquations.h" />
+    <ClInclude Include="src\WarpingSolverParameters.h" />
+    <ClInclude Include="src\WarpingSolverState.h" />
+    <ClInclude Include="src\WarpingSolverUtil.h" />
+    <ClInclude Include="src\main.h" />
+    <ClInclude Include="src\mLibInclude.h" />
+    <ClInclude Include="src\SolverUtil.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\PatchSolverWarping.cu" />
+    <CudaCompile Include="src\WarpingSolver.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="poisson_image_editing.t" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.targets" />
+  </ImportGroup>
+</Project>
