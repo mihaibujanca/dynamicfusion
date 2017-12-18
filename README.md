@@ -77,7 +77,7 @@ Inside `data`, create directories `color` and `depth`, and move color and depth 
 To use with .oni captures or straight from a kinect device, use `./build/bin/dynamicfusion_kinect <path-to-oni>` or `./build/bin/dynamicfusion_kinect <device_id>` 
 
 ---
-Note: currently, the frame rate is too low (5-6fps) to be able to cope with live inputs, so it is advisable that you capture your input first.
+Note: currently, the frame rate is too low (10s / frame) to be able to cope with live inputs, so it is advisable that you capture your input first.
 
 ## References
 [DynamicFusion project page](http://grail.cs.washington.edu/projects/dynamicfusion/)
