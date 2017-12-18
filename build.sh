@@ -82,7 +82,3 @@ cd build
 cmake -DOpenCV_DIR=~/Projects/opencv-2.4.13.3/build -DBOOST_ROOT=~/Projects/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
 make -j4
 cd ..
-./download_data.sh
-
-# Run Demo
-echo "Run using ./build/bin/dynamicfusion ~/dynamicfusion/data/umbrella"
