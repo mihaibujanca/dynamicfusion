@@ -6,3 +6,4 @@ cmake-build-release/
 data/
 html/
 latex/
+Doxyfile
