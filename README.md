@@ -43,11 +43,9 @@ doxygen Doxyfile
 ```
 
 ### Windows
-* 
 Dependencies:
 * CUDA 5.0 or higher
 * OpenCV 2.4.8 or higher (modules opencv_core, opencv_highgui, opencv_calib3d, opencv_imgproc, opencv_viz). Make sure that WITH_VTK flag is enabled in CMake during OpenCV configuration.
-* Nanoflann (included in the repository)
 * Boost (libraries system, filesystem and program options. Only used in the demo. Tested with [1.64.0](http://www.boost.org/users/history/version_1_64_0.html))
 * Ceres solver (Tested with version [1.13.0](http://ceres-solver.org/ceres-solver-1.13.0.tar.gz))
 
