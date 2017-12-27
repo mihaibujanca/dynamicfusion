@@ -6,7 +6,7 @@ sudo apt-get install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-nsight nvidia-pr
 # install git, cmake, SuiteSparse, Lapack, BLAS etc
 sudo apt-get install cmake libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev libgtk2.0-dev pkg-config libopenni-dev libusb-1.0-0-dev wget zip clang
 
-cd ../
+cd ..
 
 # Build gflags
 git clone https://github.com/gflags/gflags.git
@@ -76,6 +76,6 @@ make -j4
 cd ../../../
 
 mkdir -p build && cd build
-cmake -DOpenCV_DIR=~/opencv-2.4.13.3/build -DBOOST_ROOT=~/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
+cmake -DOpenCV_DIR=~/opencv/build -DBOOST_ROOT=~/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni -DOpenCV_FOUND=TRUE ..
 make -j4
 cd ..

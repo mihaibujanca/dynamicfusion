@@ -9,7 +9,7 @@ The code is based on this [KinectFusion implemenation](https://github.com/Nerei/
 ## Building instructions:
 
 ### Ubuntu 16.04
-Clone dynamicfusion and dependencies
+Clone dynamicfusion and dependencies. 
 ```
 git clone https://github.com/mihaibujanca/dynamicfusion --recursive
 ```
@@ -23,7 +23,7 @@ Install NVIDIA drivers.
 Alternatively a good tutorial with some common issues covered can be found [here](
               https://askubuntu.com/a/61433/167689).
 
-For fresh installs:
+For fresh installs (this assumes you cloned your project in your home directory!):
 ```
 chmod +x build.sh
 ./build.sh
@@ -32,7 +32,7 @@ chmod +x build.sh
 If you are not on a fresh install, check `build.sh` for building instructions and dependencies.
 
 If you want to build the tests as well, set `-DBUILD_TESTS=ON`.
-To save frames showing the reconstruction progress, pass `-DSAVE_RECONSTRUCTION_FRAMES=ON`.
+To save frames showing the reconstruction progress, pass `-DSAVE_RECONSTRUCTION_FRAMES=ON`. The frames will be saved in <project_root>/output
 
 To build documentation, go to the project root directory and execute
 ```
