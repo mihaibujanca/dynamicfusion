@@ -18,6 +18,7 @@ target_include_directories(ceres_test PUBLIC ${CERES_INCLUDE_DIRS})
 
 
 add_test(nanoflann_test nanoflann_test.cpp)
+
 add_test(warp_test warp_test.cpp)
 target_link_libraries(
         warp_test

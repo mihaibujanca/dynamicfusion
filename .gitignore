@@ -1,0 +1,10 @@
+build/
+output/
+.idea/
+cmake-build-debug/
+cmake-build-release/
+data/
+html/
+latex/
+Doxyfile
+deps/terra

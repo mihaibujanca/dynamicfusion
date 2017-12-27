@@ -822,7 +822,7 @@ void kfusion::device::extractNormals (const TsdfVolume& volume, const PtrSz<Poin
     en.aff = aff;
     en.Rinv = Rinv;
 
-    dim3 block (256);
+    dim3 block (32, 8);
     dim3 grid (divUp ((int)points.size, block.x));
 
     extract_normals_kernel<<<grid, block>>>(en, output);

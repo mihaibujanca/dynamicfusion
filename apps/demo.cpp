@@ -141,12 +141,9 @@ struct DynamicFusionApp
 
 };
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int main (int argc, char* argv[])
 {
-
+    assert(argc == 2 && "Usage: ./dynamicfusion <data-directory>");
     DynamicFusionApp *app;
     app = new DynamicFusionApp(argv[1]);
 

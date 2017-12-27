@@ -1,0 +1,3 @@
+[submodule "deps/Opt"]
+	path = deps/Opt
+	url = https://github.com/niessner/Opt
