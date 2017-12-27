@@ -4,12 +4,9 @@ sudo apt-get update
 # install cuda toolkit and nvidia-prime
 sudo apt-get install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-nsight nvidia-prime
 # install git, cmake, SuiteSparse, Lapack, BLAS etc
-sudo apt-get install git cmake libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev libgtk2.0-dev pkg-config libopenni-dev libusb-1.0-0-dev wget zip clang
+sudo apt-get install cmake libvtk5-dev libsuitesparse-dev liblapack-dev libblas-dev libgtk2.0-dev pkg-config libopenni-dev libusb-1.0-0-dev wget zip clang
 
-#
-cd ~/
-mkdir -p Projects/
-cd Projects/
+cd ../
 
 # Build gflags
 git clone https://github.com/gflags/gflags.git
@@ -63,7 +60,6 @@ cd ..
 
 # Build DynamicFusion
 
-git clone https://github.com/mihaibujanca/dynamicfusion.git --recursive
 cd deps/terra
 git checkout release-2016-03-25/
 cd ..
@@ -79,6 +75,6 @@ cd ../../../
 
 mkdir build
 cd build
-cmake -DOpenCV_DIR=~/Projects/opencv-2.4.13.3/build -DBOOST_ROOT=~/Projects/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
+cmake -DOpenCV_DIR=../../opencv-2.4.13.3/build -DBOOST_ROOT=../../boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
 make -j4
 cd ..

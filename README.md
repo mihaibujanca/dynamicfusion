@@ -9,13 +9,18 @@ The code is based on this [KinectFusion implemenation](https://github.com/Nerei/
 ## Building instructions:
 
 ### Ubuntu 16.04
+Clone dynamicfusion and dependencies
+```
+git clone https://github.com/mihaibujanca/dynamicfusion --recursive
+```
+
 Install NVIDIA drivers.
 - Enable NVidia drivers (Search / Additional Drivers) selecting:
 	"Using NVIDIA binary driver - version 375.66 from nvidia-375 (proprietary, tested)"
 	"Using processor microcode firmware for Intel CPUs from intel-microcode (proprietary)"
 - Restart pc to complete installation
 
-Alternatively A good tutorial with some common issues covered can be found [here](
+Alternatively a good tutorial with some common issues covered can be found [here](
               https://askubuntu.com/a/61433/167689).
 
 For fresh installs:
