@@ -63,6 +63,7 @@ cd ..
 cd dynamicfusion/deps
 wget https://github.com/zdevito/terra/releases/download/release-2016-03-25/terra-Linux-x86_64-332a506.zip
 unzip terra-Linux-x86_64-332a506.zip
+rm terra-Linux-x86_64-332a506.zip
 mv terra-Linux-x86_64-332a506 terra
 
 # Build Opt
@@ -70,12 +71,11 @@ mv terra-Linux-x86_64-332a506 terra
 #		FLAGS += -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
 #	with
 #		FLAGS += -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES -D__STRICT_ANSI__ -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
-cd deps/Opt/API/
+cd Opt/API/
 make -j4
 cd ../../../
 
-mkdir build
-cd build
-cmake -DOpenCV_DIR=../../opencv-2.4.13.3/build -DBOOST_ROOT=../../boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
+mkdir -p build && cd build
+cmake -DOpenCV_DIR=~/opencv-2.4.13.3/build -DBOOST_ROOT=~/boost_1_64_0/ -DOPENNI_INCLUDE_DIR=/usr/include/ni ..
 make -j4
 cd ..
