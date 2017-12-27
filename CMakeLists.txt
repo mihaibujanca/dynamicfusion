@@ -60,16 +60,18 @@ endif()
 
 # ---[ cuda settings
 set(HAVE_CUDA 1)
-list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_61,code=sm_61")
-
+list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;")
+if(CUDA_VERSION GREATER 7.5)
+    list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_61,code=sm_61")
+endif()
 if(UNIX OR APPLE)
   list(APPEND CUDA_NVCC_FLAGS "-Xcompiler;-fPIC;")
 endif()
 
 warnings_disable(CMAKE_CXX_FLAGS /wd4985)
-set(OPT_INCLUDE_DIRS /home/mihai/Projects/Opt/examples/external/mLib/include /home/mihai/Projects/Opt/examples/shared/ /home/mihai/Projects/Opt/API/release/include)
-set(OPT_LIBRARIES /home/mihai/Projects/Opt/API/release/lib/libOptDev.a)
-set(TERRA_LIBRARIES /home/mihai/Projects/terra/lib/libterra.a)
+set(OPT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/deps/Opt/examples/external/mLib/include ${CMAKE_CURRENT_SOURCE_DIR}/deps/Opt/examples/shared/ ${CMAKE_CURRENT_SOURCE_DIR}/deps/Opt/API/release/include)
+set(OPT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/deps/Opt/API/release/lib/libOptDev.a)
+set(TERRA_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/deps/terra/lib/libterra.a)
 
 add_subdirectory(kfusion)
 add_subdirectory(apps)
