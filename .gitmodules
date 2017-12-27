@@ -1,6 +1,0 @@
-[submodule "deps/Opt"]
-	path = deps/Opt
-	url = https://github.com/niessner/Opt
-[submodule "deps/terra"]
-	path = deps/terra
-	url = https://github.com/zdevito/terra/
