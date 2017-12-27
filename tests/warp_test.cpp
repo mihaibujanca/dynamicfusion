@@ -13,7 +13,7 @@
 
 TEST(WARP_FIELD_TEST, EnergyDataSingleVertexTest)
 {
-    const float max_error = 1e-3;
+    const float max_error = 1e-5;
 
     kfusion::WarpField warp_field;
     std::vector<cv::Vec3f> warp_init;
