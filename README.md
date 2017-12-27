@@ -31,8 +31,8 @@ chmod +x build.sh
 
 If you are not on a fresh install, check `build.sh` for building instructions and dependencies.
 
-If you want to build the tests as well, set `-DBUILD_TESTS=ON`.
-To save frames showing the reconstruction progress, pass `-DSAVE_RECONSTRUCTION_FRAMES=ON`. The frames will be saved in <project_root>/output
+If you want to build the tests as well, set `-DBUILD_TESTS=ON`.\
+To save frames showing the reconstruction progress, pass `-DSAVE_RECONSTRUCTION_FRAMES=ON`. The frames will be saved in `<project_root>/output`
 
 To build documentation, go to the project root directory and execute
 ```
