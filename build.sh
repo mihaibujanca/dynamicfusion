@@ -34,7 +34,7 @@ cd ../../
 # Build Ceres
 git clone https://ceres-solver.googlesource.com/ceres-solver
 cd ceres-solver
-mkdir -b build/ && cd build/
+mkdir -p build/ && cd build/
 cmake ..
 make -j4
 sudo make install
@@ -60,16 +60,17 @@ cd ..
 
 # Build DynamicFusion
 
-cd deps/terra
-git checkout release-2016-03-25/
-cd ..
+cd dynamicfusion/deps
+wget https://github.com/zdevito/terra/releases/download/release-2016-03-25/terra-Linux-x86_64-332a506.zip
+unzip terra-Linux-x86_64-332a506.zip
+mv terra-Linux-x86_64-332a506 terra
 
 # Build Opt
 #	Change line
 #		FLAGS += -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
 #	with
 #		FLAGS += -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES -D__STRICT_ANSI__ -O3 -g -std=c++11 -I$(SRC) -I$(SRC)/cutil/inc -I../../API/release/include -I$(TERRAHOME)/include -I$(CUDAHOME)/include -I../external/mLib/include -I../external -I../external/OpenMesh/include
-cd Opt/API/
+cd deps/Opt/API/
 make -j4
 cd ../../../
 
