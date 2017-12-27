@@ -1,0 +1,12 @@
+[submodule "deps/--force"]
+	path = deps/--force
+	url = https://github.com/niessner/Opt
+[submodule "deps/-b"]
+	path = deps/-b
+	url = https://github.com/zdevito/terra
+[submodule "deps/terra"]
+	path = deps/terra
+	url = https://github.com/zdevito/terra
+[submodule "deps/Opt"]
+	path = deps/Opt
+	url = https://github.com/niessner/Opt
